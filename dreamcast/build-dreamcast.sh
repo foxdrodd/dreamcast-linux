@@ -2,6 +2,7 @@
 #
 # Dreamcast Linux build script
 # Author: Anders Evenrud <andersevenrud@gmail.com>
+# Customized: Florian Fuchs <ffuchs@linuxdc.net>
 #
 set -e
 
