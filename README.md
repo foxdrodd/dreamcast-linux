@@ -1,8 +1,8 @@
 # Dreamcast Linux
 
-A Debian Docker environment that builds a Linux distro that is bootable on the Sega Dreamcast.
+This is a docker environment that builds a mainline linux distro that is bootable on the Sega Dreamcast
 
-**THIS IS JUST A PROOF OF CONCEPT**
+It is actually tested on real hardware. Unfortunately it does not work in gxemul.
 
 ## About
 

@@ -1,6 +1,5 @@
 #!/bin/bash
-# Change Dockerfile and rebuild
-
+# Change Dockerfile and rebuild, this is a hack for quick iteration.
 
 buildtime=$(date +%s)
 
