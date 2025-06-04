@@ -20,7 +20,8 @@ GCC_VERSION="8.3.0"
 GDB_VERSION="8.3"
 GLIBC_VERSION="2.30"
 #LINUX_VERSION="5.2"
-LINUX_VERSION="6.14"
+LINUX_VERSION_1="6.x"
+LINUX_VERSION="6.15.1"
 BUSYBOX_VERSION="1.31.0"
 
 # Globals
@@ -59,9 +60,9 @@ pushd dreamcast
     tar xJf glibc-${GLIBC_VERSION}.tar.xz
   fi
 
-  if [ ! -f "v${LINUX_VERSION}.tar.gz" ]; then
-    wget https://github.com/torvalds/linux/archive/v${LINUX_VERSION}.tar.gz
-    tar xzf v${LINUX_VERSION}.tar.gz
+  if [ ! -f "linux-${LINUX_VERSION}.tar.xz" ]; then
+    wget https://cdn.kernel.org/pub/linux/kernel/v${LINUX_VERSION_1}/linux-${LINUX_VERSION}.tar.xz
+    tar xf linux-${LINUX_VERSION}.tar.xz
   fi
 
   if [ ! -f "busybox-${BUSYBOX_VERSION}.tar.bz2" ]; then
