@@ -12,21 +12,22 @@ set -e
 
 # Customize these to your liking
 GNU_MIRROR="https://gnuftp.uib.no"
-MY_COPTS="-j4"
+MY_COPTS="-j24"
 
 # Dependencies
 BINUTILS_VERSION="2.32"
 GCC_VERSION="8.3.0"
 GDB_VERSION="8.3"
 GLIBC_VERSION="2.30"
-LINUX_VERSION="5.2"
+#LINUX_VERSION="5.2"
+LINUX_VERSION="6.14"
 BUSYBOX_VERSION="1.31.0"
 
 # Globals
 export TARGET="sh4-linux"
 export PREFIX="/opt/dreamcast"
 export PATH="${PATH}:${PREFIX}/bin"
-export INITRD=`pwd`/initrd
+export INITRD=/usr/src/dreamcast/initrd
 
 # Preparations
 mkdir -p /opt/build
@@ -84,6 +85,7 @@ pushd dreamcast
   # Binutils
   #
 
+  if [ ! -f "/opt/build/dont_binutils" ]; then
   pushd build-binutils
     ../binutils-${BINUTILS_VERSION}/configure \
       --target=$TARGET \
@@ -91,11 +93,13 @@ pushd dreamcast
     make ${MY_COPTS}
     make install
   popd
+  fi
 
   #
   # Kernel headers
   #
 
+  if [ ! -f "/opt/build/dont_linux" ]; then
   pushd linux-${LINUX_VERSION}
     cp ../../kernel.config .config
     make ARCH=sh CROSS_COMPILE=sh4-linux- headers_install
@@ -104,11 +108,13 @@ pushd dreamcast
       cp -r usr/include/* ${PREFIX}/${TARGET}/include
     fi
   popd
+  fi
 
   #
   # GCC stage 1
   #
 
+  if [ ! -f "/opt/build/dont_gcc" ]; then
   pushd build-gcc
     ../gcc-${GCC_VERSION}/configure \
       --target=$TARGET \
@@ -118,11 +124,14 @@ pushd dreamcast
     make ${MY_COPTS} all-gcc
     make install-gcc
   popd
+  fi
 
   #
   # Glibc
   #
+  #
 
+  if [ ! -f "/opt/build/dont_glibc" ]; then
   pushd build-glibc
     ../glibc-${GLIBC_VERSION}/configure \
       --host=$TARGET \
@@ -141,7 +150,9 @@ pushd dreamcast
     mkdir -p ${PREFIX}/${TARGET}/include/gnu
     touch ${PREFIX}/${TARGET}/include/gnu/stubs.h
   popd
+  fi
 
+  if [ ! -f "/opt/build/dont_gcc" ]; then
   pushd build-gcc
     make ${MY_COPTS} all-target-libgcc
     make install-target-libgcc
@@ -168,18 +179,13 @@ pushd dreamcast
     make ${MY_COPTS}
     make install
   popd
-
-  #
-  # Linux kernel
-  #
-
-  pushd linux-${LINUX_VERSION}
-    make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
-  popd
+  fi
 
   #
   # Busybox
   #
+
+  if [ ! -f "/opt/build/dont_busybox" ]; then
 
   pushd busybox-${BUSYBOX_VERSION}
     cp ../../busybox.config .config
@@ -187,28 +193,56 @@ pushd dreamcast
     make CROSS=sh4-linux- \
       DOSTATIC=true \
       CFLAGS_EXTRA="-I ${PREFIX}/${TARGET}/include" \
-      PREFIX=${INITRD} \
+      CONFIG_PREFIX=${INITRD} \
       all install
   popd
+  fi
 
   #
   # Linux ramdisk
   #
-
+  if [ ! -f "/opt/build/dont_ramdisk" ]; then
   if [ ! -d "${INITRD}/dev" ]; then
     mkdir -p ${INITRD}/dev
     mknod ${INITRD}/dev/console c 5 1
   fi
 
-  if [ ! -f "initrd.bin" ]; then
-    dd if=/dev/zero of=initrd.img bs=1k count=4096
+  mkdir -p ${INITRD}/{etc/init.d,proc,sys}
+  cat <<EOF > ${INITRD}/etc/fstab
+devtmpfs /dev devtmpfs rw,nosuid,mode=755 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+sysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0
+EOF
+
+  cat <<EOF > ${INITRD}/etc/init.d/rcS
+/bin/mount -a
+EOF
+
+  chmod a+x ${INITRD}/etc/init.d/rcS
+
+    dd if=/dev/zero of=initrd.img bs=1k count=3000
     mke2fs -F -vm0 initrd.img
-    mkdir initrd.dir
+    mkdir -p initrd.dir
     mount -o loop initrd.img initrd.dir
-    (cd initrd ; tar cf - .) | (cd initrd.dir ; tar xvf -)
+#    (cd initrd ; tar cf - .) | (cd initrd.dir ; tar xvf -)
+  
+    cd initrd;  rm -f init; ln -s bin/busybox init; cd ..
+
+    cp -r initrd/* initrd.dir/
     umount initrd.dir
     gzip -c -9 initrd.img > initrd.bin
   fi
+
+  #
+  # Linux kernel
+  #
+
+ if [ ! -f "/opt/build/dont_linux" ]; then
+
+  pushd linux-${LINUX_VERSION}
+    make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
+  popd
+ fi
 
   #
   # Boot images
@@ -228,7 +262,9 @@ pushd dreamcast
   # Finalize
   #
   pushd /opt/build
+
     ./scramble kernel-boot.bin 1ST_READ.BIN || exit 1
+# cp kernel-boot.bin 1ST_READ.BIN # try without scrambling
 
     dd of=audio.raw if=/dev/zero bs=2352 count=300
     genisoimage -l -r -C 0,11702 -G IP.BIN -o data.iso 1ST_READ.BIN
