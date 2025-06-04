@@ -6,7 +6,7 @@ This is a docker environment that builds a mainline linux distro that is bootabl
 
 [![asciicast](https://asciinema.org/a/722003.svg?t=6.0)](https://asciinema.org/a/722003?t=5)
 
-ATTENTION: You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac800000.
+ATTENTION: You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac600000.
 
 ```
 config BOOT_LINK_OFFSET
