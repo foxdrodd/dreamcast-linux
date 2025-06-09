@@ -242,7 +242,8 @@ EOF
  if [ ! -f "/opt/build/dont_linux" ]; then
 
   pushd linux-${LINUX_VERSION}
-    make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
+    #make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
+    make ARCH=sh CROSS_COMPILE=sh4-linux- zImage
   popd
  fi
 
