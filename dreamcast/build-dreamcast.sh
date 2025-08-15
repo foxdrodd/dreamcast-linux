@@ -22,7 +22,8 @@ GDB_VERSION="8.3"
 GLIBC_VERSION="2.30"
 #LINUX_VERSION="5.2"
 LINUX_VERSION_1="6.x"
-LINUX_VERSION="6.15.1"
+#LINUX_VERSION="6.15.1"
+LINUX_VERSION="6.16.1"
 BUSYBOX_VERSION="1.31.0"
 
 # Globals
@@ -204,6 +205,10 @@ pushd dreamcast
   # Linux ramdisk
   #
   if [ ! -f "/opt/build/dont_ramdisk" ]; then
+
+
+  cp -vf ../chroot.sh ${INITRD}/bin/
+
   if [ ! -d "${INITRD}/dev" ]; then
     mkdir -p ${INITRD}/dev
     mknod ${INITRD}/dev/console c 5 1
@@ -242,7 +247,8 @@ EOF
  if [ ! -f "/opt/build/dont_linux" ]; then
 
   pushd linux-${LINUX_VERSION}
-    make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
+#    make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
+     make ARCH=sh CROSS_COMPILE=sh4-linux- zImage
   popd
  fi
 
