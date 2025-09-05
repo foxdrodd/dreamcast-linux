@@ -1,6 +1,6 @@
 # Dreamcast Linux
 
-This is a docker environment that builds a mainline linux distro that is bootable on the Sega Dreamcast.
+This is a docker environment that builds a mainline linux distro that is bootable on the Sega Dreamcast. The latest bootable CDI image can be found under the Releases.
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). Unfortunately it does not work in gxemul. (`[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]`)
 
