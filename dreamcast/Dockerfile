@@ -20,6 +20,7 @@ RUN rm -rf /var/lib/apt/lists/*
 COPY build-dreamcast.sh \
   kernel.config \
   busybox.config \
+  chroot.sh \
   sh-boot-20010831-1455.diff \
   sh-boot-20010831-1455-sh4.diff \
   hello sh-boot-20010831-1455.tar.gz \
