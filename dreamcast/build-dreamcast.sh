@@ -204,6 +204,10 @@ pushd dreamcast
   # Linux ramdisk
   #
   if [ ! -f "/opt/build/dont_ramdisk" ]; then
+
+
+  cp -vf ../chroot.sh ${INITRD}/bin/
+
   if [ ! -d "${INITRD}/dev" ]; then
     mkdir -p ${INITRD}/dev
     mknod ${INITRD}/dev/console c 5 1
@@ -242,8 +246,8 @@ EOF
  if [ ! -f "/opt/build/dont_linux" ]; then
 
   pushd linux-${LINUX_VERSION}
-    #make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
-    make ARCH=sh CROSS_COMPILE=sh4-linux- zImage
+#    make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
+     make ARCH=sh CROSS_COMPILE=sh4-linux- zImage
   popd
  fi
 
