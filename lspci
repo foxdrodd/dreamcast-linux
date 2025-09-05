@@ -1,0 +1,8 @@
+00:00.0 Ethernet controller: Sega Enterprises Ltd Device 1234 (rev 10)
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 240 (8000ns min, 8000ns max)
+	Interrupt: pin A routed to IRQ 99
+	Region 1: Memory at 01001700 (32-bit, non-prefetchable) [size=512]
+	Kernel driver in use: 8139too
+

@@ -1,0 +1,11 @@
+machine		: Sega Dreamcast
+processor	: 0
+cpu family	: sh4
+cpu type	: SH7750
+cut		: unknown
+cpu flags	: fpu p2flush perfctr ptea
+cache type	: split (harvard)
+icache size	:  8KiB (1-way)
+dcache size	: 16KiB (1-way)
+address sizes	: 29 bits physical
+bogomips	: 199.50
