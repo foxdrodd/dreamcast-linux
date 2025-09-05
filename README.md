@@ -28,6 +28,20 @@ config BOOT_LINK_OFFSET
 I use kernel-integrated initramfs and not the sh-boot initrd. The path to the initramfs is defined in the kernel-config. (`CONFIG_INITRAMFS_SOURCE="/usr/src/dreamcast/initrd"
 `)
 
+
+## Apply patches
+
+```
+/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch  -p1 < ../../../hotfix-dreamcast-bba.patch
+checking file arch/sh/drivers/pci/pci-dreamcast.c
+/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch -p1 < ../../../hotfix-dreamcast-dma.patch
+checking file drivers/video/fbdev/pvr2fb.c
+/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch -p1 < ../../../hotfix-dreamcast-maple.patch
+patching file include/linux/maple.h
+/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch -p1 < ../../../hotfix-dreamcast-bootlinkoffset.patch
+patching file arch/sh/Kconfig
+```
+
 ## About
 
 Creates a cross-compilation environment for the SH4 architecture using:

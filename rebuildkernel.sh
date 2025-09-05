@@ -15,9 +15,9 @@ fi
 make base dreamcast
 
 cp -vf build/data.iso archive/data.iso.$buildtime
-cp -vf build/linux614.cdi archive/linux614.cdi.$buildtime
+cp -vf build/linux614.cdi archive/linux616.cdi.$buildtime
 
-/opt/toolchains/dc/bin/cdi4dc build/data.iso build/linux614.cdi
+/opt/toolchains/dc/bin/cdi4dc build/data.iso build/linux616.cdi
 
 modified=$(stat -c %y build/linux614.cdi)
 echo $buildtime $modified $* >> log_build.txt

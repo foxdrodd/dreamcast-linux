@@ -1,0 +1,10 @@
+--- a/arch/sh/Kconfig	2025-09-06 00:31:13.485187381 +0200
++++ b/arch/sh/Kconfig	2025-09-06 00:31:38.764403282 +0200
+@@ -682,6 +682,7 @@
+ config BOOT_LINK_OFFSET
+ 	hex
+ 	default "0x00210000" if SH_SHMIN
++	default "0x00600000" if SH_DREAMCAST
+ 	default "0x00810000" if SH_7780_SOLUTION_ENGINE
+ 	default "0x009e0000" if SH_TITAN
+ 	default "0x01800000" if SH_SDK7780
