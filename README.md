@@ -6,7 +6,7 @@ This is a docker environment that builds a mainline linux distro that is bootabl
 
 Tested Devices (for non working see https://github.com/foxdrodd/dreamcast-linux/issues/7  , feel free to add PR to add your test device)
 
-| Medium | Month                 | Works                  | Description |
+| Medium | Revision                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
 | GDEMU  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | boots, serial console |
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
