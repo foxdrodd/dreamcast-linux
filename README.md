@@ -4,7 +4,7 @@ This is a docker environment that builds a mainline linux distro that is bootabl
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). Unfortunately it does not work in gxemul. (`[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]`)
 
-Tested Devices (for non working see #7, feel free to add PR to add your test device)
+Tested Devices (for non working see https://github.com/foxdrodd/dreamcast-linux/issues/7  , feel free to add PR to add your test device)
 
 | Medium | Month                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
