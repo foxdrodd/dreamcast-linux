@@ -9,7 +9,7 @@ Tested Devices (for non working see https://github.com/foxdrodd/dreamcast-linux/
 | Medium | Month                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
 | GDEMU  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | boots, serial console |
-| GDEMU  | HKT-3020, NTSU U, Rev. 1 | :x: No | stays at sega screen  |
+| GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
 
 
 [![asciicast](https://asciinema.org/a/722003.svg?)](https://asciinema.org/a/722003?t=5)
