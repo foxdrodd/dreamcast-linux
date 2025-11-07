@@ -12,10 +12,7 @@ Tested Devices (for non working see https://github.com/foxdrodd/dreamcast-linux/
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
 | CDI | GXemul 0.7.0+dfsg |  :x: No | `[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]` |
 
-
-[![asciicast](https://asciinema.org/a/722003.svg?)](https://asciinema.org/a/722003?t=5)
-
-ATTENTION: You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac600000.
+**ATTENTION:** You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac600000.
 
 ```
 config BOOT_LINK_OFFSET
@@ -33,10 +30,8 @@ config BOOT_LINK_OFFSET
           memory.
 
 ```
-
 I use kernel-integrated initramfs and not the sh-boot initrd. The path to the initramfs is defined in the kernel-config. (`CONFIG_INITRAMFS_SOURCE="/usr/src/dreamcast/initrd"
 `)
-
 
 ## Apply patches
 
@@ -82,6 +77,7 @@ All building happens in `.dreamcast/`.
 * https://github.com/foxdrodd/dc-hacking
 * http://linuxdevices.org/running-linux-on-the-sega-dreamcast-a/
 * https://github.com/foxdrodd/sh-boot/
+* https://asciinema.org/a/722003?t=5
 
 ## License
 
