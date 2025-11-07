@@ -2,7 +2,7 @@
 
 This is a docker environment that builds a mainline linux distro that is bootable on the Sega Dreamcast. The latest bootable CDI image can be found under the Releases.
 
-[It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). Unfortunately it does not work in gxemul. (`[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]`)
+[It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). 
 
 Tested Devices (for non working see https://github.com/foxdrodd/dreamcast-linux/issues/7  , feel free to add PR to add your test device)
 
@@ -10,6 +10,7 @@ Tested Devices (for non working see https://github.com/foxdrodd/dreamcast-linux/
 | ------ | --------------------- | ---------------------- | -----------
 | GDEMU  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network |
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
+| CDI | GXemul 0.7.0+dfsg |  :x: No | `[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]` |
 
 
 [![asciicast](https://asciinema.org/a/722003.svg?)](https://asciinema.org/a/722003?t=5)
