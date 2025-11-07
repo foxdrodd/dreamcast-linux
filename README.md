@@ -4,6 +4,14 @@ This is a docker environment that builds a mainline linux distro that is bootabl
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). Unfortunately it does not work in gxemul. (`[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]`)
 
+Tested Devices (for non working see #7, feel free to add PR to add your test device)
+
+| Medium | Month                 | Works                  | Description |
+| ------ | --------------------- | ---------------------- | -----------
+| GDEMU  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | boots, serial console |
+| GDEMU  | HKT-3020, NTSU U, Rev. 1 | :x: No | stays at sega screen  |
+
+
 [![asciicast](https://asciinema.org/a/722003.svg?)](https://asciinema.org/a/722003?t=5)
 
 ATTENTION: You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac600000.
