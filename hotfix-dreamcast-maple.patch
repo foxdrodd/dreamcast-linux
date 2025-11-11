@@ -1,10 +1,62 @@
---- linux-6.15.1/include/linux/maple.h.vanilla	2025-06-04 14:46:27.000000000 +0200
-+++ linux-6.15.1/include/linux/maple.h	2025-06-10 00:31:02.500775517 +0200
-@@ -3,6 +3,7 @@
- #define __LINUX_MAPLE_H
+From 01a12c6d9dbada4dd29180540817b1d125a9cca1 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 12 Nov 2025 00:28:29 +0100
+Subject: [PATCH] sh: maple: fix empty port handling
+
+Handle timeout response from empty ports of the maple bus to prevent a
+stuck maple_sentq and a blocked maple bus.
+
+When only some ports are used, e.g. if only keyboard is connected and the
+other ports are empty, the device tends to timeout and return 0xff for
+the empty port. This needs to be handled, just like the
+MAPLE_RESPONSE_NONE response, to detect empty ports and to have usable
+peripherals, if not all of the ports are utilized. Previously, an empty
+port resulted in a never cleared maple_sentq which totally blocked the
+maple bus to be used.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+Note: This patch was tested on real Sega Dreamcast hardware and resulted
+in a usable keyboard, even when only 1 or 2 ports where populated. The
+hot-plugging of the keyboard does also work fine.
+
+The description of the timeout response can be obtained on the bottom of
+of the page: https://mc.pp.se/dc/maplebus.html: "If no response is
+received before the timeout, a word with all bits set (FFFFFFFF) is
+written at the Result address."
+
+ drivers/sh/maple/maple.c | 1 +
+ include/linux/maple.h    | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/sh/maple/maple.c b/drivers/sh/maple/maple.c
+index 6dc0549f7900..3d6c716cfc98 100644
+--- a/drivers/sh/maple/maple.c
++++ b/drivers/sh/maple/maple.c
+@@ -649,6 +649,7 @@ static void maple_dma_handler(struct work_struct *work)
+ 			list_del_init(&mq->list);
+ 			switch (code) {
+ 			case MAPLE_RESPONSE_NONE:
++			case MAPLE_RESPONSE_TIMEOUT:
+ 				maple_response_none(mdev);
+ 				break;
  
- #include <mach/maple.h>
-+#include <linux/device.h>
+diff --git a/include/linux/maple.h b/include/linux/maple.h
+index 3be4e567473c..4ae3cc6678a8 100644
+--- a/include/linux/maple.h
++++ b/include/linux/maple.h
+@@ -27,7 +27,8 @@ enum maple_code {
+ 	MAPLE_COMMAND_BWRITE,
+ 	MAPLE_COMMAND_BSYNC,
+ 	MAPLE_COMMAND_SETCOND,
+-	MAPLE_COMMAND_MICCONTROL
++	MAPLE_COMMAND_MICCONTROL,
++	MAPLE_RESPONSE_TIMEOUT = 255
+ };
  
- struct device;
- 
+ enum maple_file_errors {
+
+base-commit: 24172e0d79900908cf5ebf366600616d29c9b417
+-- 
+2.43.0
+
