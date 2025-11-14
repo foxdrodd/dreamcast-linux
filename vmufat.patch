@@ -1,0 +1,1393 @@
+The SEGA Dreamcast visual memory unit implements a file allocation table
+based filesystem which is somewhat similar to FAT16. This filesystem
+code implements that filesystem and I have used it to successfully
+manage Dreamcast VMUs and VMU images mounted via loop.
+
+You can read more about the filesystem here:
+http://mc.pp.se/dc/vms/flashmem.html
+
+I intend to fully document the filesystem and write an appropriate user
+tool to create a drive image, but in the meantime here is an early cut
+of the filesystem itself for comment.
+
+(A version of this for the 2.4 kernel existed in the Dreamcast CVS on
+Sourceforge but wasn't truly hardware independent).
+
+ fs/Kconfig         |    1 +
+ fs/Makefile        |    1 +
+ fs/vmufat/Kconfig  |   14 +
+ fs/vmufat/Makefile |    7 +
+ fs/vmufat/inode.c  |  702 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/vmufat/super.c  |  533 +++++++++++++++++++++++++++++++++++++++
+ fs/vmufat/vmufat.h |   58 +++++
+
+
+Signed-off-by: Adrian McMenamin <adrian@mcmen.demon.co.uk>
+---
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 93945dd..6c108b1 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -330,6 +330,7 @@ source "fs/resctrl/Kconfig"
+ source "fs/romfs/Kconfig"
+ source "fs/pstore/Kconfig"
+ source "fs/ufs/Kconfig"
++source "fs/vmufat/Kconfig"
+ source "fs/erofs/Kconfig"
+ source "fs/vboxsf/Kconfig"
+ 
+diff --git a/fs/vmufat/Kconfig b/fs/vmufat/Kconfig
+new file mode 100644
+index 0000000..bdad4c6
+--- /dev/null
++++ b/fs/vmufat/Kconfig
+@@ -0,0 +1,14 @@
++config VMUFAT_FS
++	tristate "Dreamcast VMU FAT filesystem"
++	depends on BLOCK
++	help
++	  This implements the simple FAT type filesystem found on SEGA
++	  Dreamcast visual memory units.
++
++	  Dreamcast users who want to mount their VMUs to view the native
++	  filesystem will say 'Y' here. The filesystem is hardware independent
++	  but is not recommended for any serious use in other circumstances, so
++	  just about everyone else should say 'N'.
++
++	  To compile this as a module say 'M' here. The module will be called
++	  vmufat
+diff --git a/fs/vmufat/Makefile b/fs/vmufat/Makefile
+new file mode 100644
+index 0000000..e7f9bbf
+--- /dev/null
++++ b/fs/vmufat/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for VMUFAT filesystem
++#
++
++obj-$(CONFIG_VMUFAT_FS) += vmufat.o
++
++vmufat-objs := super.o inode.o
+diff --git a/fs/vmufat/inode.c b/fs/vmufat/inode.c
+new file mode 100644
+index 0000000..3639351
+--- /dev/null
++++ b/fs/vmufat/inode.c
+@@ -0,0 +1,702 @@
++/*
++ * inode operations for the VMU file system
++ *
++ * Copyright (C) 2002 - 2009	Adrian McMenamin
++ * Copyright (C) 2002		Paul Mundt
++ *
++ * Released under the terms of the GNU GPL v2.0.
++ */
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/blkdev.h>
++#include <linux/buffer_head.h>
++#include <linux/mtd/mtd.h>
++#include "vmufat.h"
++
++struct dentry *vmufat_inode_lookup(struct inode *in, struct dentry *dent,
++	struct nameidata *nd)
++{
++	struct super_block *sb;
++	struct memcard *vmudetails;
++	struct buffer_head *bh;
++	struct inode *ino;
++	char name[VMUFAT_NAMELEN];
++	long blck_read;
++	int error = 0, fno = 0, filenamelen;
++
++	if (dent->d_name.len > VMUFAT_NAMELEN) {
++		error = -ENAMETOOLONG;
++		goto out;
++	}
++
++	sb = in->i_sb;
++	vmudetails = (struct memcard *)sb->s_fs_info;
++	blck_read = vmudetails->dir_bnum;
++
++	bh = vmufat_sb_bread(sb, blck_read);
++	if (!bh) {
++		error = -EIO;
++		goto out;
++	}
++
++	do {
++		/* Have we got a file? */
++		if (((__u8 *)bh->b_data)[(fno % 0x10) * 0x20] == 0) {
++			error = -ENOENT;
++			goto release_bh;
++		}
++
++		/* get file name */
++		memcpy(name,
++		       bh->b_data + 4 + (fno % 0x10) * 0x20, VMUFAT_NAMELEN);
++		/* do names match ?*/
++		filenamelen = strlen(dent->d_name.name);
++		if (memcmp(dent->d_name.name, name, filenamelen) == 0) {
++			/* read the inode number from the directory */
++			ino = vmufat_get_inode(sb,
++				le16_to_cpu(((__u16 *) bh->b_data)
++					[1 + (fno % 0x10) * 0x10]));
++			if (!ino || IS_ERR(ino)) {
++				error = -EACCES;
++				goto release_bh;
++			}
++			/* return the entry */
++			d_add(dent, ino);
++			goto release_bh;
++		}
++
++		/* did not match, so try the next file */
++		fno++;
++		/* do we need to move to the next block in the directory? */
++		if ((fno / 0x10) > (vmudetails->dir_bnum - blck_read)) {
++			brelse(bh);
++			blck_read--;
++			bh = vmufat_sb_bread(sb, blck_read);
++			if (!bh) {
++				error = -EIO;
++				goto out;
++			}
++		}
++	} while (1);
++
++release_bh:
++	brelse(bh);
++out:
++	return ERR_PTR(error);
++}
++
++static int vmufat_inode_unlink(struct inode *in, struct dentry *de)
++{
++	/* find the inode of the specified dentry
++	 * and then call the superblock delete_inode */
++	struct super_block *sb = in->i_sb;
++	sb->s_op->delete_inode(de->d_inode);
++	return 0;
++}
++
++static int vmufat_inode_create(struct inode *dir, struct dentry *de,
++		int imode, struct nameidata *nd)
++{
++	/* Create an inode */
++	int y, z;
++	long nextblock, blck_read;
++	struct inode *inode;
++	struct super_block *sb;
++	struct memcard *vmudetails;
++	struct buffer_head *bh_fat, *bh;
++	unsigned long unix_date;
++	int year, day, nl_day, month;	/*inspired by FAT driver */
++	__u16 fatdata;
++	__u8 century, u8year;
++
++
++	if (de->d_name.len > VMUFAT_NAMELEN)
++		return -ENAMETOOLONG;
++
++	sb = dir->i_sb;
++	vmudetails = (struct memcard *) sb->s_fs_info;
++
++	inode = new_inode(sb);
++	if (!inode)
++		return -ENOSPC;
++
++	/* Walk through blocks looking for place to write
++	* Is this an executible file? */
++	if (imode & 73) {	/*Octal 111 */
++		inode->i_ino = VMUFAT_ZEROBLOCK;
++		/* But this already allocated? */
++		bh_fat =
++		    vmufat_sb_bread(sb, vmudetails->fat_bnum);
++		if (!bh_fat)
++			return -EIO;
++
++		fatdata = ((__u16 *) bh_fat->b_data)[0];
++		if (fatdata != 0xfffc) {
++			printk(KERN_ERR
++				"vmufat: cannot write executible file to"
++				" filesystem - block 0 already allocated.\n");
++			brelse(bh_fat);
++			return -ENOSPC;
++		}
++
++	} else {
++		/*Look for a free block in the FAT */
++		nextblock = vmudetails->numblocks - 1;
++		bh_fat =
++		    vmufat_sb_bread(sb, vmudetails->fat_bnum);
++		if (!bh_fat)
++			return -EIO;
++
++		do {
++			fatdata = ((__u16 *) bh_fat->b_data)[nextblock];
++			if (fatdata == 0xfffc)
++				break;	/*empty block */
++			if (--nextblock < 0)
++				break;
++		} while (1);
++
++		if (nextblock < 0) {
++			iput(inode);
++			brelse(bh_fat);
++			return -ENOSPC;
++		}
++		inode->i_ino = nextblock;
++	}
++	brelse(bh_fat);
++
++	inode->i_uid = 0;
++	inode->i_gid = 0;
++	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
++	inode->i_mode = imode;
++	inode->i_blocks = 0;
++	inode->i_sb = sb;
++	insert_inode_hash(inode);
++	mark_inode_dirty(inode);
++	inode->i_op = &vmufat_inode_operations;
++	inode->i_fop = &vmufat_file_operations;
++
++	/* Write to the directory
++	* Now search for space for the directory entry */
++	blck_read = vmudetails->dir_bnum;
++	bh = vmufat_sb_bread(sb, blck_read);
++	if (!bh)
++		return -EIO;
++
++	for (y = 0; y < (vmudetails->dir_len * 0x10); y++) {
++		if ((y / 0x10) > (vmudetails->dir_bnum - blck_read)) {
++			brelse(bh);
++			blck_read--;
++			bh = vmufat_sb_bread(sb, blck_read);
++			if (!bh)
++				return -EIO;
++		}
++		if (((bh->b_data)[(y % 0x10) * 0x20]) == 0)
++			break;
++	}
++	/* Have the directory entry
++	 * so now update it */
++	z = (y % 0x10) * 0x20;
++	if (inode->i_ino != VMUFAT_ZEROBLOCK)
++		bh->b_data[z] = 0x33;	/* data file */
++	else
++		bh->b_data[z] = 0xcc;
++
++	if ((bh->b_data[z + 1] != (char) 0x00) &&
++		(bh->b_data[z + 1] != (char) 0xff))
++		bh->b_data[z + 1] = (char) 0x00;
++
++	if (inode->i_ino != VMUFAT_ZEROBLOCK) {
++		((__u16 *) bh->b_data)[z / 2 + 1] =
++		    cpu_to_le16(inode->i_ino);
++		((__u16 *) bh->b_data)[z / 2 + 0x0D] = 0;
++	} else {
++		((__u16 *) bh->b_data)[z / 2 + 1] = 0;
++		((__u16 *) bh->b_data)[z / 2 + 0x0D] = 1;
++	}
++
++	/* Name */
++	memset((char *) (bh->b_data + z + 0x04), '\0', 0x0C);
++	memcpy((char *) (bh->b_data + z + 0x04), ((de->d_name).name),
++	       de->d_name.len);
++
++	/* BCD timestamp it */
++	unix_date = CURRENT_TIME.tv_sec;
++	day = unix_date / 86400 - 3652;
++	year = day / 365;
++
++	if ((year + 3) / 4 + 365 * year > day)
++		year--;
++
++	day -= (year + 3) / 4 + 365 * year;
++	if (day == 59 && !(year & 3)) {
++		nl_day = day;
++		month = 2;
++	} else {
++		nl_day = (year & 3) || day <= 59 ? day : day - 1;
++		for (month = 0; month < 12; month++)
++			if (day_n[month] > nl_day)
++				break;
++	}
++
++	century = 19;
++	if (year > 19)
++		century = 20;
++
++	bh->b_data[z + 0x10] = bcd_from_u8(century);
++	u8year = year + 80;
++	if (u8year > 99)
++		u8year = u8year - 100;
++
++	bh->b_data[z + 0x11] = bcd_from_u8(u8year);
++	bh->b_data[z + 0x12] = bcd_from_u8((__u8) month);
++	bh->b_data[z + 0x13] =
++	    bcd_from_u8((__u8) day - day_n[month - 1] + 1);
++	bh->b_data[z + 0x14] =
++	    bcd_from_u8((__u8) ((unix_date / 3600) % 24));
++	bh->b_data[z + 0x15] = bcd_from_u8((__u8) ((unix_date / 60) % 60));
++	bh->b_data[z + 0x16] = bcd_from_u8((__u8) (unix_date % 60));
++
++	((__u16 *) bh->b_data)[z / 2 + 0x0C] =
++	    cpu_to_le16(inode->i_blocks);
++
++	inode->i_mtime.tv_sec = unix_date;
++	mark_buffer_dirty(bh);
++	brelse(bh);
++
++	d_instantiate(de, inode);
++
++	return 0;
++}
++
++
++static int vmufat_inode_rename(struct inode *in_source,
++			      struct dentry *de_source,
++			      struct inode *in_target,
++			      struct dentry *de_target)
++{
++	return -EPERM;
++}
++
++const struct inode_operations vmufat_inode_operations = {
++	.lookup =	vmufat_inode_lookup,
++	.unlink =	vmufat_inode_unlink,
++	.create =	vmufat_inode_create,
++	.rename =	vmufat_inode_rename,
++};
++
++
++static int vmufat_readdir(struct file *filp, void *dirent, filldir_t filldir)
++{
++	int filenamelen, i;
++	struct vmufat_file_info *saved_file = NULL;
++	struct dentry *dentry = filp->f_dentry;
++	struct inode *inode = dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
++	struct memcard *vmudetails =
++	    ((struct memcard *) sb->s_fs_info);
++	struct buffer_head *bh;
++
++	int blck_read = vmudetails->dir_bnum;
++	bh = vmufat_sb_bread(sb, blck_read);
++	if (!bh)
++		return -EIO;
++
++	i = filp->f_pos;
++
++	switch ((unsigned int) filp->f_pos) {
++	case 0:
++		if (filldir(dirent, ".", 1, i++, inode->i_ino, DT_DIR) < 0)
++			goto finish;
++
++		filp->f_pos++;
++	case 1:
++		if (filldir(dirent, "..", 2, i++,
++			    dentry->d_parent->d_inode->i_ino, DT_DIR) < 0)
++			goto finish;
++
++		filp->f_pos++;
++	default:
++		break;
++	}
++
++	/* wander through the Directory and find files */
++	if ((i - 2) > (vmudetails->dir_len * 0x10)) {
++		brelse(bh);
++		return -1;
++	}
++
++	saved_file =
++	    kmalloc(sizeof(struct vmufat_file_info), GFP_KERNEL);
++
++	do {
++		if ((i - 2) / 0x10 > (vmudetails->dir_bnum - blck_read)) {
++			/* move to next block in directory */
++			brelse(bh);
++			blck_read--;
++			bh = vmufat_sb_bread(sb, blck_read);
++			if (!bh) {
++				kfree(saved_file);
++				return -EIO;
++			}
++		}
++
++		saved_file->ftype = bh->b_data[((i - 2) % 0x10) * 0x20];
++
++		if (saved_file->ftype == 0)
++			break;
++
++		saved_file->fblk =
++		    le16_to_cpu(((__u16 *) bh->b_data)[1 +
++				((i - 2) % 0x10) * 0x10]);
++		if (saved_file->fblk == 0)
++			saved_file->fblk = VMUFAT_ZEROBLOCK;
++
++		memcpy(saved_file->fname,
++		       bh->b_data + 4 + ((i - 2) % 0x10) * 0x20, 12);
++		filenamelen = strlen(saved_file->fname);
++		if (filenamelen > VMUFAT_NAMELEN)
++			filenamelen = VMUFAT_NAMELEN;
++		if (filldir
++		    (dirent, saved_file->fname, filenamelen, i++,
++		     saved_file->fblk, DT_REG) < 0) {
++			goto finish;
++		}
++
++		filp->f_pos++;
++	} while (1);
++
++finish:
++
++	kfree(saved_file);
++	brelse(bh);
++
++	return 0;
++}
++
++const struct file_operations vmufat_file_dir_operations = {
++	.owner =	THIS_MODULE,
++	.read =		generic_read_dir,
++	.readdir =	vmufat_readdir,
++	.fsync =	file_fsync,
++};
++
++static int vmufat_game_write(struct file *file, const char *buf, char *writebuf,
++		     size_t count, loff_t *ppos)
++{
++	__u16 fatdata;
++	struct buffer_head *bh_fat, *bh;
++	struct inode *in = (file->f_dentry)->d_inode;
++	struct super_block *sb = in->i_sb;
++	struct memcard *vmudetails =
++	    ((struct memcard *) sb->s_fs_info);
++
++	unsigned long blkoffset = *ppos >> in->i_sb->s_blocksize_bits;
++	if (blkoffset < 1) {
++		/* Additional sanity check */
++		kfree(writebuf);
++		return -EIO;
++	}
++
++	/* Is the next block free in the VMU? */
++	bh_fat = vmufat_sb_bread(in->i_sb, vmudetails->fat_bnum);
++	if (!bh_fat) {
++		kfree(writebuf);
++		return -EIO;
++	}
++	fatdata = ((__u16 *) bh_fat->b_data)[(__u16) blkoffset];
++
++	if (fatdata != 0xfffc) {
++		printk(KERN_ERR
++			"vmufat: Cannot save game file - insufficient"
++			" linear space\n");
++		kfree(writebuf);
++		return -EFBIG;
++	}
++
++	/*Now we have the space - write the block out */
++	bh = vmufat_sb_bread(sb, blkoffset);
++	if (!bh) {
++		brelse(bh_fat);
++		kfree(writebuf);
++		return -EIO;
++	}
++	if (count < sb->s_blocksize)
++		memset((char *) (bh->b_data), '\0', sb->s_blocksize);
++	memcpy((char *) (bh->b_data), writebuf, count);
++	mark_buffer_dirty(bh);
++	brelse(bh);
++	in->i_size += count;
++	in->i_blocks++;
++
++	/*Now update the FAT */
++	((__u16 *) (bh_fat->b_data))[(__u16) blkoffset] = 0xfffa;
++	((__u16 *) (bh_fat->b_data))[((__u16) (blkoffset - 1))] =
++	    cpu_to_le16(blkoffset);
++	mark_buffer_dirty(bh_fat);
++
++	brelse(bh_fat);
++
++	kfree(writebuf);
++	*ppos += count;
++	return count;
++}
++
++static ssize_t vmufat_file_write(struct file *file, const char *buf, size_t count,
++			 loff_t *ppos)
++{
++	struct buffer_head *bh, *bh_fat;
++	unsigned long inode_num, currentblock, nextblock;
++	char *writebuf;
++	int previousblock;
++	__u16 fatdata;
++	struct inode *in = (file->f_dentry)->d_inode;
++	struct super_block *sb = in->i_sb;
++	struct memcard *vmudetails =
++	    ((struct memcard *) sb->s_fs_info);
++	unsigned long blkoffset = *ppos >> in->i_sb->s_blocksize_bits;
++
++	if ((ssize_t) count < 0)
++		return -ENOENT;
++
++	/* We will assume that all files -
++	 * unless having inode value of 0
++	 * are data files
++	 */
++
++	/* copy buffer */
++	if (count > sb->s_blocksize)
++		count = sb->s_blocksize;
++	writebuf = kzalloc(count, GFP_KERNEL);
++	copy_from_user(writebuf, buf, count);
++
++	/* Handle game files */
++	inode_num = in->i_ino;
++	if (inode_num == VMUFAT_ZEROBLOCK)
++		inode_num = 0;
++
++	/*Start by writing out to first block */
++	if (blkoffset == 0) {
++		currentblock = inode_num;
++		bh = vmufat_sb_bread(sb, inode_num);
++		if (!bh) {
++			kfree(writebuf);
++			return -EIO;
++		}
++		if (count < sb->s_blocksize)
++			memset((char *) (bh->b_data), '\0', sb->s_blocksize);
++		memcpy((char *) (bh->b_data), writebuf, count);
++		mark_buffer_dirty(bh);
++		brelse(bh);
++		in->i_size = sb->s_blocksize;	/* will increment as we grow */
++		in->i_blocks = 1;
++
++		/* Update FAT */
++		bh_fat =
++		    vmufat_sb_bread(in->i_sb, vmudetails->fat_bnum);
++		if (!bh_fat) {
++			kfree(writebuf);
++			return -EIO;
++		}
++
++		/*Wipe out any old FAT records for this inode */
++		do {
++			fatdata =
++			    ((__u16 *) bh_fat->
++			     b_data)[(__u16) currentblock];
++			if (fatdata == 0xfffc)
++				break;	/* already empty */
++			((__u16 *) (bh_fat->b_data))[(__u16) currentblock]
++			    = 0xfffc;
++			mark_buffer_dirty(bh_fat);
++			if (fatdata == 0xfffa)
++				break;	/* end of file */
++		} while (1);
++
++		/* Avoid writes to mtd if possible
++		 * so check if a write is really
++		 * required here */
++		fatdata = ((__u16 *) bh_fat->b_data)[(__u16) (inode_num)];
++		if (fatdata != 0xfffa) {
++			((__u16 *) (bh_fat->b_data))[(__u16) (inode_num)]
++			    = 0xfffa;
++			mark_buffer_dirty(bh_fat);
++		}
++		brelse(bh_fat);
++
++	}
++	/* Now every other block */
++	else {
++		if (inode_num == 0)
++			return vmufat_game_write(file, buf, writebuf,
++					count, ppos);
++		else {
++
++			/*Look for a free block in the FAT */
++			__u16 fatdata;
++			nextblock = inode_num - 1;
++			bh_fat =
++			    vmufat_sb_bread(in->i_sb, vmudetails->fat_bnum);
++			if (!bh_fat) {
++				kfree(writebuf);
++				return -EIO;
++			}
++			do {
++				fatdata =
++				    ((__u16 *) bh_fat->b_data)[nextblock];
++				if (fatdata == 0xfffc)
++					break;	/*empty block */
++				if (--nextblock < 0)
++					break;
++			} while (1);
++			if ((long) nextblock < 0) {
++				brelse(bh_fat);
++				kfree(writebuf);
++				printk(KERN_ERR
++				       "vmufs: Out of space on vmu device\n");
++				return -EFBIG;
++			}
++			/*Now we have the space - write the block out */
++			bh = vmufat_sb_bread(sb, nextblock);
++			if (!bh) {
++				brelse(bh_fat);
++				kfree(writebuf);
++				return -EIO;
++			}
++
++			if (count < sb->s_blocksize)
++				memset((char *) (bh->b_data), '\0',
++				       sb->s_blocksize);
++			memcpy((char *) (bh->b_data), writebuf, count);
++			mark_buffer_dirty(bh);
++			brelse(bh);
++			in->i_size += sb->s_blocksize;
++			in->i_blocks++;
++			/*Now update the FAT if required */
++			fatdata =
++			    ((__u16 *) bh_fat->b_data)[(__u16) nextblock];
++			if (fatdata != 0xfffa) {
++				((__u16 *) (bh_fat->
++					    b_data))[(__u16) nextblock] =
++				    0xfffa;
++				mark_buffer_dirty(bh_fat);
++			}
++			previousblock = inode_num;
++			do {
++				fatdata =
++				    ((__u16 *) bh_fat->
++				     b_data)[previousblock];
++				if (fatdata == 0xfffc
++				    || fatdata == 0xfffa) {
++					((__u16 *) bh_fat->
++					 b_data)[previousblock] =
++						 cpu_to_le16(nextblock);
++					mark_buffer_dirty(bh_fat);
++					break;
++				}
++				previousblock = fatdata;
++				blkoffset--;
++			} while (blkoffset > 0);
++
++			brelse(bh_fat);
++
++			if (blkoffset < 1) {
++				/* Additional sanity check */
++				kfree(writebuf);
++				return -EIO;
++			}
++
++		}
++
++
++	}
++
++
++	kfree(writebuf);
++	*ppos += count;
++	return count;
++}
++
++ssize_t vmufat_file_read(struct file *file, char *buf, size_t count,
++			loff_t *ppos)
++{
++	struct inode *in = file->f_dentry->d_inode;
++	unsigned long inode_num = in->i_ino;
++	unsigned long blkoffset = *ppos >> in->i_sb->s_blocksize_bits;
++	unsigned long blcks_to_read, x;
++	__u16 fatblk, next_block;
++	struct buffer_head *bh_file;
++	struct buffer_head *bh_fat;
++	long file_len = in->i_size;
++	char *readbuf;
++	struct super_block *sb = in->i_sb;
++	struct memcard *vmudetails =
++	    ((struct memcard *) sb->s_fs_info);
++
++	if (inode_num == VMUFAT_ZEROBLOCK)
++		inode_num = 0;
++
++	if (*ppos > file_len)
++		return -EINVAL;
++	if (*ppos + count > file_len)
++		count = file_len - *ppos;
++
++	blcks_to_read = count >> in->i_sb->s_blocksize_bits;
++	if (blcks_to_read == 0)
++		return 0;
++	readbuf = kzalloc(count, GFP_KERNEL);
++	/* Traverse through FAT to read the blocks in */
++	x = 0;
++	next_block = inode_num;
++	bh_fat = vmufat_sb_bread(in->i_sb, vmudetails->fat_bnum);
++	if (!bh_fat) {
++		kfree(readbuf);
++		return -EIO;
++	}
++	/*Walk through to where we are */
++	if (blkoffset > 0) {
++		do {
++			next_block =
++			    ((__u16 *) bh_fat->b_data)[next_block];
++			blkoffset--;
++		} while (blkoffset > 0);
++	}
++	do {
++		bh_file = vmufat_sb_bread(in->i_sb, next_block);
++		if (!bh_file)
++			goto out;
++
++		memcpy(readbuf + x * sb->s_blocksize, bh_file->b_data,
++			sb->s_blocksize);
++		x++;
++		fatblk = ((__u16 *) bh_fat->b_data)[next_block];
++		brelse(bh_file);
++		if (fatblk == 0xfffa)
++			break;
++		next_block = fatblk;
++	} while (x < blcks_to_read);
++
++
++	/* Copy to user space */
++	copy_to_user(buf, readbuf, count);
++	*ppos += count;
++out:
++	kfree(readbuf);
++	brelse(bh_fat);
++	return count;
++}
++
++static int vmufat_file_open(struct inode *in, struct file *f)
++{
++	return 0;
++}
++
++const struct file_operations vmufat_file_operations = {
++	.read =		vmufat_file_read,
++	.write =	vmufat_file_write,
++	.open =		vmufat_file_open,
++};
++
++const struct inode_operations vmufat_file_inode_operations = {
++};
+diff --git a/fs/vmufat/super.c b/fs/vmufat/super.c
+new file mode 100644
+index 0000000..7697757
+--- /dev/null
++++ b/fs/vmufat/super.c
+@@ -0,0 +1,533 @@
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/fs.h>
++#include <linux/statfs.h>
++#include <linux/slab.h>
++#include <linux/blkdev.h>
++#include <linux/mtd/mtd.h>
++#include <linux/maple.h>
++#include <linux/time.h>
++#include <linux/buffer_head.h>
++#include "vmufat.h"
++
++/*
++ * VMUFAT - file system support
++ * for Sega Dreamcast visual
++ * memory unit flash memory
++ *
++ * This software is copyright (c) 2002 - 2009
++ * Adrian McMenamin <adrian@mcmen.demon.co.uk>
++ *
++ * This software is licensed under the
++ * terms of the GNU General Public
++ * Licence version 2.
++ * http://www.fsf.org
++ */
++
++__u8 bcd_from_u8(__u8 num)
++{
++	__u8 topnib = num / 10;
++	__u8 botnib = num % 10;
++	return topnib << 4 | botnib;
++}
++
++inline int int_from_bcd(__u8 bcd)
++{
++	int topnib = (bcd >> 4) & 0x000f;
++	int botnib = bcd & 0x000f;
++
++	return (topnib * 10) + botnib;
++}
++
++struct inode *vmufat_get_inode(struct super_block *sb, int ino)
++{
++	int y, blck_read;
++	struct inode *in;
++	struct buffer_head *bh;
++	struct memcard *vmudetails =
++	    ((struct memcard *) sb->s_fs_info);
++	long superblock_bno = vmudetails->sb_bnum;
++	int century, year, month, day, hour, minute, second;
++
++	in = iget_locked(sb, ino);
++	if (!in)
++		return ERR_PTR(-ENOMEM);
++
++	if (ino == superblock_bno) {
++		bh = vmufat_sb_bread(sb, ino);
++		if (!bh)
++			goto failed;
++
++		century = int_from_bcd((bh->b_data)[0x30]);
++		year = int_from_bcd((bh->b_data)[0x31]);
++		month = int_from_bcd((bh->b_data)[0x32]);
++		day = int_from_bcd((bh->b_data)[0x33]);
++		hour = int_from_bcd((bh->b_data)[0x34]);
++		minute = int_from_bcd((bh->b_data)[0x35]);
++		second = int_from_bcd((bh->b_data)[0x36]);
++
++		/*
++		 * As a temporary workaround, clear out any
++		 * existing type mask and force it as a
++		 * directory type.
++		 */
++		in->i_ino = ino;
++		in->i_mode &= ~S_IFMT;
++		in->i_mode |= S_IFDIR | S_IRUGO | S_IXUGO;
++		in->i_atime = CURRENT_TIME;
++
++		in->i_ctime.tv_sec = in->i_mtime.tv_sec =
++		    mktime(century * 100 + year, month, day, hour, minute,
++			   second);
++		in->i_uid = in->i_gid = 0;
++
++		in->i_op = &vmufat_inode_operations;
++		in->i_fop = &vmufat_file_dir_operations;
++
++		/*Not in FAT table */
++		in->i_size = sb->s_blocksize;
++		in->i_blocks = 1;
++		brelse(bh);
++	} else {
++		if (in->i_ino > vmudetails->numblocks) {
++			/* Not here */
++			printk(KERN_INFO
++				"vmufat: Attempt to access file which cannot"
++				" exist on this size of VMU\n");
++			iget_failed(in);
++			return ERR_PTR(-ESPIPE);
++		}
++
++		blck_read = vmudetails->dir_bnum;
++		bh = vmufat_sb_bread(sb, blck_read);
++		if (!bh)
++			goto failed;
++
++		/*
++		* Do the same here.. clear out the old mask, and force
++		* the inode as a regular file.. Workaround for spontaneous
++		* referencing of symlinks and other garbage -- do a proper
++		* fix later.
++		*/
++		in->i_mode &= ~S_IFMT;
++		in->i_mode |= S_IFREG;
++
++		/* Scan through the directory to find the matching file */
++		for (y = 0; y < vmudetails->numblocks; y++) {
++			if ((y / 0x10) >
++			    (vmudetails->dir_bnum - blck_read)) {
++				brelse(bh);
++				blck_read--;
++				bh = vmufat_sb_bread(sb, blck_read);
++				if (!bh)
++					goto failed;
++			}
++			if (le16_to_cpu
++			    (((__u16 *) bh->b_data)[(y % 0x10) * 0x10 +
++						    0x01]) == in->i_ino)
++				break;
++		}
++
++		if (y >= vmudetails->numblocks) {
++			brelse(bh);
++			printk(KERN_INFO
++				"vmufat: could not find this file on "
++				" filesystem\n");
++			iget_failed(in);
++			return ERR_PTR(-ENOENT);
++		}
++
++		/* identified the correct directory entry */
++		century =
++		    int_from_bcd((bh->b_data)[0x10 + (y % 0x10) * 0x20]);
++		year =
++		    int_from_bcd((bh->b_data)[0x11 + (y % 0x10) * 0x20]);
++		month =
++		    int_from_bcd((bh->b_data)[0x12 + (y % 0x10) * 0x20]);
++		day = int_from_bcd((bh->b_data)[0x13 + (y % 0x10) * 0x20]);
++		hour =
++		    int_from_bcd((bh->b_data)[0x14 + (y % 0x10) * 0x20]);
++		minute =
++		    int_from_bcd((bh->b_data)[0x15 + (y % 0x10) * 0x20]);
++		second =
++		    int_from_bcd((bh->b_data)[0x16 + (y % 0x10) * 0x20]);
++
++		in->i_ctime.tv_sec = in->i_mtime.tv_sec =
++		    mktime(century * 100 + year, month, day, hour, minute,
++			   second);
++
++		/* Execute if a game, write if not copy protected */
++		in->i_mode &= ~(S_IWUGO | S_IXUGO);
++		in->i_mode |= S_IRUGO;
++
++
++		/* Mode - is the file copiable? */
++		if ((((__u8 *) bh->b_data)[0x01 + (y % 0x10) * 0x20] ==
++		     0x00) & ~(sb->s_flags & MS_RDONLY))
++			in->i_mode |= S_IWUGO;
++		/* Is file executible - ie a game */
++		if ((((__u8 *) bh->b_data)[(y % 0x10) * 0x20] ==
++		     0xcc) & ~(sb->s_flags & MS_NOEXEC))
++			in->i_mode |= S_IXUGO;
++
++
++		in->i_uid = in->i_gid = 0;
++
++		in->i_op = &vmufat_file_inode_operations;
++		in->i_fop = &vmufat_file_operations;
++
++		in->i_blocks =
++		    le16_to_cpu(((__u16 *) bh->b_data)[(y % 0x10) * 0x10 +
++						       0x0C]);
++		in->i_size = in->i_blocks * VMU_BLK_SZ;
++		brelse(bh);
++	}
++
++	unlock_new_inode(in);
++	return in;
++
++failed:
++	iget_failed(in);
++	return ERR_PTR(-EIO);
++}
++
++static void vmufat_put_super(struct super_block *sb)
++{
++	struct memcard *vmudetails;
++	sb->s_dev = 0;
++	vmudetails = (struct memcard *) (sb->s_fs_info);
++	kfree(vmudetails);
++}
++
++static int vmufat_statfs(struct dentry *dentry, struct kstatfs *buf)
++{
++	buf->f_type = 0x55555555;
++	buf->f_bsize = VMU_BLK_SZ;
++	buf->f_bfree = 256;	/* TO DO: Fix */
++	buf->f_bavail = 0;
++	buf->f_ffree = 0;
++	buf->f_namelen = 12;
++
++	return 0;
++}
++
++static void vmufat_delete_inode(struct inode *in)
++{
++	/* Delete inode by marking space as free in FAT
++	 * no need to waste time and effort by actually
++	 * wiping underlying data on media             */
++	struct buffer_head *bh, *bh_old;
++	struct super_block *sb;
++	struct memcard *vmudetails;
++	int z, y, x, blck_read;
++	__u16 nextblock, fatdata;
++
++	if (in->i_ino == VMUFAT_ZEROBLOCK)
++		in->i_ino = 0;
++	sb = in->i_sb;
++	vmudetails = (struct memcard *) sb->s_fs_info;
++	bh = vmufat_sb_bread(sb, vmudetails->fat_bnum);
++	if (!bh)
++		return;
++
++	/* FAT now read in - seek start of file and wonder through FAT */
++	nextblock = in->i_ino;
++	do {
++		fatdata = ((__u16 *) bh->b_data)[nextblock];
++		((__u16 *) bh->b_data)[nextblock] = 0xfffc;
++		if (fatdata == 0xfffa)
++			break;	/*end of file */
++		nextblock = fatdata;
++	} while (1);
++	mark_buffer_dirty(bh);
++	brelse(bh);
++
++	/* Now clean the directory entry
++	 * Have to wander through this
++	 * to find the appropriate entry */
++	blck_read = vmudetails->dir_bnum;
++	bh = vmufat_sb_bread(sb, blck_read);
++	if (!bh)
++		return;
++
++	for (y = 0; y < (vmudetails->dir_len * 0x10); y++) {
++		if ((y / 0x10) > (vmudetails->dir_bnum - blck_read)) {
++			brelse(bh);
++			blck_read--;
++			bh = vmufat_sb_bread(sb, blck_read);
++			if (!bh)
++				return;
++		}
++		if (le16_to_cpu
++		    (((__u16 *) bh->b_data)[(y % 0x10) * 0x10 +
++					    0x01]) == in->i_ino)
++			break;
++	}
++
++	/* Found directory entry - so NULL it now */
++	for (z = 0; z < 0x10; z++)
++		((__u16 *) bh->b_data)[(y % 0x10) * 0x10 + z] = 0;
++	/* Replace it with another entry - if one exists */
++	mark_buffer_dirty(bh);
++	x = y;			/* save for later use */
++	for (y = x + 1; y < (vmudetails->dir_len * 0x10); y++) {
++		if ((y / 0x10) > (vmudetails->dir_bnum - blck_read)) {
++			brelse(bh);
++			blck_read--;
++			bh = vmufat_sb_bread(sb, blck_read);
++			if (!bh)
++				return;
++		}
++		if (bh->b_data[(y % 0x10) * 0x20] == 0x00) {	/* Not a file */
++			y--;
++			if (y == x)
++				break;	/* At the end in any case */
++			brelse(bh);
++
++			/* force read of correct block */
++			bh = vmufat_sb_bread(sb, vmudetails->dir_bnum -
++				y / 0x10);
++			if (!bh)
++				return;
++			bh_old =
++			    vmufat_sb_bread(sb, vmudetails->dir_bnum -
++				x / 0x10);
++			if (!bh_old) {
++				brelse(bh);
++				return;
++			}
++
++			/* Copy this directory entry over */
++			for (z = 0; z < 0x10; z++) {
++				((__u16 *) bh_old->b_data)[(x % 0x10) *
++							   0x10 + z] =
++					((__u16 *) bh->b_data)[(y % 0x10) *
++							   0x10 + z];
++				((__u16 *) bh->b_data)[(y % 0x10) * 0x10 +
++						       z] = 0x00;
++			}
++			mark_buffer_dirty(bh);
++			/* In case written back already */
++			mark_buffer_dirty(bh_old);
++			brelse(bh_old);
++			break;
++		}
++	}
++
++	brelse(bh);
++}
++
++static int vmufat_write_inode(struct inode *in, int wait)
++{
++	struct buffer_head *bh;
++	__u8 century, u8year;
++	unsigned long inode_num;
++	int y, blck_read, z;
++	unsigned long unix_date;
++	int year, day, nl_day, month;
++	struct super_block *sb = in->i_sb;
++	struct memcard *vmudetails =
++	    ((struct memcard *) sb->s_fs_info);
++
++	if (in->i_ino == VMUFAT_ZEROBLOCK)
++		inode_num = 0;
++	else
++		inode_num = in->i_ino;
++
++	/* update the directory and inode details */
++	/* Now search for the directory entry */
++	blck_read = vmudetails->dir_bnum;
++	bh = vmufat_sb_bread(sb, blck_read);
++	if (!bh)
++		return -EIO;
++
++	for (y = 0; y < vmudetails->numblocks; y++) {
++		if ((y / 0x10) > (vmudetails->dir_bnum - blck_read)) {
++			brelse(bh);
++			blck_read--;
++			bh = vmufat_sb_bread(sb, blck_read);
++			if (!bh)
++				return -EIO;
++		}
++		if (le16_to_cpu
++		    (((__u16 *) bh->b_data)[(y % 0x10) * 0x10 +
++					    0x01]) == inode_num)
++			break;
++	}
++	/* Have the directory entry
++	 * so now update it */
++	z = (y % 0x10) * 0x20;
++	if (inode_num != 0)
++		bh->b_data[z] = 0x33;	/* data file */
++	else
++		bh->b_data[z] = 0xcc;
++	if ((bh->b_data[z + 1] != (char) 0x00)
++	    && (bh->b_data[z + 1] != (char) 0xff))
++		bh->b_data[z + 1] = (char) 0x00;
++	((__u16 *) bh->b_data)[z / 2 + 1] = cpu_to_le16(inode_num);
++
++	/* BCD timestamp it */
++	unix_date = CURRENT_TIME.tv_sec;
++	day = unix_date / 86400 - 3652;
++	year = day / 365;
++	if ((year + 3) / 4 + 365 * year > day)
++		year--;
++	day -= (year + 3) / 4 + 365 * year;
++	if (day == 59 && !(year & 3)) {
++		nl_day = day;
++		month = 2;
++	} else {
++		nl_day = (year & 3) || day <= 59 ? day : day - 1;
++		for (month = 0; month < 12; month++)
++			if (day_n[month] > nl_day)
++				break;
++	}
++
++	century = 19;
++	if (year > 19)
++		century = 20;
++	bh->b_data[z + 0x10] = bcd_from_u8(century);
++	u8year = year + 80;
++	if (u8year > 99)
++		u8year = u8year - 100;
++	bh->b_data[z + 0x11] = bcd_from_u8(u8year);
++	bh->b_data[z + 0x12] = bcd_from_u8((__u8) month);
++	bh->b_data[z + 0x13] =
++	    bcd_from_u8((__u8) day - day_n[month - 1] + 1);
++	bh->b_data[z + 0x14] =
++	    bcd_from_u8((__u8) ((unix_date / 3600) % 24));
++	bh->b_data[z + 0x15] = bcd_from_u8((__u8) ((unix_date / 60) % 60));
++	bh->b_data[z + 0x16] = bcd_from_u8((__u8) (unix_date % 60));
++
++	((__u16 *) bh->b_data)[z / 2 + 0x0C] = cpu_to_le16(in->i_blocks);
++	if (inode_num != 0)
++		((__u16 *) bh->b_data)[z / 2 + 0x0D] = 0;
++	else /* game */
++		((__u16 *) bh->b_data)[z / 2 + 0x0D] = cpu_to_le16(1);
++	in->i_mtime.tv_sec = unix_date;
++	mark_buffer_dirty(bh);
++	brelse(bh);
++
++	return 0;
++}
++
++static const struct super_operations vmufat_super_operations = {
++	.write_inode =	vmufat_write_inode,
++	.delete_inode =	vmufat_delete_inode,
++	.put_super =	vmufat_put_super,
++	.statfs =	vmufat_statfs,
++};
++
++static int check_sb_format(struct buffer_head *bh)
++{
++	__u32 s_magic = 0x55555555;
++
++	if (!((((__u32 *) bh->b_data)[0] == s_magic)
++	      && (((__u32 *) bh->b_data)[1] == s_magic)
++	      && (((__u32 *) bh->b_data)[2] == s_magic)
++	      && (s_magic == ((__u32 *) bh->b_data)[3])))
++		return 0;
++	else
++		return 1;
++}
++
++static int vmufat_fill_super(struct super_block *sb,
++					    void *data, int silent)
++{
++	/*Search for the superblock - assuming likely sizes are
++	* 128, 256, 512 and 1024 blocks */
++
++	struct buffer_head *bh;
++	struct memcard *vmudata;
++	int z;
++	struct inode *root_i;
++	int erasesize, log_2 = 0, ret = -EINVAL;
++
++	sb_set_blocksize(sb, VMU_BLK_SZ);
++
++	/* Have to try lowest number first to avoid oops */
++	for (z = 128; z < 1024; z = z * 2) {
++		bh = vmufat_sb_bread(sb, z - 1);
++		if (!bh)
++			return -EIO;
++		if (check_sb_format(bh))
++			break;
++		brelse(bh);
++		if (z == 1024) {	/* failed */
++			printk(KERN_ERR
++				"vmufat: attempted to mount non vmufat medium"
++				" as vmufat\n");
++			return ret;
++		}
++	}
++	/* Store this data in the super block */
++
++	vmudata = kmalloc(sizeof(struct memcard), GFP_KERNEL);
++
++	/* user blocks */
++	vmudata->numblocks = le16_to_cpu(((__u16 *) bh->b_data)[0x50 / 2]);
++	vmudata->sb_bnum = z - 1;
++	vmudata->fat_bnum = le16_to_cpu(((__u16 *) bh->b_data)[0x46 / 2]);
++	vmudata->fat_len = le16_to_cpu(((__u16 *) bh->b_data)[0x48 / 2]);
++	vmudata->dir_bnum = le16_to_cpu(((__u16 *) bh->b_data)[0x4a / 2]);
++	vmudata->dir_len = le16_to_cpu(((__u16 *) bh->b_data)[0x4c / 2]);
++	sb->s_fs_info = vmudata;
++
++	erasesize = VMU_BLK_SZ;
++
++	while ((erasesize /= 2) != 0)
++		log_2++;	/* thanks to MR Brown */
++
++	sb->s_blocksize_bits = log_2;
++	sb->s_magic = 0x55555555;
++	sb->s_op = &vmufat_super_operations;
++	brelse(bh);
++
++	root_i = vmufat_get_inode(sb, vmudata->sb_bnum);
++	if (!root_i || IS_ERR(root_i)) {
++		printk(KERN_ERR "vmufs: get root inode failed\n");
++		return ret;
++	}
++
++	sb->s_root = d_alloc_root(root_i);
++
++	if (!sb->s_root) {
++		iput(root_i);
++		return ret;
++	}
++
++	return 0;
++
++}
++
++static int vmufat_get_sb(struct file_system_type *fs_type,
++	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
++{
++	return get_sb_bdev(fs_type, flags, dev_name, data, vmufat_fill_super,
++			   mnt);
++}
++
++static struct file_system_type vmufat_fs_type = {
++	.owner		= THIS_MODULE,
++	.name		= "vmufat",
++	.get_sb		= vmufat_get_sb,
++	.kill_sb	= kill_block_super,
++	.fs_flags	= FS_REQUIRES_DEV,
++};
++
++static int __init init_vmufat_fs(void)
++{
++	return register_filesystem(&vmufat_fs_type);
++}
++
++static void __exit exit_vmufat_fs(void)
++{
++	unregister_filesystem(&vmufat_fs_type);
++}
++
++module_init(init_vmufat_fs);
++module_exit(exit_vmufat_fs);
++
++MODULE_DESCRIPTION("Filesystem for Sega Dreamcast VMU");
++MODULE_AUTHOR("Adrian McMenamin <adrian@mcmen.demon.co.uk>");
++MODULE_LICENSE("GPL v2");
+diff --git a/fs/vmufat/vmufat.h b/fs/vmufat/vmufat.h
+new file mode 100644
+index 0000000..32ae5e9
+--- /dev/null
++++ b/fs/vmufat/vmufat.h
+@@ -0,0 +1,58 @@
++/* Licenced under the GPL v2
++ * Copyright Adrian McMenamin, 2002 - 2009
++ * adrian@mcmen.demon.co.uk */
++
++#define VMUFAT_NAMELEN 12
++
++/* GNU utils won't list files with inode num 0 */
++#define VMUFAT_ZEROBLOCK 32768
++#define VMU_BLK_SZ 512
++
++extern const struct inode_operations vmufat_inode_operations;
++extern const struct inode_operations vmufat_file_inode_operations;
++extern const struct file_operations vmufat_file_dir_operations;
++extern const struct file_operations vmufat_file_operations;
++
++/* Memory card details */
++struct memcard {
++	long sb_bnum;
++	long fat_bnum;
++	long fat_len;
++	long dir_bnum;
++	long dir_len;
++	long numblocks;
++};
++
++struct vmufat_file_info {
++	struct vmufat_file_info *prev;
++	struct vmufat_file_info *next;
++	__u8 ftype;
++	__u8 copy_pro;
++	__u16 fblk;
++	char fname[12];
++	int date[8];
++
++	__u16 blk_cnt;
++	__u16 hd_off;
++};
++
++extern __u8 bcd_from_u8(__u8 num);
++extern struct inode *vmufat_get_inode(struct super_block *sb, int ino);
++
++/* VMU hardware is flaky, so let's compensate for that
++ * without losing hardare independence -
++ * as it is likely to be where this filesystem is used
++ */
++static inline struct buffer_head *vmufat_sb_bread(struct super_block *sb,
++	sector_t block)
++{
++	struct buffer_head *bh;
++	bh = sb_bread(sb, block);
++	if (bh)
++		return bh;
++	return sb_bread(sb, block);
++}
++
++/* Linear day numbers of the respective 1sts in non-leap years. */
++static int day_n[] =
++    {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+--- a/fs/Makefile	2025-11-14 11:47:43.733438645 +0100
++++ b/fs/Makefile	2025-11-14 11:48:43.618146034 +0100
+@@ -120,6 +120,7 @@
+ obj-$(CONFIG_OCFS2_FS)		+= ocfs2/
+ obj-$(CONFIG_BTRFS_FS)		+= btrfs/
+ obj-$(CONFIG_GFS2_FS)           += gfs2/
++obj-$(CONFIG_VMUFAT_FS)         += vmufat/
+ obj-$(CONFIG_F2FS_FS)		+= f2fs/
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
+
