@@ -1,0 +1,132 @@
+From 145959acc9580fd285e3502bcda5bc2b7a9bfe8c Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 12 Nov 2025 19:43:06 +0100
+Subject: [PATCH 1/3] sh: maple: Fix build error due to missing include of
+ linux/device.h
+
+Fix build error by adding the missing include of linux/device.h and
+removing the then unneeded struct device. linux/maple.h embeds struct
+device via struct maple_device, which requires the definition. Otherwise
+results in build error:
+
+./include/linux/maple.h:81:16: error: field 'dev' has incomplete type
+  struct device dev;
+                ^~~
+./include/linux/maple.h:86:23: error: field 'drv' has incomplete type
+  struct device_driver drv;
+                       ^~~
+
+Fixes: 313162d0b838 ("device.h: audit and cleanup users in main include dir")
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ drivers/mtd/maps/vmu-flash.c | 1 +
+ include/linux/maple.h        | 2 --
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
+index 53019d313db7..234cc9ecaa01 100644
+--- a/drivers/mtd/maps/vmu-flash.c
++++ b/drivers/mtd/maps/vmu-flash.c
+@@ -9,6 +9,7 @@
+ #include <linux/slab.h>
+ #include <linux/sched.h>
+ #include <linux/delay.h>
++#include <linux/device.h>
+ #include <linux/maple.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/map.h>
+diff --git a/include/linux/maple.h b/include/linux/maple.h
+index 3be4e567473c..a5e62bcb7e16 100644
+--- a/include/linux/maple.h
++++ b/include/linux/maple.h
+@@ -4,8 +4,6 @@
+ 
+ #include <mach/maple.h>
+ 
+-struct device;
+-
+ /* Maple Bus command and response codes */
+ enum maple_code {
+ 	MAPLE_RESPONSE_FILEERR =	-5,
+-- 
+2.43.0
+
+From 9a8a6b675c5c11fd3466a3dd69e9601374824801 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 12 Nov 2025 19:44:01 +0100
+Subject: [PATCH 2/3] mtd: maps: vmu-flash: Fix fault in unaligned fixup
+
+Use kcalloc() / kzalloc() to allocate the memcard structs, instead of
+kmalloc() / kmalloc_array() to prevent access to uninitialized data.
+
+Fixes runtime error: Fault in unaligned fixup: 0000 [#1] at
+mtd_get_fact_prot_info.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ drivers/mtd/maps/vmu-flash.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
+index 234cc9ecaa01..bd5903c8610d 100644
+--- a/drivers/mtd/maps/vmu-flash.c
++++ b/drivers/mtd/maps/vmu-flash.c
+@@ -610,7 +610,7 @@ static int vmu_connect(struct maple_device *mdev)
+ 
+ 	basic_flash_data = be32_to_cpu(mdev->devinfo.function_data[c - 1]);
+ 
+-	card = kmalloc(sizeof(struct memcard), GFP_KERNEL);
++	card = kzalloc(sizeof(struct memcard), GFP_KERNEL);
+ 	if (!card) {
+ 		error = -ENOMEM;
+ 		goto fail_nomem;
+@@ -628,14 +628,14 @@ static int vmu_connect(struct maple_device *mdev)
+ 	* Not sure there are actually any multi-partition devices in the
+ 	* real world, but the hardware supports them, so, so will we
+ 	*/
+-	card->parts = kmalloc_array(card->partitions, sizeof(struct vmupart),
++	card->parts = kcalloc(card->partitions, sizeof(struct vmupart),
+ 				    GFP_KERNEL);
+ 	if (!card->parts) {
+ 		error = -ENOMEM;
+ 		goto fail_partitions;
+ 	}
+ 
+-	card->mtd = kmalloc_array(card->partitions, sizeof(struct mtd_info),
++	card->mtd = kcalloc(card->partitions, sizeof(struct mtd_info),
+ 				  GFP_KERNEL);
+ 	if (!card->mtd) {
+ 		error = -ENOMEM;
+-- 
+2.43.0
+
+From 459f6ff4610aa635b7107a409910a1c971f08e80 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 12 Nov 2025 19:44:42 +0100
+Subject: [PATCH 3/3] mtd: maps: vmu-flash: Fix NULL pointer dereference in
+ initialization
+
+The mtd_info contains a struct device, which must be linked to its
+parent. Without this, the initialization of the MTD fails with a NULL
+pointer dereference.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ drivers/mtd/maps/vmu-flash.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
+index bd5903c8610d..da7cd1bc131b 100644
+--- a/drivers/mtd/maps/vmu-flash.c
++++ b/drivers/mtd/maps/vmu-flash.c
+@@ -548,6 +548,7 @@ static void vmu_queryblocks(struct mapleq *mq)
+ 	mpart->partition = card->partition;
+ 	mtd_cur->priv = mpart;
+ 	mtd_cur->owner = THIS_MODULE;
++	mtd_cur->dev.parent = &mdev->dev;
+ 
+ 	pcache = kzalloc(sizeof(struct vmu_cache), GFP_KERNEL);
+ 	if (!pcache)
+-- 
+2.43.0
+

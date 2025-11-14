@@ -1,141 +1,158 @@
-Linux version 6.17.7 (root@5b74c85d962c) (sh4-linux-gcc (GCC) 8.3.0, GNU ld (GNU Binutils) 2.32) #8 PREEMPT Fri Nov  7 19:15:22 UTC 2025
-Boot params:
-... MOUNT_ROOT_RDONLY - 00000000
-... RAMDISK_FLAGS     - 00000000
-... ORIG_ROOT_DEV     - 00000100
-... LOADER_TYPE       - 00000000
-... INITRD_START      - 00000000
-... INITRD_SIZE       - 00000000
-Booting machvec: Sega Dreamcast
-initrd disabled
-Zone ranges:
-  Normal   [mem 0x000000000c000000-0x000000000cffffff]
-Movable zone start for each node
-Early memory node ranges
-  node   0: [mem 0x000000000c000000-0x000000000cffffff]
-Initmem setup node 0 [mem 0x000000000c000000-0x000000000cffffff]
-pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
-pcpu-alloc: [0] 0 
-Kernel command line: console=ttySC1,115200 panic=3 root=/dev/nfs nfsroot=192.168.0.225:/home/flo/devel/t2-hacking/uclibc ip=192.168.0.200:192.168.0.225:192.168.0.1:255.255.255.0::eth0:::::
-printk: log buffer data + meta data: 16384 + 51200 = 67584 bytes
-Dentry cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
-Inode-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
-Sorting __ex_table...
-Built 1 zonelists, mobility grouping on.  Total pages: 4096
-mem auto-init: stack:off, heap alloc:off, heap free:off
-PVR=040205c1 CVR=00000000 PRR=00000000
-I-cache : n_ways=1 n_sets=256 way_incr=8192
-I-cache : entry_mask=0x00001fe0 alias_mask=0x00001000 n_aliases=2
-D-cache : n_ways=1 n_sets=512 way_incr=16384
-D-cache : entry_mask=0x00003fe0 alias_mask=0x00003000 n_aliases=4
-virtual kernel memory layout:
-    fixmap  : 0xdfff7000 - 0xdffff000   (  32 kB)
-    vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
-    lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
-            : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
-      .init : 0x8c4bc000 - 0x8c5d3000   (1116 kB)
-      .data : 0x8c384910 - 0x8c4bbe2c   (1245 kB)
-      .text : 0x8c001000 - 0x8c384910   (3598 kB)
-SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-rcu: Preemptible hierarchical RCU implementation.
-rcu: 	RCU event tracing is enabled.
-rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
-NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
-intc: Registered controller 'sh7750' with 20 IRQs
-intc: Registered controller 'sh7750_dma4' with 5 IRQs
-rcu: srcu_init: Setting srcu_struct sizes based on contention.
-Console: colour dummy device 80x25
- sh-tmu.0: ch0: used for clock events
- sh-tmu.0: ch0: used for periodic clock events
- sh-tmu.0: ch1: used as clock source
-clocksource: sh-tmu.0: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 153279423644 ns
-sched_clock: 32 bits at 250 Hz, resolution 4000000ns, wraps every 8589934590000000ns
-Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
-CPU: SH7750
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
-Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
-Performance Events: sh7750 support registered
-rcu: Hierarchical SRCU implementation.
-rcu: 	Max phase no-delay instances is 1000.
-Memory: 9644K/16384K available (3594K kernel code, 217K rwdata, 1024K rodata, 1116K init, 91K bss, 6240K reserved, 0K cma-reserved)
-devtmpfs: initialized
-clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
-posixtimers hash table entries: 512 (order: -1, 2048 bytes, linear)
-futex hash table entries: 256 (4096 bytes on 1 NUMA nodes, total 4 KiB, linear).
-NET: Registered PF_NETLINK/PF_ROUTE protocol family
-DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
-registering PCI controller with io_map_base unset
-HugeTLB: registered 64.0 KiB page size, pre-allocated 0 pages
-HugeTLB: 0 KiB vmemmap can be freed for a 64.0 KiB page
-sh_tmu sh-tmu.0: kept as earlytimer
-DMA: Registering sh_dmac handler (4 channels).
-DMA: Registering DMA API.
-DMA: Registering pvr2_dmac handler (1 channel).
-DMA: Registering g2_dmac handler (4 channels).
-PCI host bridge to bus 0000:00
-pci_bus 0000:00: root bus resource [mem 0x01001600-0x010035ff]
-pci_bus 0000:00: root bus resource [mem 0x01840000-0x01847fff]
-pci_bus 0000:00: No busn resource found for root bus, will use [bus 00-ff]
-pci 0000:00:00.0: [11db:1234] type 00 class 0x020000 conventional PCI endpoint
-pci 0000:00:00.0: BAR 0 [io  0x2000-0x20ff]
-pci 0000:00:00.0: BAR 1 [mem 0x01000000-0x010000ff]
-PCI: Fixing up device 0000:00:00.0
-pci_bus 0000:00: busn_res: [bus 00-ff] end is updated to 00
-pci 0000:00:00.0: BAR 0 [io  size 0x0100]: can't assign; no space
-pci 0000:00:00.0: BAR 0 [io  size 0x0100]: failed to assign
-pci 0000:00:00.0: BAR 0 [io  size 0x0100]: can't assign; no space
-pci 0000:00:00.0: BAR 0 [io  size 0x0100]: failed to assign
-vgaarb: loaded
-clocksource: Switched to clocksource sh-tmu.0
-NET: Registered PF_INET protocol family
-IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
-tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
-Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
-TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
-TCP bind hash table entries: 1024 (order: 1, 8192 bytes, linear)
-TCP: Hash tables configured (established 1024 bind 1024)
-UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
-UDP-Lite hash table entries: 256 (order: 1, 8192 bytes, linear)
-NET: Registered PF_UNIX/PF_LOCAL protocol family
-RPC: Registered named UNIX socket transport module.
-RPC: Registered udp transport module.
-RPC: Registered tcp transport module.
-RPC: Registered tcp-with-tls transport module.
-RPC: Registered tcp NFSv4.1 backchannel transport module.
-PCI: CLS 0 bytes, default 32
-sq: Registering store queue API.
-workingset: timestamp_bits=30 max_order=12 bucket_order=0
-io scheduler mq-deadline registered
-io scheduler kyber registered
-Console: switching to colour frame buffer device 80x30
-fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
-fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
-fb0: registering with SQ API
-sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
-fb0: Mapped video memory to SQ addr 0xe0000000
-SuperH (H)SCI(F) driver initialized
-sh-sci.0: ttySC0 at MMIO 0xffe00000 (irq = 39, base_baud = 0) is a sci
-sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
-printk: legacy console [ttySC1] enabled
-brd: module loaded
-loop: module loaded
-8139too: 8139too Fast Ethernet driver 0.9.28
-8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99
-NET: Registered PF_PACKET protocol family
-8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1
-IP-Config: Complete:
-     device=eth0, hwaddr=00:d0:f1:03:21:ca, ipaddr=192.168.0.200, mask=255.255.255.0, gw=192.168.0.1
-     host=192.168.0.200, domain=, nis-domain=(none)
-     bootserver=192.168.0.225, rootserver=192.168.0.225, rootpath=
-Freeing unused kernel image (initmem) memory: 1116K
-This architecture does not have kernel memory protection.
-Run /init as init process
-  with arguments:
-    /init
-  with environment:
-    HOME=/
-    TERM=linux
-loop0: detected capacity change from 0 to 1048576
-random: crng init done
-Adding 524284k swap on /dev/loop0.  Priority:-2 extents:1 across:524284k SS
+[    0.000000] Linux version 6.17.8 (root@55e76a39e4ac) (sh4-linux-gcc (GCC) 8.3.0, GNU ld (GNU Binutils) 2.32) #2 PREEMPT Fri Nov 14 21:13:44 UTC 2025
+[    0.000000] Boot params:
+               ... MOUNT_ROOT_RDONLY - 00000000
+               ... RAMDISK_FLAGS     - 00000000
+               ... ORIG_ROOT_DEV     - 00000100
+               ... LOADER_TYPE       - 00000000
+               ... INITRD_START      - 00000000
+               ... INITRD_SIZE       - 00000000
+[    0.000000] Booting machvec: Sega Dreamcast
+[    0.000000] initrd disabled
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x000000000c000000-0x000000000cffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x000000000c000000-0x000000000cffffff]
+[    0.000000] Initmem setup node 0 [mem 0x000000000c000000-0x000000000cffffff]
+[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+[    0.000000] pcpu-alloc: [0] 0 
+[    0.000000] Kernel command line: console=ttySC1,115200 panic=3 root=/dev/nfs 8139too.use_pio=1 nfsroot=192.168.0.225:/home/flo/devel/t2-hacking/uclibc ip=192.168.0.200:192.168.0.225:192.168.0.1:255.255.255.0::eth0:::::
+[    0.000000] printk: log buffer data + meta data: 16384 + 51200 = 67584 bytes
+[    0.000000] Dentry cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.000000] Sorting __ex_table...
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 4096
+[    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
+[    0.000000] PVR=040205c1 CVR=00000000 PRR=00000000
+[    0.000000] I-cache : n_ways=1 n_sets=256 way_incr=8192
+[    0.000000] I-cache : entry_mask=0x00001fe0 alias_mask=0x00001000 n_aliases=2
+[    0.000000] D-cache : n_ways=1 n_sets=512 way_incr=16384
+[    0.000000] D-cache : entry_mask=0x00003fe0 alias_mask=0x00003000 n_aliases=4
+[    0.000000] virtual kernel memory layout:
+                   fixmap  : 0xdfff7000 - 0xdffff000   (  32 kB)
+                   vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
+                   lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
+                           : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
+                     .init : 0x8c4b8000 - 0x8c5cf000   (1116 kB)
+                     .data : 0x8c3a0048 - 0x8c4b7e08   (1119 kB)
+                     .text : 0x8c001000 - 0x8c3a0048   (3708 kB)
+[    0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] intc: Registered controller 'sh7750' with 20 IRQs
+[    0.000000] intc: Registered controller 'sh7750_dma4' with 5 IRQs
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] Console: colour dummy device 80x25
+[    0.000000]  sh-tmu.0: ch0: used for clock events
+[    0.000000]  sh-tmu.0: ch0: used for periodic clock events
+[    0.000000]  sh-tmu.0: ch1: used as clock source
+[    0.000000] clocksource: sh-tmu.0: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 153279423644 ns
+[    0.000000] sched_clock: 32 bits at 250 Hz, resolution 4000000ns, wraps every 8589934590000000ns
+[    0.000000] Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
+[    0.000000] CPU: SH7750
+[    0.000000] pid_max: default: 32768 minimum: 301
+[    0.000000] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.000000] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.012000] Performance Events: sh7750 support registered
+[    0.016000] rcu: Hierarchical SRCU implementation.
+[    0.016000] rcu: 	Max phase no-delay instances is 1000.
+[    0.020000] Memory: 9656K/16384K available (3704K kernel code, 207K rwdata, 908K rodata, 1116K init, 93K bss, 6228K reserved, 0K cma-reserved)
+[    0.020000] devtmpfs: initialized
+[    0.036000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.036000] posixtimers hash table entries: 512 (order: -1, 2048 bytes, linear)
+[    0.036000] futex hash table entries: 256 (4096 bytes on 1 NUMA nodes, total 4 KiB, linear).
+[    0.040000] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.076000] DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
+[    0.100000] registering PCI controller with io_map_base unset
+[    0.104000] HugeTLB: registered 64.0 KiB page size, pre-allocated 0 pages
+[    0.104000] HugeTLB: 0 KiB vmemmap can be freed for a 64.0 KiB page
+[    0.108000] sh_tmu sh-tmu.0: kept as earlytimer
+[    0.116000] DMA: Registering sh_dmac handler (4 channels).
+[    0.116000] DMA: Registering DMA API.
+[    0.120000] DMA: Registering pvr2_dmac handler (1 channel).
+[    0.120000] DMA: Registering g2_dmac handler (4 channels).
+[    0.124000] PCI host bridge to bus 0000:00
+[    0.124000] pci_bus 0000:00: root bus resource [mem 0x01001600-0x010035ff]
+[    0.124000] pci_bus 0000:00: root bus resource [mem 0x01840000-0x01847fff]
+[    0.124000] pci_bus 0000:00: No busn resource found for root bus, will use [bus 00-ff]
+[    0.124000] pci 0000:00:00.0: [11db:1234] type 00 class 0x020000 conventional PCI endpoint
+[    0.124000] pci 0000:00:00.0: BAR 0 [io  0x2000-0x20ff]
+[    0.124000] pci 0000:00:00.0: BAR 1 [mem 0x01000000-0x010000ff]
+[    0.124000] PCI: Fixing up device 0000:00:00.0
+[    0.124000] pci_bus 0000:00: busn_res: [bus 00-ff] end is updated to 00
+[    0.124000] pci 0000:00:00.0: BAR 0 [io  size 0x0100]: can't assign; no space
+[    0.124000] pci 0000:00:00.0: BAR 0 [io  size 0x0100]: failed to assign
+[    0.124000] pci 0000:00:00.0: BAR 0 [io  size 0x0100]: can't assign; no space
+[    0.124000] pci 0000:00:00.0: BAR 0 [io  size 0x0100]: failed to assign
+[    0.128000] vgaarb: loaded
+[    0.128000] clocksource: Switched to clocksource sh-tmu.0
+[    0.208000]  maple: bus core now registered
+[    0.208000] NET: Registered PF_INET protocol family
+[    0.208000] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.212000] maple (null): detected Dreamcast Mouse: function 0x200: at (0, 0)
+[    0.212000] maple (null): no driver found
+[    0.212000] maple (null): detected Keyboard: function 0x40: at (1, 0)
+[    0.212000] maple (null): no driver found
+[    0.212000] maple (null): detected Dreamcast Controller: function 0x1: at (2, 0)
+[    0.212000] maple (null): no driver found
+[    0.216000] maple (null): no devices to port 3
+[    0.216000] tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.216000] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.216000] TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.216000] TCP bind hash table entries: 1024 (order: 1, 8192 bytes, linear)
+[    0.216000] TCP: Hash tables configured (established 1024 bind 1024)
+[    0.216000] UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+[    0.216000] UDP-Lite hash table entries: 256 (order: 1, 8192 bytes, linear)
+[    0.220000] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.224000] RPC: Registered named UNIX socket transport module.
+[    0.224000] RPC: Registered udp transport module.
+[    0.224000] RPC: Registered tcp transport module.
+[    0.224000] RPC: Registered tcp-with-tls transport module.
+[    0.224000] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.224000] PCI: CLS 0 bytes, default 32
+[    0.228000] sq: Registering store queue API.
+[    0.232000] maple (null): detected Visual Memory: function 0xE: at (2, 1)
+[    0.232000] maple (null): no driver found
+[    0.236000] workingset: timestamp_bits=30 max_order=12 bucket_order=0
+[    0.252000] io scheduler mq-deadline registered
+[    0.252000] io scheduler kyber registered
+[    1.924000] Console: switching to colour frame buffer device 80x30
+[    1.948000] fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
+[    1.948000] fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
+[    1.948000] fb0: registering with SQ API
+[    1.948000] sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
+[    1.948000] fb0: Mapped video memory to SQ addr 0xe0000000
+[    1.952000] SuperH (H)SCI(F) driver initialized
+[    1.952000] sh-sci.0: ttySC0 at MMIO 0xffe00000 (irq = 39, base_baud = 0) is a sci
+[    1.956000] sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
+[    1.956000] printk: legacy console [ttySC1] enabled
+[    2.472000] brd: module loaded
+[    2.516000] loop: module loaded
+[    2.520000] 8139too: 8139too Fast Ethernet driver 0.9.28
+[    2.528000] 8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99
+[    2.536000] Dreamcast_visual_memory 2:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255
+[    3.116000] gdrom: CD-ROM DRIVE     from SE               with firmware 6.42            
+[    3.120000] gdrom: Registered with major number 254
+[    3.124000] cdrom: Uniform CD-ROM driver Revision: 3.20
+[    3.140000] mousedev: PS/2 mouse device common for all mice
+[    3.148000] input: Keyboard as /devices/maple/1:00.40/input/input0
+[    3.156000] input: Dreamcast Mouse as /devices/virtual/input/input1
+[    3.164000] input: Dreamcast Controller as /devices/maple/2:00.1/input/input2
+[    3.176000] NET: Registered PF_PACKET protocol family
+[    3.360000] 8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1
+[    3.380000] IP-Config: Complete:
+[    3.380000]      device=eth0, hwaddr=00:d0:f1:03:21:ca, ipaddr=192.168.0.200, mask=255.255.255.0, gw=192.168.0.1
+[    3.388000]      host=192.168.0.200, domain=, nis-domain=(none)
+[    3.392000]      bootserver=192.168.0.225, rootserver=192.168.0.225, rootpath=
+[    3.400000] Freeing unused kernel image (initmem) memory: 1116K
+[    3.408000] This architecture does not have kernel memory protection.
+[    3.416000] Run /init as init process
+[    3.416000]   with arguments:
+[    3.416000]     /init
+[    3.416000]   with environment:
+[    3.416000]     HOME=/
+[    3.416000]     TERM=linux
+[    5.680000] random: crng init done
+[    7.264000] loop0: detected capacity change from 0 to 1048576
+[    7.356000] Adding 524284k swap on /dev/loop0.  Priority:-2 extents:1 across:524284k SS
