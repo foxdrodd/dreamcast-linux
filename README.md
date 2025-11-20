@@ -4,7 +4,7 @@ This is a docker environment that builds a mainline linux distro that is bootabl
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). 
 
-Tested Devices (for non working see https://github.com/foxdrodd/dreamcast-linux/issues/7  , feel free to add PR to add your test device)
+Tested Devices, feel free to add PR to add your test device:
 
 | Medium | Revision                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
