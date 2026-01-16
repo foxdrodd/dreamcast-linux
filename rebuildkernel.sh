@@ -4,7 +4,7 @@
 buildtime=$(date +%s)
 
 old="hello sh-boot-20010831-1455.tar.gz"
-oldfound=$(grep -c $old dreamcast/Dockerfile)
+oldfound=$(grep -c "$old" dreamcast/Dockerfile)
 
 if [ $oldfound = 1 ]; then
 	sed -i 's/hello sh-boot-20010831-1455.tar.gz/sh-boot-20010831-1455.tar.gz hello/' dreamcast/Dockerfile
