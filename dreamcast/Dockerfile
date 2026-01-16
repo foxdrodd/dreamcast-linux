@@ -2,7 +2,7 @@
 # Dreamcast Linux Dockerfile
 # Author: Anders Evenrud <andersevenrud@gmail.com>
 #
-FROM debian:10
+FROM debian:latest
 
 RUN mkdir -p /usr/src/dreamcast
 
@@ -12,9 +12,10 @@ RUN apt-get update
 RUN apt-get install -y \
       genisoimage texinfo bc flex wget gawk bison python3 \
       build-essential gcc-multilib \
-      libc-dev libmpc-dev libncurses5-dev rsync
+      libc-dev libmpc-dev libncurses5-dev rsync file e2fsprogs
 
 RUN rm -rf /var/lib/apt/lists/*
+RUN echo 1234567
 
 # Sources
 COPY build-dreamcast.sh \

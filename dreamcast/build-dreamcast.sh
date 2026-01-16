@@ -16,14 +16,14 @@ GNU_MIRROR="https://gnuftp.uib.no"
 MY_COPTS="-j24"
 
 # Dependencies
-BINUTILS_VERSION="2.32"
-GCC_VERSION="8.3.0"
-GDB_VERSION="8.3"
-GLIBC_VERSION="2.30"
+BINUTILS_VERSION="2.45.1"
+GCC_VERSION="15.2.0"
+GDB_VERSION="17.1"
+GLIBC_VERSION="2.42"
 #LINUX_VERSION="5.2"
 LINUX_VERSION_1="6.x"
 LINUX_VERSION="6.18.4"
-BUSYBOX_VERSION="1.31.0"
+BUSYBOX_VERSION="1.37.0"
 
 # Globals
 export TARGET="sh4-linux"
@@ -117,12 +117,16 @@ pushd dreamcast
   #
 
   if [ ! -f "/opt/build/dont_gcc" ]; then
+  rm -rf build-gcc
+  mkdir -p build-gcc
   pushd build-gcc
     ../gcc-${GCC_VERSION}/configure \
       --target=$TARGET \
       --prefix=$PREFIX \
       --with-multilib-list=m4,m4-nofpu \
-      --enable-languages=c,c++
+      --disable-shared \
+      --without-headers \
+      --enable-languages=c
     make ${MY_COPTS} all-gcc
     make install-gcc
   popd
@@ -141,6 +145,7 @@ pushd dreamcast
       --disable-debug \
       --disable-profile \
       --disable-sanity-checks \
+      --disable-werror \
       --build=$MACHTYPE \
       --with-headers=${PREFIX}/${TARGET}/include
 
