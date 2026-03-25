@@ -22,7 +22,7 @@ GDB_VERSION="17.1"
 GLIBC_VERSION="2.42"
 #LINUX_VERSION="5.2"
 LINUX_VERSION_1="6.x"
-LINUX_VERSION="6.19.2"
+LINUX_VERSION="6.19.9"
 BUSYBOX_VERSION="1.37.0"
 
 # Globals
@@ -226,8 +226,16 @@ sysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0
 EOF
 
   cat <<EOF > ${INITRD}/etc/init.d/rcS
+#!/bin/sh
 /bin/mount -a
 EOF
+
+  cat <<EOF > ${INITRD}/etc/inittab
+::sysinit:/etc/init.d/rcS
+console::askfirst:/bin/sh
+tty0::askfirst:/bin/sh
+EOF
+
 
   chmod a+x ${INITRD}/etc/init.d/rcS
 
