@@ -39,10 +39,8 @@ I use kernel-integrated initramfs and not the sh-boot initrd. The path to the in
 ## Apply patches
 
 ```
-/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch -p1 < ../../../hotfix-dreamcast-bba.patch
-/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch -p1 < ../../../hotfix-vmu.patch
-/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch -p1 < ../../../hotfix-dreamcast-maple.patch
-/dreamcast-linux/.dreamcast/src/linux-6.16.5 ❯ patch -p1 < ../../../hotfix-dreamcast-bootlinkoffset.patch
+dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-dreamcast-*.patch
+dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-vmu*.patch
 ```
 
 ## About
