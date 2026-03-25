@@ -1,4 +1,4 @@
-Linux version 6.19.2 (root@2dfa7fe3100d) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #1 PREEMPT Tue Feb 17 21:09:30 UTC 2026
+Linux version 6.19.9 (root@350ebd0a70ae) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #1 PREEMPT Wed Mar 25 11:28:55 UTC 2026
 Boot params:
 ... MOUNT_ROOT_RDONLY - 00000000
 ... RAMDISK_FLAGS     - 00000000
@@ -33,9 +33,9 @@ virtual kernel memory layout:
     vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
     lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
             : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
-      .init : 0x8c4d7000 - 0x8c5e9000   (1096 kB)
-      .data : 0x8c3b7974 - 0x8c4d67c8   (1147 kB)
-      .text : 0x8c001000 - 0x8c3b7974   (3802 kB)
+      .init : 0x8c4e3000 - 0x8c5f5000   (1096 kB)
+      .data : 0x8c3c0518 - 0x8c4e2a4c   (1161 kB)
+      .text : 0x8c001000 - 0x8c3c0518   (3837 kB)
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 rcu: Preemptible hierarchical RCU implementation.
 rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
@@ -57,7 +57,7 @@ Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
 Performance Events: sh7750 support registered
 rcu: Hierarchical SRCU implementation.
 rcu: 	Max phase no-delay instances is 1000.
-Memory: 9544K/16384K available (3798K kernel code, 211K rwdata, 932K rodata, 1096K init, 94K bss, 6332K reserved, 0K cma-reserved)
+Memory: 9496K/16384K available (3833K kernel code, 217K rwdata, 940K rodata, 1096K init, 94K bss, 6380K reserved, 0K cma-reserved)
 devtmpfs: initialized
 clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
 posixtimers hash table entries: 512 (order: 0, 2048 bytes, linear)
@@ -93,6 +93,14 @@ NET: Registered PF_INET protocol family
 IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
 tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
 Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+maple (null): detected Dreamcast Controller: function 0x1: at (0, 0)
+maple (null): no driver found
+maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
+maple (null): no driver found
+maple (null): detected Dreamcast Mouse: function 0x200: at (2, 0)
+maple (null): no driver found
+maple (null): detected Keyboard: function 0x40: at (3, 0)
+maple (null): no driver found
 TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
 TCP bind hash table entries: 1024 (order: 1, 8192 bytes, linear)
 TCP: Hash tables configured (established 1024 bind 1024)
@@ -106,19 +114,9 @@ RPC: Registered tcp-with-tls transport module.
 RPC: Registered tcp NFSv4.1 backchannel transport module.
 PCI: CLS 0 bytes, default 32
 sq: Registering store queue API.
-maple (null): detected Dreamcast Controller: function 0x1: at (0, 0)
-maple (null): no driver found
-maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
-maple (null): no driver found
-maple (null): detected Keyboard: function 0x40: at (2, 0)
-maple (null): no driver found
-maple (null): detected Dreamcast Mouse: function 0x200: at (3, 0)
-maple (null): no driver found
 workingset: timestamp_bits=30 max_order=12 bucket_order=0
 io scheduler mq-deadline registered
 io scheduler kyber registered
-maple (null): detected Visual Memory: function 0xE: at (0, 1)
-maple (null): no driver found
 Console: switching to colour frame buffer device 80x30
 fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
 fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
@@ -133,15 +131,20 @@ brd: module loaded
 loop: module loaded
 8139too: 8139too Fast Ethernet driver 0.9.28
 8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99
-Dreamcast_visual_memory 0:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255
 gdrom: CD-ROM DRIVE     from SE               with firmware 6.42            
 gdrom: Registered with major number 254
 cdrom: Uniform CD-ROM driver Revision: 3.20
 mousedev: PS/2 mouse device common for all mice
-input: Keyboard as /devices/maple/2:00.40/input/input0
+input: Keyboard as /devices/maple/3:00.40/input/input0
 input: Dreamcast Mouse as /devices/virtual/input/input1
 input: Dreamcast Controller as /devices/maple/0:00.1/input/input2
 input: Dreamcast Controller as /devices/maple/1:00.1/input/input3
+rtc-generic rtc-generic: registered as rtc0
+rtc-generic rtc-generic: setting system clock to 1998-11-27T01:08:48 UTC (912128928)
+sh-rtc sh-rtc: error -ENXIO: IRQ index 2 not found
+sh-rtc sh-rtc: error -EINVAL: request_irq(4294967290) sh_rtc_alarm 0x0 sh-rtc
+sh-rtc sh-rtc: request alarm IRQ failed with -22, IRQ -6
+sh-rtc sh-rtc: probe with driver sh-rtc failed with error -22
 AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
 random: crng init done
 AICA AICA: Direct firmware load for aica_firmware.bin failed with error -2
