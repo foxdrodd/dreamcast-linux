@@ -1,0 +1,75 @@
+Some Debuggings done around the issue, that gxemul is not working with my dreamcast linux.
+So far, it seems to extract the kernel and start to boot, but then traps on a BUG() in the mm/percpu.c setup.
+
+With my full dc config, there occur other errors, might be related to missing emulation features./wrong compile
+like UNIMPLEMENTED opcodes.
+
+DISPLAY=:0 gxemul -i -v -x -XEdreamcast -dco23965696:build/data.raw &> ins.log         flo@lithos
+--> USE data.iso man! not raw
+
+from gxemul instruction log file:
+
+sh-boot, kernel-boot.S
+that is entrypoint 
+
+8c600000: start of linux ./.dreamcast/src/linux-6.19.2/arch/sh/boot/compressed/head_32.S
+8c601a58: After head_32.S  after last nop
+-----
+without instruction log:
+[ exception 0x160, pc=0x8c25cdcc vaddr=0x00000000 ]
+
+pc=0x8c25cdcc -> do_unbind_con_driver
+
+
+Some other adress
+[ exception 0x160, pc=0x8c4e85b6 vaddr=0x00000000  ]
+
+pc=0x8c4e85b6 -> 8c4e85b6:	00 00       	.word 0x0000
+
+
+WITH minimal dreamcast_defconfig:
+
+8c4da9a8:	34 d1       	mov.l	8c4daa7c <pcpu_setup_first_chunk+0x174>,r1	! 8c004258 <pcpu_dump_alloc_info>
+8c4da9aa:	35 d4       	mov.l	8c4daa80 <pcpu_setup_first_chunk+0x178>,r4	! 8c44ee70
+8c4da9ac:	0b 41       	jsr	@r1
+8c4da9ae:	83 65       	mov	r8,r5
+8c4da9b0:	3e c3       	trapa	#62
+
+
+trapa comes from BUG() Macro of mm/percpu.c
+
+
+
+WITH my OWN custom fuller config:
+
+Unimplemented opcode 0x8,0x2
+cpu: UNIMPLEMENTED instruction at 0x8c600c72
+8c600c72:  8287        UNIMPLEMENTED hi4=0x8,0x2
+
+8c6010f6:	c3 db       	mov.l	8c601404 <__con_initcall_end+0xe6f60>,r11	! 7848d5ac
+8c6010f8:	15 b2       	bsr	8c601526 <__con_initcall_end+0xe7082>
+8c6010fa:	ba ad       	bra	8c600c72 <__con_initcall_end+0xe67ce>
+8c6010fc:	00 91       	mov.w	8c601100 <__con_initcall_end+0xe6c5c>,r1	! 7b05
+
+
+With dreamcast_defconfig IT IS LOOPING AT:
+mm/percpu.c:
+
+#define PCPU_SETUP_BUG_ON(cond) do {                                    \
+        if (unlikely(cond)) {                                           \
+                pr_emerg("failed to initialize, %s\n", #cond);          \
+                pr_emerg("cpu_possible_mask=%*pb\n",                    \
+                         cpumask_pr_args(cpu_possible_mask));           \
+                pcpu_dump_alloc_info(KERN_EMERG, ai);                   \
+                nop(); nop(); \
+                BUG();                                                  \
+        }                                                               \
+} while (0)
+
+
+---
+
+POSSBILE BUG_ON:
+        PCPU_SETUP_BUG_ON(offset_in_page(base_addr));
+
+
