@@ -1,4 +1,12 @@
 
+00:13:772 hw/sh4/interpr/sh4_opcodes.cpp:929 W[INTERPRETER]: TRAP #3E
+
+Also looks like the trap at the mm/percpu.c, maybe thats also the ntsc problem.
+
+
+---
+
+
 DISPLAY=:0 ./flycast-x86_64.AppImage  /home/flo/devel/t2-hacking/dreamcast/dreamcast-linux/build/linux616.cdi
 
 00:00:000 sdl/sdl.cpp:775 N[RENDERER]: Monitor refresh rate: 60 Hz (1920 x 1080)
