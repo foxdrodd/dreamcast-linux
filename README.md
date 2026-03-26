@@ -14,6 +14,9 @@ Tested Devices, feel free to add PR to add your test device:
 | GDEMU  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network |
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
 | GDEMU  | HKT-3000, NTSC J, Ugo Denshi |  | soon to be tested  |
+| GDROM  | HKT-3030, PAL E, Rev. 1 |  | soon to be tested |
+| GDROM  | HKT-3020, NTSC U, Rev. 1 |  | soon to be tested  |
+| GDROM  | HKT-3000, NTSC J, Ugo Denshi |  | soon to be tested  |
 | CDI | GXemul 0.7.0+dfsg |  :x: No | `[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]` |
 | CDI | lxdream 0.9.1 |  :x: No | stays at sega screen |
 | CDI | flycast 2.6 |  :x: No | stays at sega screen |
