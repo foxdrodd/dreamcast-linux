@@ -4,12 +4,16 @@ This is a docker environment that builds a mainline linux distro that is bootabl
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). 
 
+My main testcase is via serial and NFS chroot, so it doesn't contain many useful applications by itself. This is certainly an area of improvement.
+Furthermore the build-process is currently a bit sophisticated, meaning its not really reproducible right know, like the patches not applied automatically.
+
 Tested Devices, feel free to add PR to add your test device:
 
 | Medium | Revision                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
 | GDEMU  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network |
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
+| GDEMU  | HKT-3000, NTSC J, Ugo Denshi |  | soon to be tested  |
 | CDI | GXemul 0.7.0+dfsg |  :x: No | `[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]` |
 | CDI | lxdream 0.9.1 |  :x: No | stays at sega screen |
 | CDI | flycast 2.6 |  :x: No | stays at sega screen |
