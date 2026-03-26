@@ -1,0 +1,26 @@
+
+With the memset/memcpy specifics for sh4 removed, it loads up to SuperH Boot Logo:
+But no interaction with keyboard or so was possiblle.
+
+With modified kernel commandline, to NOT use serial output, I can see the boot logs,
+up to the busybox "Press enter to start shell", but still no interaction possible then.
+
+SCSPTR2 is related to missinng serial support: https://github.com/lxdream/lxdream/issues/8
+
+
+22:10:29 8C002906 INFO  ATAPI packet: 30 24 00 2E  53 00 00 00  00 00 09 00
+22:10:29 8C002906 INFO  ATAPI packet: 30 24 00 2E  5C 00 00 00  00 00 01 00
+22:10:29 8C002906 INFO  ATAPI packet: 30 24 00 2E  63 00 00 00  00 00 01 00
+22:10:29 8C002906 INFO  ATAPI packet: 30 24 00 2E  65 00 00 00  00 07 EE 00
+22:10:34 8C22F2A8 WARN  SCSPTR2 not implemented: Write 000000C0
+22:10:34 8C250472 WARN  IDE: Unimplemented command: 90
+22:10:41 8C22F2A8 WARN  SCSPTR2 not implemented: Write 000000C0
+22:10:47 A000011C DEBUG ARM disabled
+22:10:48 8C00BAB4 DEBUG ARM enabled
+22:10:48 8C002EA4 INFO  Set PIO Flow-control mode: 3
+22:10:48 8C002F36 INFO  Set Multiword DMA mode: 2
+22:10:48 8C002906 INFO  ATAPI packet: 00 00 00 00  00 00 00 00  00 00 00 00
+22:10:48 8C002906 INFO  ATAPI packet: 13 00 00 00  0A 00 00 00  00 00 00 00
+
+
+

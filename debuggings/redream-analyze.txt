@@ -1,0 +1,11 @@
+
+Seems like to be some operation missing?
+
+boot_load_rom failed to open
+bios_override_settings region=usa lang=english bcast=ntsc time=0x8f62ecc0
+bios_boot using hle bootstrap
+[/builds/inolen/redream-private/src/guest/sh4/sh4.c:418] Check failed: value == 0x00000003
+[/builds/inolen/redream-private/src/guest/sh4/sh4.c:418] unsupported STBCR write
+
+
+
