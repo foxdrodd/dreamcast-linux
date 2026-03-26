@@ -1,0 +1,26 @@
+
+DISPLAY=:0 ./flycast-x86_64.AppImage  /home/flo/devel/t2-hacking/dreamcast/dreamcast-linux/build/linux616.cdi
+
+00:00:000 sdl/sdl.cpp:775 N[RENDERER]: Monitor refresh rate: 60 Hz (1920 x 1080)
+00:00:010 ui/gui.cpp:341 N[RENDERER]: Screen DPI is 82, size 640 x 480. Scaling by 1.00
+00:00:034 rend/gles/gles.cpp:603 N[RENDERER]: OpenGL version 4.6
+00:00:034 rend/gles/gles.cpp:604 N[RENDERER]: Vendor 'AMD' Renderer 'AMD Ryzen 9 9900X 12-Core Processor (radeonsi, raphael_mendocino, LLVM 20.1.2, DRM 3.57, 6.8.0-85-generic)' Version '4.6 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.1'
+00:00:042 rend/gles/gles.cpp:615 N[RENDERER]: glBlitFramebuffer test successful
+00:00:046 hw/mem/addrspace.cpp:425 N[VMEM]: Info: nvmem is enabled
+00:00:057 hw/mem/addrspace.cpp:457 N[VMEM]: BASE 0x74398ddf0000 RAM(32 MB) 0x743999df0000 VRAM64(8 MB) 0x743991df0000 ARAM(2 MB) 0x7439addf0000
+00:00:064 hw/mem/addrspace.cpp:425 N[VMEM]: Info: nvmem is enabled
+00:00:073 hw/mem/addrspace.cpp:457 N[VMEM]: BASE 0x74398ddf0000 RAM(32 MB) 0x743999df0000 VRAM64(8 MB) 0x743991df0000 ARAM(2 MB) 0x7439addf0000
+00:00:079 emulator.cpp:63 N[BOOT]: Game ID is [T0000]
+00:00:081 emulator.cpp:63 N[BOOT]: Game ID is [T0000]
+00:00:092 hw/sh4/modules/serial.cpp:491 N[BOOT]: Pseudoterminal is at /dev/pts/156
+00:13:764 hw/sh4/interpr/sh4_opcodes.cpp:929 W[INTERPRETER]: TRAP #3E
+00:13:769 hw/sh4/interpr/sh4_opcodes.cpp:929 W[INTERPRETER]: TRAP #3E
+00:13:769 hw/sh4/interpr/sh4_opcodes.cpp:929 W[INTERPRETER]: TRAP #3E
+00:13:772 hw/sh4/interpr/sh4_opcodes.cpp:929 W[INTERPRETER]: TRAP #3E
+00:13:785 hw/aica/aica_if.cpp:70 W[AICA]: readRtcReg: invalid address 710003 sz 4
+00:13:785 hw/aica/aica_if.cpp:103 W[AICA]: writeRtcReg: invalid address 710003 sz 4 data 0
+00:13:785 hw/aica/aica_if.cpp:70 W[AICA]: readRtcReg: invalid address 710007 sz 4
+00:13:785 hw/aica/aica_if.cpp:103 W[AICA]: writeRtcReg: invalid address 710007 sz 4 data 0
+00:13:785 hw/aica/aica_if.cpp:70 W[AICA]: readRtcReg: invalid address 71000b sz 4
+00:13:785 hw/aica/aica_if.cpp:103 W[AICA]: writeRtcReg: invalid address 71000b sz 4 data 0
+
