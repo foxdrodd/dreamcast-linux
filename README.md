@@ -17,9 +17,10 @@ Tested Devices, feel free to add PR to add your test device:
 | GDROM  | HKT-3030, PAL E, Rev. 1 |  | soon to be tested |
 | GDROM  | HKT-3020, NTSC U, Rev. 1 |  | soon to be tested  |
 | GDROM  | HKT-3000, NTSC J, Ugo Denshi |  | soon to be tested  |
-| CDI | GXemul 0.7.0+dfsg |  :x: No | `[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]` see [gxemul-analyze.txt](debuggings/gxemul-analyze.txt)|
-| CDI | lxdream 0.9.1 |  :x: No | stays at sega screen, with memset/memcpy sh4-specifics removed, boots to console, but no interaction possible |
-| CDI | flycast 2.6 |  :x: No | stays at sega screen |
+| CDI | GXemul 0.7.0+dfsg |  :x: No | `[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]` see [gxemul-analyze.txt](debuggings/gxemul-analyze.txt) |
+| CDI | lxdream 0.9.1 |  :x: No | stays at sega screen, with memset/memcpy sh4-specifics removed, boots to console, but no interaction possible see [lxdream-analyze.txt](debuggings/lxdream-analyze.txt) |
+| CDI | flycast 2.6 |  :x: No | stays at sega screen, see [flycast-analyze.txt](debuggings/flycast-analyze.txt)   |
+| CDI | redream 1.5.0 |  :x: No | [redream-analyze.txt](debuggings/redream-analyze.txt) |
 
 
 **ATTENTION:** You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac600000.
