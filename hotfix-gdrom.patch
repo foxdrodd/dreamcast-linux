@@ -1,0 +1,75 @@
+
+Experiments with the gdrom, to try mount an iso9660 while also booting from gdemu.
+
+--- linux-6.19.10/drivers/cdrom/gdrom.c.vanilla	2026-03-28 18:54:44.131596378 +0100
++++ linux-6.19.10/drivers/cdrom/gdrom.c	2026-03-28 18:41:22.855840796 +0100
+@@ -198,7 +198,17 @@
+ 		gdrom_getsense(NULL);
+ 		return;
+ 	}
+-	outsw(GDROM_DATA_REG, cmd, 6);
++
++// FF start
++	// outsw(GDROM_DATA_REG, cmd, 6);
++        const u16 *p = cmd;
++        int i;
++
++        for (i = 0; i < 6; i++)
++                __raw_writew(p[i], GDROM_DATA_REG);
++ 
++// FF end
++
+ }
+ 
+ 
+@@ -282,7 +292,14 @@
+ 		err = -EINVAL;
+ 		goto cleanup_readtoc;
+ 	}
+-	insw(GDROM_DATA_REG, toc, tocsize/2);
++// FF
++//	insw(GDROM_DATA_REG, toc, tocsize/2);
++	u16 *p = (u16 *)toc;
++	int i;
++
++	for (i = 0; i < tocsize / 2; i++)
++		p[i] = __raw_readw(GDROM_DATA_REG);
++// FF
+ 	if (gd.status & 0x01)
+ 		err = -EINVAL;
+ 
+@@ -433,7 +450,15 @@
+ 		GDROM_DEFAULT_TIMEOUT);
+ 	if (gd.pending)
+ 		goto cleanup_sense;
+-	insw(GDROM_DATA_REG, &sense, sense_command->buflen/2);
++// FF
++	// insw(GDROM_DATA_REG, &sense, sense_command->buflen/2);
++	u16 *p = (u16 *)&sense;
++	int i;
++
++	for (i = 0; i < sense_command->buflen / 2; i++)
++		p[i] = __raw_readw(GDROM_DATA_REG);
++// FF
++
+ 	if (sense[1] & 40) {
+ 		pr_info("Drive not ready - command aborted\n");
+ 		goto cleanup_sense;
+@@ -612,7 +637,16 @@
+ 		cpu_relax();
+ 	gd.pending = 1;
+ 	gd.transfer = 1;
+-	outsw(GDROM_DATA_REG, &read_command->cmd, 6);
++
++// FF start
++	// outsw(GDROM_DATA_REG, &read_command->cmd, 6);
++	const u16 *p = (void *) read_command->cmd;
++	int i;
++
++	for (i = 0; i < 6; i++)
++		__raw_writew(p[i], GDROM_DATA_REG);
++
++// FF end
+ 	timeout = jiffies + HZ / 2;
+ 	/* Wait for any pending DMA to finish */
+ 	while (__raw_readb(GDROM_DMA_STATUS_REG) &&
