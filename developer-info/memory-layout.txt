@@ -1,0 +1,21 @@
+
+8C002000	Linux Kernel		not sure what that means, comes from sh-elf-readelf -a vmlinux
+		Entry Point		
+					
+8C008000	IP.BIN			DC deault Bootloader entry
+8C010000	1ST_READ.BIN		DC default entrypoint
+ .					sh-boot entry, copies data to BOOT_LINK_OFFSET 8C600000
+ .					sh-boot/tools/dreamcast/kernel-boot.S
+ .
+ .
+8C510000 	end of 1ST_READ.BIN	binary ends about here for around 5 MB
+ .
+8C600000        zImage/vmlinux         	Linux Relocation address in sh-boot kernel-boot.S L_entry 
+ .                               	arch/sh/boot/compressed/head_32.S
+ .
+ .
+ .
+ .
+8CD80000	end of vmlinux		Linux kernel ends around here for uncompressed 7.5 MB
+ .
+8CFFFFFF	End of memory

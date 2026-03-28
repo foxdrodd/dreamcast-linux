@@ -1,0 +1,5 @@
+
+
+/opt/toolchains/dc/bin/makeip -c DCLinux -g "Dreamcast Linux" -l tux.png -b 1ST_READ.BIN -a JUE IP.BIN 
+
+
