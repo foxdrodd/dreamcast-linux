@@ -11,7 +11,7 @@ Tested Devices, feel free to add PR to add your test device:
 
 | Medium | Revision                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
-| GDEMU  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network |
+| GDEMU, dcload-serial  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network |
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
 | dcload-serial  | HKT-3000, NTSC J, Ugo Denshi | :heavy_check_mark: Yes | framebuffer, serial console, (has no bba)  |
 | GDROM  | HKT-3030, PAL E, Rev. 1 |  | soon to be tested |
