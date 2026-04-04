@@ -1,75 +1,136 @@
+From 8017309b5468e58f621cc68e260824eaef3aea53 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 3 Apr 2026 23:24:55 +0200
+Subject: [PATCH] cdrom: gdrom: fix block I/O so ISO9660 mounts work again
 
-Experiments with the gdrom, to try mount an iso9660 while also booting from gdemu.
+The communication via outsw() and insw() doesn't work here, as it wants
+to talk directly to the MMIO register specified in GDROM_DATA_REG, but
+outsw() and insw() add the io_port_base P2SEG to it, so the call fails:
 
---- linux-6.19.10/drivers/cdrom/gdrom.c.vanilla	2026-03-28 18:54:44.131596378 +0100
-+++ linux-6.19.10/drivers/cdrom/gdrom.c	2026-03-28 18:41:22.855840796 +0100
-@@ -198,7 +198,17 @@
+        BUG: unable to handle kernel paging request at 405f7080
+        PC: [<8c28d5b4>] gdrom_spicommand+0x6c/0xb0
+
+This is fixed by using __raw_writew() / __raw_readw() like used in the
+rest of this driver, to communicate with GDROM_DATA_REG.
+
+The driver also never updated gendisk capacity from the media. Without
+the capacity, the block reads fail before reaching the request queue,
+which prevented ISO9660 mounts. Refresh the capacity from the TOC
+leadout in gdrom_bdops_open() so it checks the inserted media.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+Note: The change was tested on real Sega Dreamcast devices (PAL-E, NTSC-J)
+with physical GDROM discs and with GDEMU emulated discs. Before: error
+message and trace, after: able to mount and use the inserted medium.
+---
+ drivers/cdrom/gdrom.c | 49 +++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 45 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+index 4ba4dd06cbf4..0ae94c10c6f9 100644
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -171,6 +171,24 @@ static void gdrom_identifydevice(void *buf)
+ 		data[c] = __raw_readw(GDROM_DATA_REG);
+ }
+ 
++static void gdrom_fifo_readw(void *buf, unsigned int words)
++{
++	u16 *p = buf;
++	unsigned int i;
++
++	for (i = 0; i < words; i++)
++		p[i] = __raw_readw(GDROM_DATA_REG);
++}
++
++static void gdrom_fifo_writew(const void *buf, unsigned int words)
++{
++	const u16 *p = buf;
++	unsigned int i;
++
++	for (i = 0; i < words; i++)
++		__raw_writew(p[i], GDROM_DATA_REG);
++}
++
+ static void gdrom_spicommand(void *spi_string, int buflen)
+ {
+ 	short *cmd = spi_string;
+@@ -198,7 +216,7 @@ static void gdrom_spicommand(void *spi_string, int buflen)
  		gdrom_getsense(NULL);
  		return;
  	}
 -	outsw(GDROM_DATA_REG, cmd, 6);
-+
-+// FF start
-+	// outsw(GDROM_DATA_REG, cmd, 6);
-+        const u16 *p = cmd;
-+        int i;
-+
-+        for (i = 0; i < 6; i++)
-+                __raw_writew(p[i], GDROM_DATA_REG);
-+ 
-+// FF end
-+
++	gdrom_fifo_writew(cmd, 6);
  }
  
  
-@@ -282,7 +292,14 @@
+@@ -282,7 +300,7 @@ static int gdrom_readtoc_cmd(struct gdromtoc *toc, int session)
  		err = -EINVAL;
  		goto cleanup_readtoc;
  	}
 -	insw(GDROM_DATA_REG, toc, tocsize/2);
-+// FF
-+//	insw(GDROM_DATA_REG, toc, tocsize/2);
-+	u16 *p = (u16 *)toc;
-+	int i;
-+
-+	for (i = 0; i < tocsize / 2; i++)
-+		p[i] = __raw_readw(GDROM_DATA_REG);
-+// FF
++	gdrom_fifo_readw(toc, tocsize / 2);
  	if (gd.status & 0x01)
  		err = -EINVAL;
  
-@@ -433,7 +450,15 @@
+@@ -433,7 +451,7 @@ static int gdrom_getsense(short *bufstring)
  		GDROM_DEFAULT_TIMEOUT);
  	if (gd.pending)
  		goto cleanup_sense;
 -	insw(GDROM_DATA_REG, &sense, sense_command->buflen/2);
-+// FF
-+	// insw(GDROM_DATA_REG, &sense, sense_command->buflen/2);
-+	u16 *p = (u16 *)&sense;
-+	int i;
-+
-+	for (i = 0; i < sense_command->buflen / 2; i++)
-+		p[i] = __raw_readw(GDROM_DATA_REG);
-+// FF
-+
++	gdrom_fifo_readw(sense, sense_command->buflen / 2);
  	if (sense[1] & 40) {
  		pr_info("Drive not ready - command aborted\n");
  		goto cleanup_sense;
-@@ -612,7 +637,16 @@
+@@ -474,6 +492,27 @@ static const struct cdrom_device_ops gdrom_ops = {
+ 				  CDC_RESET | CDC_DRIVE_STATUS | CDC_CD_R,
+ };
+ 
++static int gdrom_update_capacity(void)
++{
++	sector_t cap;
++	int ret;
++
++	if (gdrom_drivestatus(gd.cd_info, CDSL_CURRENT) != CDS_DISC_OK) {
++		set_capacity(gd.disk, 0);
++		return -ENOMEDIUM;
++	}
++
++	ret = gdrom_readtoc_cmd(gd.toc, 0);
++	if (ret) {
++		set_capacity(gd.disk, 0);
++		return ret;
++	}
++
++	cap = (sector_t)get_entry_lba(gd.toc->leadout) * GD_TO_BLK;
++	set_capacity(gd.disk, cap);
++	return 0;
++}
++
+ static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
+ {
+ 	int ret;
+@@ -482,6 +521,8 @@ static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
+ 
+ 	mutex_lock(&gdrom_mutex);
+ 	ret = cdrom_open(gd.cd_info, mode);
++	if (!ret)
++		ret = gdrom_update_capacity();
+ 	mutex_unlock(&gdrom_mutex);
+ 	return ret;
+ }
+@@ -612,7 +653,7 @@ static blk_status_t gdrom_readdisk_dma(struct request *req)
  		cpu_relax();
  	gd.pending = 1;
  	gd.transfer = 1;
 -	outsw(GDROM_DATA_REG, &read_command->cmd, 6);
-+
-+// FF start
-+	// outsw(GDROM_DATA_REG, &read_command->cmd, 6);
-+	const u16 *p = (void *) read_command->cmd;
-+	int i;
-+
-+	for (i = 0; i < 6; i++)
-+		__raw_writew(p[i], GDROM_DATA_REG);
-+
-+// FF end
++	gdrom_fifo_writew(read_command->cmd, 6);
  	timeout = jiffies + HZ / 2;
  	/* Wait for any pending DMA to finish */
  	while (__raw_readb(GDROM_DMA_STATUS_REG) &&
+
+base-commit: 6de23f81a5e08be8fbf5e8d7e9febc72a5b5f27f
+-- 
+2.43.0
+
