@@ -11,8 +11,8 @@ Tested Devices, feel free to add PR to add your test device:
 
 | Medium | Revision                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
-| GDEMU, dcload-serial, dcload-ip  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network |
-| GDROM, dcload-serial  | HKT-3000, NTSC J, Ugo Denshi 670-14071E | :heavy_check_mark: Yes | framebuffer, serial console, (has no bba)  |
+| GDEMU, dcload-serial, dcload-ip  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network, gdrom |
+| GDROM, dcload-serial  | HKT-3000, NTSC J, Ugo Denshi 670-14071E | :heavy_check_mark: Yes | framebuffer, serial console, network, gdrom  |
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 | :x: No | stays at sega screen  |
 | GDROM  | HKT-3030, PAL E, Rev. 1 |  | soon to be tested |
 | GDROM  | HKT-3020, NTSC U, Rev. 1 |  | soon to be tested  |
@@ -48,6 +48,7 @@ I use kernel-integrated initramfs and not the sh-boot initrd. The path to the in
 ```
 dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-dreamcast-*.patch
 dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-vmu*.patch
+dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-gdrom*.patch
 ```
 
 ## About
