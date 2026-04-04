@@ -1,3 +1,10 @@
+The memory spacing and size of the kernel image is very important in the DC
+as we need to consider the constraints, so we need to be careful, to not overwrite
+ourselfs, when extracting the image.
+
+TODO: Put the uncompressed image at the right place, and don't depend on
+sh-boot to copy the image somewhere and prevent the decompression.
+
 
 8C002000	Linux Kernel		not sure what that means, comes from sh-elf-readelf -a vmlinux
 		Entry Point		
