@@ -223,6 +223,7 @@ pushd dreamcast
 devtmpfs /dev devtmpfs rw,nosuid,mode=755 0 0
 proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
 sysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0
+#/dev/gdrom /media iso9660 ro 0 0
 EOF
 
   cat <<EOF > ${INITRD}/etc/init.d/rcS
@@ -282,6 +283,7 @@ EOF
   # Finalize
   #
   pushd /opt/build
+# just use mkdcdisc
 
     ./scramble kernel-boot.bin 1ST_READ.BIN || exit 1
 # cp kernel-boot.bin 1ST_READ.BIN # try without scrambling
