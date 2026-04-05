@@ -1,6 +1,8 @@
 # Dreamcast Linux
 
-This is a docker environment that builds a mainline linux distro that is bootable on the Sega Dreamcast. The latest bootable CDI image can be found under the Releases.
+This is a docker environment that builds a mainline linux distro that is bootable on the Sega Dreamcast. 
+
+The latest bootable CDI image can be found under the [Releases](https://github.com/foxdrodd/dreamcast-linux/releases/latest).
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). 
 
