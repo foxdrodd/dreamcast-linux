@@ -1,81 +1,89 @@
-From f4cbdf1291ad45e95f0249de38745677ceae494f Mon Sep 17 00:00:00 2001
+From 4875a56ebac0ddba0099df8ea3c2ccf3476460ae Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Fri, 3 Apr 2026 23:24:55 +0200
-Subject: [PATCH] cdrom: gdrom: fix block I/O so ISO9660 mounts work
+Subject: [PATCH v3 1/3] cdrom: gdrom: replace port I/O with MMIO accessors
 
 GDROM_DATA_REG is a memory-mapped data register, but the driver uses
 outsw() and insw() only for this register. Replace this with local
 helpers using MMIO accessors ioread16_rep() / iowrite16_rep().
 
 Before, it oopsed accessing the data register, as the io_port_base
-P2SEG gets added to the argument in outsw() / insw():
+P2SEG gets added to the argument in outsw() / insw(), which leads to an
+unusable drive:
 
         BUG: unable to handle kernel paging request at 405f7080
         PC: [<8c28d5b4>] gdrom_spicommand+0x6c/0xb0
 
-The driver also never updated gendisk capacity from the media. Without
-the capacity, the block reads fail before reaching the request queue,
-which prevented ISO9660 mounts. Refresh the capacity from the TOC
-leadout in gdrom_bdops_open() so it checks the inserted media.
-
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
-Note: The change was tested on real Sega Dreamcast devices (PAL-E, NTSC-J)
-with physical GDROM discs and with GDEMU emulated discs. Before: error
-message and trace, after: able to mount and use the inserted medium.
----
- drivers/cdrom/gdrom.c | 41 +++++++++++++++++++++++++++++++++++++----
- 1 file changed, 37 insertions(+), 4 deletions(-)
+ drivers/cdrom/gdrom.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
-index 4ba4dd06cbf4..97e7139706f0 100644
+index 4ba4dd06cbf4..89938d9b2825 100644
 --- a/drivers/cdrom/gdrom.c
 +++ b/drivers/cdrom/gdrom.c
-@@ -171,6 +171,16 @@ static void gdrom_identifydevice(void *buf)
- 		data[c] = __raw_readw(GDROM_DATA_REG);
- }
- 
-+static void gdrom_fifo_readw(void *buf, unsigned int words)
-+{
-+	ioread16_rep((void __iomem *)GDROM_DATA_REG, buf, words);
-+}
-+
-+static void gdrom_fifo_writew(const void *buf, unsigned int words)
-+{
-+	iowrite16_rep((void __iomem *)GDROM_DATA_REG, buf, words);
-+}
-+
- static void gdrom_spicommand(void *spi_string, int buflen)
- {
- 	short *cmd = spi_string;
-@@ -198,7 +208,7 @@ static void gdrom_spicommand(void *spi_string, int buflen)
+@@ -198,7 +198,7 @@ static void gdrom_spicommand(void *spi_string, int buflen)
  		gdrom_getsense(NULL);
  		return;
  	}
 -	outsw(GDROM_DATA_REG, cmd, 6);
-+	gdrom_fifo_writew(cmd, 6);
++	writesw((void __iomem *)GDROM_DATA_REG, (void *)cmd, 6);
  }
  
  
-@@ -282,7 +292,7 @@ static int gdrom_readtoc_cmd(struct gdromtoc *toc, int session)
+@@ -282,7 +282,7 @@ static int gdrom_readtoc_cmd(struct gdromtoc *toc, int session)
  		err = -EINVAL;
  		goto cleanup_readtoc;
  	}
 -	insw(GDROM_DATA_REG, toc, tocsize/2);
-+	gdrom_fifo_readw(toc, tocsize / 2);
++	readsw((void __iomem *)GDROM_DATA_REG, toc, tocsize / 2);
  	if (gd.status & 0x01)
  		err = -EINVAL;
  
-@@ -433,7 +443,7 @@ static int gdrom_getsense(short *bufstring)
+@@ -433,7 +433,7 @@ static int gdrom_getsense(short *bufstring)
  		GDROM_DEFAULT_TIMEOUT);
  	if (gd.pending)
  		goto cleanup_sense;
 -	insw(GDROM_DATA_REG, &sense, sense_command->buflen/2);
-+	gdrom_fifo_readw(sense, sense_command->buflen / 2);
++	readsw((void __iomem *)GDROM_DATA_REG, &sense, sense_command->buflen / 2);
  	if (sense[1] & 40) {
  		pr_info("Drive not ready - command aborted\n");
  		goto cleanup_sense;
-@@ -474,6 +484,27 @@ static const struct cdrom_device_ops gdrom_ops = {
+@@ -612,7 +612,7 @@ static blk_status_t gdrom_readdisk_dma(struct request *req)
+ 		cpu_relax();
+ 	gd.pending = 1;
+ 	gd.transfer = 1;
+-	outsw(GDROM_DATA_REG, &read_command->cmd, 6);
++	writesw((void __iomem *)GDROM_DATA_REG, (void *)read_command->cmd, 6);
+ 	timeout = jiffies + HZ / 2;
+ 	/* Wait for any pending DMA to finish */
+ 	while (__raw_readb(GDROM_DMA_STATUS_REG) &&
+
+base-commit: 6de23f81a5e08be8fbf5e8d7e9febc72a5b5f27f
+-- 
+2.43.0
+
+From 531a05a924e80b17b29e734020aa340767c70646 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 4 Apr 2026 22:16:07 +0200
+Subject: [PATCH v3 2/3] cdrom: gdrom: update gendisk capacity on open
+
+Update the gendisk capacity of the media. Without the capacity, the block
+reads fail before reaching the request queue, which prevented ISO9660
+mounts. Refresh the capacity from the TOC leadout in gdrom_bdops_open()
+so it checks the inserted media.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ drivers/cdrom/gdrom.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+index 89938d9b2825..e1dc94007d32 100644
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -474,6 +474,25 @@ static const struct cdrom_device_ops gdrom_ops = {
  				  CDC_RESET | CDC_DRIVE_STATUS | CDC_CD_R,
  };
  
@@ -88,13 +96,11 @@ index 4ba4dd06cbf4..97e7139706f0 100644
 +		set_capacity(gd.disk, 0);
 +		return -ENOMEDIUM;
 +	}
-+
 +	ret = gdrom_readtoc_cmd(gd.toc, 0);
 +	if (ret) {
 +		set_capacity(gd.disk, 0);
 +		return ret;
 +	}
-+
 +	cap = (sector_t)get_entry_lba(gd.toc->leadout) * GD_TO_BLK;
 +	set_capacity(gd.disk, cap);
 +	return 0;
@@ -103,7 +109,7 @@ index 4ba4dd06cbf4..97e7139706f0 100644
  static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
  {
  	int ret;
-@@ -482,6 +513,8 @@ static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
+@@ -482,6 +501,8 @@ static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
  
  	mutex_lock(&gdrom_mutex);
  	ret = cdrom_open(gd.cd_info, mode);
@@ -112,17 +118,51 @@ index 4ba4dd06cbf4..97e7139706f0 100644
  	mutex_unlock(&gdrom_mutex);
  	return ret;
  }
-@@ -612,7 +645,7 @@ static blk_status_t gdrom_readdisk_dma(struct request *req)
- 		cpu_relax();
- 	gd.pending = 1;
- 	gd.transfer = 1;
--	outsw(GDROM_DATA_REG, &read_command->cmd, 6);
-+	gdrom_fifo_writew(read_command->cmd, 6);
- 	timeout = jiffies + HZ / 2;
- 	/* Wait for any pending DMA to finish */
- 	while (__raw_readb(GDROM_DMA_STATUS_REG) &&
+-- 
+2.43.0
 
-base-commit: 6de23f81a5e08be8fbf5e8d7e9febc72a5b5f27f
+From f51e27d4927e41c3c1e15899a2706e8088a32018 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 8 Apr 2026 20:09:28 +0200
+Subject: [PATCH v3 3/3] Also work if continuous umount/mount
+
+---
+ drivers/cdrom/gdrom.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+index e1dc94007d32..599467e8f64a 100644
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -354,7 +354,17 @@ static int gdrom_get_last_session(struct cdrom_device_info *cd_info,
+ static int gdrom_open(struct cdrom_device_info *cd_info, int purpose)
+ {
+ 	/* spin up the disk */
+-	return gdrom_preparedisk_cmd();
++	int err = gdrom_preparedisk_cmd();
++	/*
++	* Retry on UNIT_ATTENTION
++	*/
++	if (err) {
++		err = gdrom_preparedisk_cmd();
++		printk(KERN_ERR "Did retry on prepare disk!");
++	}
++
++	return err;
++
+ }
+ 
+ /* this function is required even if empty */
+@@ -371,6 +381,9 @@ static int gdrom_drivestatus(struct cdrom_device_info *cd_info, int ignore)
+ 		return CDS_DISC_OK;
+ 	if (sense == 0x20)
+ 		return CDS_DRIVE_NOT_READY;
++	if (sense == 0x60)
++		return CDS_TRAY_OPEN;
++
+ 	/* default */
+ 	return CDS_NO_INFO;
+ }
 -- 
 2.43.0
 
