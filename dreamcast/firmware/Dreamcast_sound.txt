@@ -1,0 +1,18 @@
+SOUND ON THE SEGA DREAMCAST
+
+The Sega Dreamcast includes a ARM7 processor that seperately handles sound
+playback. The ARM7 processor has its own address space which is only partially
+accessible to the main SH4 processor.
+
+The ALSA driver loads data to the ARM7 address space using DMA (which will
+run at a good speed). The old OSS driver did not use DMA and so showed
+very poor performance at high bit rates.
+
+The driver also loads some simple firmware (seperately licenced under a 
+modified BSD licence) which controls the ARM7 processor. Without the 
+firmware the driver would merely fill the ARM7's address space and would 
+not playback any sound.
+
+The firmware, by default, should be loaded to /lib/firmware/ and should
+be named aica_firmware.bin.
+

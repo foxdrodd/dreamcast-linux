@@ -1,6 +1,7 @@
 #
 # Dreamcast Linux Dockerfile
 # Author: Anders Evenrud <andersevenrud@gmail.com>
+# Customized: Florian Fuchs
 #
 FROM debian:latest
 
@@ -22,10 +23,12 @@ COPY build-dreamcast.sh \
   kernel.config \
   busybox.config \
   chroot.sh \
+  sh-boot-20010831-1455.tar.gz hello \
   sh-boot-20010831-1455.diff \
   sh-boot-20010831-1455-sh4.diff \
-  hello sh-boot-20010831-1455.tar.gz \
   /usr/src/
+
+COPY firmware/aica_firmware.bin /usr/src/dreamcast
 WORKDIR /usr/src
 
 # Runtime

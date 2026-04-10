@@ -218,12 +218,17 @@ pushd dreamcast
     mknod ${INITRD}/dev/console c 5 1
   fi
 
+# Edit the fstab, inittab if you don't have a userland distro in the GDROM!
+# (just oncomment the gdrom, overlay mounts and so on..)
+# Or if you just want to use the small busybox image.
+
   mkdir -p ${INITRD}/{etc/init.d,proc,sys}
   cat <<EOF > ${INITRD}/etc/fstab
 devtmpfs /dev devtmpfs rw,nosuid,mode=755 0 0
 proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
 sysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0
-#/dev/gdrom /media iso9660 ro 0 0
+/dev/gdrom /media iso9660 ro 0 0
+overlay /run/overlay-root overlay rw,relatime,lowerdir=/media,upperdir=/run/overlay-rw/upper,workdir=/run/overlay-rw/work,redirect_dir=nofollow,uuid=null 0 0
 EOF
 
   cat <<EOF > ${INITRD}/etc/init.d/rcS
@@ -233,8 +238,22 @@ EOF
 
   cat <<EOF > ${INITRD}/etc/inittab
 ::sysinit:/etc/init.d/rcS
-console::askfirst:/bin/sh
-tty0::askfirst:/bin/sh
+console::askfirst:/chroot.sh
+tty0::askfirst:/chroot.sh
+EOF
+
+cat <<EOF > ${INITRD}/chroot.sh
+#!/bin/sh
+# chroot to the userland of dclinux
+
+cd /run/overlay-root/
+mount -o bind /dev dev
+mount -o bind /proc proc
+mount -o bind /sys sys
+mkdir /dev/pts
+mount -vt devpts devpts /dev/pts
+mount -o bind /dev/pts/ dev/pts
+chroot . /bin/mksh
 EOF
 
 
@@ -261,7 +280,7 @@ EOF
 
   pushd linux-${LINUX_VERSION}
 #    make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
-     make ARCH=sh CROSS_COMPILE=sh4-linux- -j24 zImage
+     make W=1 ARCH=sh CROSS_COMPILE=sh4-linux- -j24 zImage
   popd
  fi
 

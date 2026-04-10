@@ -1,0 +1,2 @@
+Original file can be obtained from the alsa project:
+https://www.alsa-project.org/files/pub/firmware/alsa-firmware-1.2.4.tar.bz2
