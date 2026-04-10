@@ -250,7 +250,11 @@ cd /run/overlay-root/
 mount -o bind /dev dev
 mount -o bind /proc proc
 mount -o bind /sys sys
-mkdir /dev/pts
+
+if [ ! -e /dev/pts ]; then
+	mkdir /dev/pts
+fi
+
 mount -vt devpts devpts /dev/pts
 mount -o bind /dev/pts/ dev/pts
 chroot . /bin/mksh
