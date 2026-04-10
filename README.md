@@ -6,7 +6,7 @@ The latest bootable CDI image can be found under the [Releases](https://github.c
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). 
 
-The "base-busybox" image contains only the kernel+initrd with a minimal busybox shell, capable of NFS/GDROM mounts and more. The "with-userland" image contains a full distribution on the GDROM with all of the latest software I could find for now, still an area of improvement, to get more cool apps, also the memory use can be improved.
+The "base-busybox" image contains only the kernel+initrd with a minimal busybox shell, capable of NFS/GDROM mounts and more. The "with-userland" image contains a full distribution on the GDROM, mounted with overlayfs, with all of the latest software I could find for now, still an area of improvement, to get more cool apps, also the memory use can be improved.
 The build-process is currently a bit sophisticated, meaning its not really reproducible right know, like the patches not applied automatically.
 
 Tested Devices, feel free to add PR to add your test device:
