@@ -22,8 +22,10 @@ for i in "${!userland[@]}"; do
 	iso=linux-$linux_version-with-userland-$i
 	genisoimage -l -r -C 0,11702 -G IP.BIN -o $iso.iso 1ST_READ.BIN ${userland[$i]}
 	/opt/toolchains/dc/bin/cdi4dc $iso.iso $iso.cdi
+	zstd $iso.cdi -o $iso.cdi.zst
 done
 
 cp linux616.cdi linux-$linux_version-base-busybox.cdi
+zstd 1ST_READ.BIN -o 1ST_READ.BIN.zst
 
 cd ..
