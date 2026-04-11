@@ -1,13 +1,14 @@
 # Dreamcast Linux
 
-This is a full Linux distribution for the Sega Dreamcast and a docker environment that builds a minimal linux distro that is bootable on the Sega Dreamcast. 
+Dreamcast Linux is a full Linux distribution for the Sega Dreamcast, with a Docker-based build environment for producing a minimal bootable Dreamcast Linux system.
 
-The latest bootable CDI image can be found under the [Releases](https://github.com/foxdrodd/dreamcast-linux/releases/latest).
+See the [latest release](https://github.com/foxdrodd/dreamcast-linux/releases/latest) for the available bootable CDI images:
+- `base-busybox`: kernel + initrd with a minimal BusyBox shell, supporting NFS, GD-ROM mounts, and more
+- `with-userland`: full system with about 140 packages on GD-ROM, mounted via overlayfs. Available as musl or uclibc builds.
+
+The image already includes a usable and up-to-date software stack, but application coverage, graphical interfaces, memory usage, and build reproducibility still need work. The patches are currently applied manually.
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). 
-
-The "base-busybox" image contains only the kernel+initrd with a minimal busybox shell, capable of NFS/GDROM mounts and more. The "with-userland" image contains a full distribution on the GDROM, mounted with overlayfs, with all of the latest software I could find for now, still an area of improvement, to get more cool apps, also the memory use can be improved.
-The build-process is currently a bit sophisticated, meaning its not really reproducible right know, like the patches not applied automatically.
 
 Tested Devices, feel free to add PR to add your test device:
 
