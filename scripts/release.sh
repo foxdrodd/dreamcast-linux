@@ -25,7 +25,7 @@ for i in "${!userland[@]}"; do
 	zstd $iso.cdi -o $iso.cdi.zst
 done
 
-cp linux616.cdi linux-$linux_version-base-busybox.cdi
+zstd linux616.cdi -o linux-$linux_version-base-busybox.cdi.zst
 zstd 1ST_READ.BIN -o 1ST_READ.BIN.zst
 
 cd ..
