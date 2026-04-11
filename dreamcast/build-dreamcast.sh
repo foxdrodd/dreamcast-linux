@@ -22,7 +22,7 @@ GDB_VERSION="17.1"
 GLIBC_VERSION="2.42"
 #LINUX_VERSION="5.2"
 LINUX_VERSION_1="6.x"
-LINUX_VERSION="6.19.11"
+LINUX_VERSION="6.19.12"
 BUSYBOX_VERSION="1.37.0"
 
 # Globals
@@ -244,20 +244,24 @@ EOF
 
 cat <<EOF > ${INITRD}/chroot.sh
 #!/bin/sh
-# chroot to the userland of dclinux
+# chroot to the userland of dclinux or start only shell.
 
-cd /run/overlay-root/
-mount -o bind /dev dev
-mount -o bind /proc proc
-mount -o bind /sys sys
-
-if [ ! -e /dev/pts ]; then
-	mkdir /dev/pts
+if [ ! -e /media/etc/os-release ]; then
+	/bin/sh
+else
+	cd /run/overlay-root/
+	mount -o bind /dev dev
+	mount -o bind /proc proc
+	mount -o bind /sys sys
+	
+	if [ ! -e /dev/pts ]; then
+		mkdir /dev/pts
+	fi
+	
+	mount -vt devpts devpts /dev/pts
+	mount -o bind /dev/pts/ dev/pts
+	chroot . /bin/mksh
 fi
-
-mount -vt devpts devpts /dev/pts
-mount -o bind /dev/pts/ dev/pts
-chroot . /bin/mksh
 EOF
 
 
