@@ -1,0 +1,178 @@
+# --- T2-COPYRIGHT-BEGIN ---
+# t2/target/generic/pkgsel/20-base.in
+# Copyright (C) 2004 - 2026 The T2 SDE Project
+# SPDX-License-Identifier: GPL-2.0
+# --- T2-COPYRIGHT-END ---
+
+# TITLE: Base package selection
+
+# reuse the bootstrap
+include target/generic/pkgsel/10-bootstrap.in
+
+X tzdata
+X dhcp
+X dialog
+X bzip2
+X xz
+X lzo
+X lzip
+X cron
+X disktype
+O embutils
+X expat
+X fget
+X ipconfig
+O gdb # termios not found
+O groff
+O iproute2
+O iptables
+O dosfstools
+#X reiserfsprogs
+O ntfsprogs
+O btrfs-progs
+X squashfs-tools
+X inih
+X liburcu
+O xfsprogs
+O jfsutils
+X libaio
+O lvm2
+X libgpg-error
+X json-c
+X libgcrypt
+O cryptsetup
+O iw
+O wpa_supplicant
+X libnl
+X kbd
+X less
+X libelf
+O linux
+O linux-firmware
+O intel-microcode
+O memtest86
+X gdbm
+X libpipeline
+O man
+O man-pages
+X minised
+O kmod
+X nghttp2
+X iputils
+#X netkit-telnet
+#X netcat
+X net-tools
+X tcp_wrappers
+X rpcbind
+X rpcsvc-proto
+X libtirpc
+X nfs-utils
+X ed
+X vim
+X openssh
+O wireguard-tools
+X ca-certificates
+X xxhash
+X rsync
+X pam
+X libpcap
+X ppp
+X procps
+X sysstat
+X psmisc
+O hwdata
+X pciutils
+X sharutils
+O libusb
+O usbutils
+O pcmciautils
+X libevent
+X shadow
+X strace
+X sysfsutils
+X sysklogd
+X udev
+O watchdog
+#X perl-gettext
+O help2man
+X libatomic_ops
+
+# Subversion, to let people get T2 source
+X apr
+X apr-util
+X serf
+#X scons
+X sqlite
+X utf8proc
+X subversion
+
+# and let people create T2 ISOs and LiveCD/DVDs
+O cmake
+X libcap
+X libisofs
+O libburn
+O libisoburn
+X popt
+
+# Add architecture-specific-packages for booting
+O u-boot
+O aboot
+#X mac-fdisk
+O elftoaout
+O kboot
+X kexec-tools
+O dtc
+O m1n1
+O efivar
+O efibootmgr
+O palo
+#X elftoaout
+#X silo
+ROemile
+O parted
+
+# sysfiles split
+O mkinitrd
+
+# nice to have
+X libmnl
+X ethtool
+O smartmontools
+O sgutils
+O libnvme
+O nvme-cli
+X ntp
+O lm_sensors
+X stressapptest
+X tmux
+
+O llvm
+O clang
+O lld
+O cargo
+O rustc
+O rust-src
+= thin-provisioning-tools
+
+O go
+
+X t2-src
+
+# My custom Dreamcast Linux package additions:
+
+X fastfetch
+X neofetch
+X htop
+X btop
+X nextvi
+X tcpdump
+X iperf
+X screen
+X ircii
+X lynx
+X nfs-utils
+X tmux
+X mtd-utils
+X nano
+X mkfs.vmufat
+X netcat

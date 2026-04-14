@@ -1,0 +1,44 @@
+--- neofetch-7.1.0/neofetch.vanilla	2026-04-10 17:55:33.361156965 +0200
++++ neofetch-7.1.0/neofetch	2026-04-10 17:56:18.175000000 +0200
+@@ -9851,6 +9851,30 @@
+ EOF
+         ;;
+ 
++        "Dreamcast"*)
++            set_colors 1 7 3 4
++            read -rd '' ascii_data <<'EOF'
++${c1}           .:-=++*****+++=-:.           
++${c1}        .-+++=-::....::--=++*+=-.       
++${c1}     .-+*+-.                .-+**+:     
++${c1}   .=**-.    .:-=++++==-:.     .=**=.   
++${c1}  .+*=.   .-+*+=--:::-=+**+-.    :+*+.  
++${c1} :**-    -**=.          .:+**=.   .+**: 
++${c1}.+*=    +*+.  .-=++==-:    :+*+.   .**+.
++${c1}=**.   =*+   -**=::-=+*+-   .**+    -**=
++${c1}+*+    +*-  .**:      :**=   -**:    =++
++${c1}+*+    +*-   +*=:...   -**.  .**=       
++${c1}-**:   -*+.   -=++++.  -**.   +*+       
++${c1} +*+    =*+:          :+*=    +*+       
++${c1} .+*=    -+*+=-::::-=+*+:    -**-       
++${c1}  .+*+:    .-==+++==-:     .=**-        
++${c1}    :+*+-.              .-=**=.         
++${c1}      :=+*++=-:::::::-=+*+=-.           
++${c1}         .:-=++*****++=-:               
++EOF
++        ;;
++
++
+         "openSUSE Tumbleweed"* | "openSUSE_Tumbleweed"*)
+             set_colors 2 7
+             read -rd '' ascii_data <<'EOF'
+--- neofetch/neofetch.vanilla	2026-04-10 17:58:32.505235533 +0200
++++ neofetch/neofetch	2026-04-10 17:58:38.173000000 +0200
+@@ -1503,8 +1503,6 @@
+             has sorcery    && tot gaze installed
+             has alps       && tot alps showinstalled
+             has butch      && tot butch list
+-            has mine       && tot mine -q
+-            has bize       && tot bize -q
+ 
+             # Counting files/dirs.
+             # Variables need to be unquoted here. Only Bedrock Linux is affected.

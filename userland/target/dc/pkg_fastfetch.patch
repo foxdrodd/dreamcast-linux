@@ -1,0 +1,40 @@
+--- fastfetch-2.61.0/src/logo/ascii/dclinux.txt.vanilla	2026-04-10 17:01:44.410141221 +0200
++++ fastfetch-2.61.0/src/logo/ascii/dclinux.txt	2026-04-10 17:02:13.908358218 +0200
+@@ -0,0 +1,17 @@
++            .:-=++*****+++=-:.           
++         .-+++=-::....::--=++*+=-.       
++      .-+*+-.                .-+**+:     
++    .=**-.    .:-=++++==-:.     .=**=.   
++   .+*=.   .-+*+=--:::-=+**+-.    :+*+.  
++  :**-    -**=.          .:+**=.   .+**: 
++ .+*=    +*+.  .-=++==-:    :+*+.   .**+.
++ =**.   =*+   -**=::-=+*+-   .**+    -**=
++ +*+    +*-  .**:      :**=   -**:    =++
++ +*+    +*-   +*=:...   -**.  .**=       
++ -**:   -*+.   -=++++.  -**.   +*+       
++  +*+    =*+:          :+*=    +*+       
++  .+*=    -+*+=-::::-=+*+:    -**-       
++   .+*+:    .-==+++==-:     .=**-        
++     :+*+-.              .-=**=.         
++       :=+*++=-:::::::-=+*+=-.           
++          .:-=++*****++=-:               
+--- fastfetch-2.61.0/src/logo/builtin.c.vanilla	2026-04-10 18:12:15.680959054 +0200
++++ fastfetch-2.61.0/src/logo/builtin.c	2026-04-10 18:12:28.967347041 +0200
+@@ -1514,6 +1514,17 @@
+         .colorKeys = FF_COLOR_FG_RED,
+         .colorTitle = FF_COLOR_FG_DEFAULT,
+     },
++    // Dreamcast Linux
++    {
++        .names = {"Dreamcast Linux", "dclinux"},
++        .lines = FASTFETCH_DATATEXT_LOGO_DCLINUX,
++        .colors = {
++            FF_COLOR_FG_RED,
++            FF_COLOR_FG_WHITE,
++            FF_COLOR_FG_YELLOW,
++            FF_COLOR_FG_BLUE,
++        },
++    },
+     // Droidian
+     {
+         .names = {"Droidian"},

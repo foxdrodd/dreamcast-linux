@@ -1,0 +1,65 @@
+# --- T2-COPYRIGHT-BEGIN ---
+# t2/target/generic/pkgsel/10-bootstrap.in
+# Copyright (C) 2007 - 2026 The T2 SDE Project
+# SPDX-License-Identifier: GPL-2.0
+# --- T2-COPYRIGHT-END ---
+
+# TITLE: Bootstrap package selection
+
+# reuse the toolchain
+include target/generic/pkgsel/00-toolchain.in
+
+# Add strictly required packages
+X autoconf
+X autoconf-archive
+X automake
+X bash
+X bc
+X bison
+X cpio
+X openssl
+X curl
+X mksh
+X diffutils
+X file
+X coreutils
+X findutils
+X flex
+X gawk
+X gettext
+X grep
+X gzip
+X bzip2
+X zstd
+X unzip
+X keyutils
+X libtool
+X linux-header
+X m4
+X make
+#X meson
+#X ninja
+X bize
+X ncurses
+X patch
+X libffi
+#X python
+#X perl
+#X perl-xml-parser
+X glib
+X pcre2
+X libxml
+X pkgconfig
+X readline
+X sed
+#X setuptools
+X sysfiles
+X tar
+X texinfo
+X time
+X e2fsprogs
+X util-linux
+X zlib
+
+X stone
+X rocknet
