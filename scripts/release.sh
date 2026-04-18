@@ -23,6 +23,8 @@ for i in "${!userland[@]}"; do
 	genisoimage -l -r -C 0,11702 -G IP.BIN -o $iso.iso 1ST_READ.BIN ${userland[$i]}
 	/opt/toolchains/dc/bin/cdi4dc $iso.iso $iso.cdi
 	zstd $iso.cdi -o $iso.cdi.zst
+	usrland=linux-$linux_version-userland-$i
+	zstd ${userland[$i]} -o $usrland-userland.zst
 done
 
 zstd linux616.cdi -o linux-$linux_version-base-busybox.cdi.zst
