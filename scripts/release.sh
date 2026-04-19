@@ -29,5 +29,6 @@ done
 
 zstd linux616.cdi -o linux-$linux_version-base-busybox.cdi.zst
 zstd 1ST_READ.BIN -o 1ST_READ.BIN.zst
+zstd kernel-boot.bin -o kernel-boot.bin.zst
 
 cd ..
