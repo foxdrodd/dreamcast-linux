@@ -260,7 +260,7 @@ else
 	
 	mount -vt devpts devpts /dev/pts
 	mount -o bind /dev/pts/ dev/pts
-	chroot . /bin/mksh
+	script -qc "chroot . /bin/mksh" /dev/null
 fi
 EOF
 

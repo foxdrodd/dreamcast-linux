@@ -16,5 +16,4 @@ mkdir /dev/pts
 mount -vt devpts devpts /dev/pts
 mount -o bind /dev/pts/ dev/pts
 
-chroot . /bin/bash
-
+script -qc "chroot . /bin/bash" /dev/null
