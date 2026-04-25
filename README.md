@@ -6,6 +6,8 @@ See the [latest release](https://github.com/foxdrodd/dreamcast-linux/releases/la
 - `base-busybox`: kernel + initrd with a minimal BusyBox shell, supporting NFS, GD-ROM mounts, and more
 - `with-userland`: full system with about 140 packages on GD-ROM, mounted via overlayfs. Available as musl or uclibc builds.
 - `userland`: contains only the userland files
+- `kernel-boot.bin`: plain executable, that can be loaded with `dcload-serial`
+- `1ST_READ.BIN`: scrambled executable, that can be used to burn a custom CD
 
 The image already includes a usable and up-to-date software stack, but application coverage, graphical interfaces, memory usage, and build reproducibility still need work. The patches are currently applied manually.
 
