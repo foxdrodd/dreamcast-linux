@@ -178,3 +178,6 @@ X mkfs.vmufat
 X netcat
 X wget
 X lrzsz
+X alsa-lib
+X alsa-utils
+X argp
