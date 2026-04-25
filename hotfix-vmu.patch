@@ -39,16 +39,6 @@ diff --git a/include/linux/maple.h b/include/linux/maple.h
 index 3be4e567473c..a5e62bcb7e16 100644
 --- a/include/linux/maple.h
 +++ b/include/linux/maple.h
-@@ -4,8 +4,6 @@
- 
- #include <mach/maple.h>
- 
--struct device;
--
- /* Maple Bus command and response codes */
- enum maple_code {
- 	MAPLE_RESPONSE_FILEERR =	-5,
--- 
 2.43.0
 
 From 9a8a6b675c5c11fd3466a3dd69e9601374824801 Mon Sep 17 00:00:00 2001
@@ -69,64 +59,39 @@ Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 
 diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
 index 234cc9ecaa01..bd5903c8610d 100644
---- a/drivers/mtd/maps/vmu-flash.c
-+++ b/drivers/mtd/maps/vmu-flash.c
-@@ -610,7 +610,7 @@ static int vmu_connect(struct maple_device *mdev)
- 
- 	basic_flash_data = be32_to_cpu(mdev->devinfo.function_data[c - 1]);
- 
--	card = kmalloc(sizeof(struct memcard), GFP_KERNEL);
-+	card = kzalloc(sizeof(struct memcard), GFP_KERNEL);
- 	if (!card) {
- 		error = -ENOMEM;
- 		goto fail_nomem;
-@@ -628,14 +628,14 @@ static int vmu_connect(struct maple_device *mdev)
- 	* Not sure there are actually any multi-partition devices in the
- 	* real world, but the hardware supports them, so, so will we
- 	*/
--	card->parts = kmalloc_array(card->partitions, sizeof(struct vmupart),
-+	card->parts = kcalloc(card->partitions, sizeof(struct vmupart),
- 				    GFP_KERNEL);
- 	if (!card->parts) {
- 		error = -ENOMEM;
- 		goto fail_partitions;
- 	}
- 
--	card->mtd = kmalloc_array(card->partitions, sizeof(struct mtd_info),
-+	card->mtd = kcalloc(card->partitions, sizeof(struct mtd_info),
- 				  GFP_KERNEL);
- 	if (!card->mtd) {
- 		error = -ENOMEM;
--- 
-2.43.0
 
-From 459f6ff4610aa635b7107a409910a1c971f08e80 Mon Sep 17 00:00:00 2001
-From: Florian Fuchs <fuchsfl@gmail.com>
-Date: Wed, 12 Nov 2025 19:44:42 +0100
-Subject: [PATCH 3/3] mtd: maps: vmu-flash: Fix NULL pointer dereference in
- initialization
-
-The mtd_info contains a struct device, which must be linked to its
-parent. Without this, the initialization of the MTD fails with a NULL
-pointer dereference.
-
-Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
----
- drivers/mtd/maps/vmu-flash.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
-index bd5903c8610d..da7cd1bc131b 100644
---- a/drivers/mtd/maps/vmu-flash.c
-+++ b/drivers/mtd/maps/vmu-flash.c
-@@ -548,6 +548,7 @@ static void vmu_queryblocks(struct mapleq *mq)
+--- a/drivers/mtd/maps/vmu-flash.c	2026-04-22 13:32:23.000000000 +0200
++++ b/drivers/mtd/maps/vmu-flash.c	2026-04-25 17:38:22.028114853 +0200
+@@ -547,6 +548,7 @@
  	mpart->partition = card->partition;
  	mtd_cur->priv = mpart;
  	mtd_cur->owner = THIS_MODULE;
 +	mtd_cur->dev.parent = &mdev->dev;
  
- 	pcache = kzalloc(sizeof(struct vmu_cache), GFP_KERNEL);
+ 	pcache = kzalloc_obj(struct vmu_cache);
  	if (!pcache)
--- 
-2.43.0
-
+@@ -609,7 +611,7 @@
+ 
+ 	basic_flash_data = be32_to_cpu(mdev->devinfo.function_data[c - 1]);
+ 
+-	card = kmalloc_obj(struct memcard);
++	card = kzalloc_obj(struct memcard);
+ 	if (!card) {
+ 		error = -ENOMEM;
+ 		goto fail_nomem;
+@@ -627,13 +629,13 @@
+ 	* Not sure there are actually any multi-partition devices in the
+ 	* real world, but the hardware supports them, so, so will we
+ 	*/
+-	card->parts = kmalloc_objs(struct vmupart, card->partitions);
++	card->parts = kzalloc_objs(struct vmupart, card->partitions);
+ 	if (!card->parts) {
+ 		error = -ENOMEM;
+ 		goto fail_partitions;
+ 	}
+ 
+-	card->mtd = kmalloc_objs(struct mtd_info, card->partitions);
++	card->mtd = kzalloc_objs(struct mtd_info, card->partitions);
+ 	if (!card->mtd) {
+ 		error = -ENOMEM;
+ 		goto fail_mtd_info;
