@@ -21,16 +21,25 @@ for i in "${!userland[@]}"; do
 	sed -i 's/PRETTY.*/PRETTY_NAME="Dreamcast Linux ('$(date +%Y-%m-%d)')"/' ${userland[$i]}/etc/os-release
 	sed -i 's/VERSION=.*/VERSION="'$(date +%Y-%m-%d)'"/' ${userland[$i]}/etc/os-release
 	sed -i 's/VERSION_ID=.*/VERSION_ID="'$(date +%Y-%m-%d)'"/' ${userland[$i]}/etc/os-release
+	echo dreamcast > ${userland[$i]}/etc/hostname
+	sed -i '/# nameserver 1\.1/ s/^..//' ${userland[$i]}/etc/resolv.conf
+
+        echo PS1=\"root@dreamcast:\\\$PWD\\$ \" > ${userland[$i]}/etc/profile
+        echo "hostname dreamcast" >> ${userland[$i]}/etc/profile
+        echo flashfetch >> ${userland[$i]}/etc/profile
+
 	iso=linux-$linux_version-with-userland-$i
 	genisoimage -l -r -C 0,11702 -G IP.BIN -o $iso.iso 1ST_READ.BIN ${userland[$i]}
 	/opt/toolchains/dc/bin/cdi4dc $iso.iso $iso.cdi
-	zstd $iso.cdi -o $reldir/$iso.cdi.zst
+	zstd -f $iso.cdi -o $reldir/$iso.cdi.zst &
 	usrland=linux-$linux_version-userland-$i
-	tar --zstd -cf $reldir/$usrland.tar.zst -C ${userland[$i]} .
+	tar --zstd -cf $reldir/$usrland.tar.zst -C ${userland[$i]} . &
 done
 
-zstd linux616.cdi -o $reldir/linux-$linux_version-base-busybox.cdi.zst
-zstd 1ST_READ.BIN -o $reldir/1ST_READ.BIN.zst
-zstd kernel-boot.bin -o $reldir/kernel-boot.bin.zst
+zstd -f linux616.cdi -o $reldir/linux-$linux_version-base-busybox.cdi.zst &
+zstd -f 1ST_READ.BIN -o $reldir/1ST_READ.BIN.zst &
+zstd -f kernel-boot.bin -o $reldir/kernel-boot.bin.zst &
+
+wait
 
 cd ..

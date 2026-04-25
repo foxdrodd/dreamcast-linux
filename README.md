@@ -14,10 +14,10 @@ Tested Devices, feel free to add PR to add your test device:
 
 | Medium | Revision                 | Works                  | Description |
 | ------ | --------------------- | ---------------------- | -----------
-| GDEMU, dcload-serial, dcload-ip  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network, gdrom |
-| GDROM, dcload-serial  | HKT-3000, NTSC J, Ugo Denshi 670-14071E | :heavy_check_mark: Yes | framebuffer, serial console, network, gdrom  |
-| GDROM, dcload-serial  | HKT-3020, NTSC U, Rev. 1 (670-14081B) | :heavy_check_mark: Yes | framebuffer, serial console, gdrom   |
-| GDEMU  | HKT-3020, NTSC U, Rev. 1 (670-14081M) | :heavy_check_mark: Yes | framebuffer, serial console, network, gdrom   |
+| GDEMU, dcload-serial, dcload-ip  | HKT-3030, PAL E, Rev. 1 | :heavy_check_mark: Yes | framebuffer, serial console, network, VMU, gdrom |
+| GDROM, dcload-serial  | HKT-3000, NTSC J, Ugo Denshi 670-14071E | :heavy_check_mark: Yes | framebuffer, serial console, network, VMU, gdrom  |
+| GDROM, dcload-serial  | HKT-3020, NTSC U, Rev. 1 (670-14081B) | :heavy_check_mark: Yes | framebuffer, serial console, network, VMU, gdrom   |
+| GDEMU  | HKT-3020, NTSC U, Rev. 1 (670-14081M) | :heavy_check_mark: Yes | framebuffer, serial console, network, VMU, gdrom |
 | GDEMU  | HKT-3020, NTSC U, Rev. 1 (670-14081K) | :x: | stays at sega screen  |
 | GDROM  | HKT-3030, PAL E, Rev. 1 |  | soon to be tested |
 | CDI | GXemul 0.7.0+dfsg |  :x: No | `[ exception 0x160, pc=0x8c4abede vaddr=0x00000000  ]` see [gxemul-analyze.txt](debuggings/gxemul-analyze.txt) |
