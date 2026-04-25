@@ -1,0 +1,11 @@
+2003-10-15  Christian Berger  <c.berger@tu-braunschweig.de>
+
+	* mlcd.h: First public release.
+
+	* mlcd.c: First public release.
+	
+	* SEGA_VMU_Display.java: First public release.
+	
+	* BitBlock2Hex.java: First public release.
+	
+	* text2lcd.c: First public release.

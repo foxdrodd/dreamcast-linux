@@ -1,0 +1,57 @@
+This is a device driver for the SEGA LAN adapter (HIT-0300).
+
+Installation:
+
+You are here, so I'm assuming you know, what a toolchain is
+and you've set up yours for the Dreamcast.
+
+If you're ready, simply compile and install the driver with
+
+1.)	Copy the included patch in the root of your kernel source tree.
+
+2.)	Apply the patch:
+
+	patch -p1 < lan_adapter-VERSION.patch
+
+3.)	Configure your kernel:
+
+	make ARCH=sh CROSS_COMPILE=sh4-linux- menuconfig
+	
+	Choose CONFIG_LAN_ADAPTER in Networking Support --> CONFIG_NET
+	--> Ethernet (10 or 100Mbit) --> CONFIG_LAN_ADAPTER
+	
+	Choose either M for compiling as module or * for compiling direct
+	in the kernel.
+	
+4.)	Compile your kernel:
+
+	make ARCH=sh CROSS_COMPILE=sh4-linux- clean zImage
+	
+5.)	Optionally, compile the modules:
+
+	make ARCH=sh CROSS_COMPILE=sh4-linux- modules
+	
+6.)	Install the modules onto your initrd / CD-ROM image / whereever...
+
+	export INSTALL_MOD_PATH=$INITRD/lib/modules
+	
+	make ARCH=sh CROSS_COMPILE=sh4-linux- modules_install
+
+7.)	Boot your Dreamcast and load the driver, if you've compiled it 
+	as module:
+    
+	insmod lan_adapter.ko
+	
+	-Or, with debug messages-
+	
+	insmod lan_adapter.ko hit_debug=2
+	
+8.)	Setup up your *new* ethernet device:
+
+	ifconfig eth0 192.168.1.2 up
+	
+	Your device name should be the same, or did you plug in two HIT-0300 :-) ?
+
+Have fun!
+
+    Christian Berger <c.berger@tu-braunschweig.de>

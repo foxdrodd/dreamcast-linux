@@ -1,0 +1,59 @@
+This package contains the device driver for the SEGA VMU LCD Display and a
+userspace tool for transforming a string into a bitmapped font.
+
+Installation:
+
+You are here, so I'm assuming you know, what a toolchain is
+and you've set up yours for the Dreamcast.
+
+If you're ready, simply compile and install the driver with
+
+1.)	make all
+
+2.)	Copy mlcd.o and text2lcd onto your initrd / CD-ROM image / whereever...
+	or simply execute:
+
+	make INITRD=/my/dreamcast/initrd install
+
+3.)	Boot your Dreamcast and load the driver:
+
+	insmod mlcd.o
+
+	-Or, with debug messages-
+
+	insmod mlcd.o mlcd_debug=2
+
+4.)	Setup up the necessary device node:
+
+	/bin/mknod /dev/mlcd0 c 65 0
+
+5.)	Now, you're ready to use your SEGA VMU LCD Display. Simply plug in
+	your VMU and try the following command:
+
+	/usr/bin/text2lcd "HELLO WORLD" > /dev/mlcd0
+
+	and take a look on your SEGA VMU LCD Display.
+
+If you don't own a SEGA VMU LCD Display, you can simply use the
+SEGA VMU LCD Display emulator. Therefore, you need at least Java 1.3
+and follow these steps:
+
+1.)	make all_with_emulator
+
+2.)	Create a named pipe using the following command:
+
+	mkfifo DEV_MLCD
+
+3.)	Start the SEGA VMU LCD Display emulator using the following command:
+
+	java SEGA_VMU_Display DEV_MLCD
+
+4.) Now, you can test the userspace tool like
+
+	text2lcd_native "HALLO WORLD" > DEV_MLCD
+
+	You should see the string printed on the SEGA VMU LCD Display emulator.
+
+Have fun!
+
+    Christian Berger <c.berger@tu-braunschweig.de>

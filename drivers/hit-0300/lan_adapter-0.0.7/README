@@ -1,0 +1,35 @@
+This is a device driver for the SEGA LAN adapter (HIT-0300).
+
+Installation:
+
+You are here, so I'm assuming you know, what a toolchain is
+and you've set up yours for the Dreamcast.
+
+If you're ready, simply compile and install the driver with
+
+1.)	make all
+
+2.) 	Copy lan_adapter.o onto your initrd / CD-ROM image / whereever...
+
+3.)	Boot your Dreamcast and load the driver:
+    
+	insmod lan_adapter.o
+	
+	-Or, with debug messages-
+	
+	insmod lan_adapter.o hit_debug=2
+	
+4.)	Setup up your *new* ethernet device:
+
+	ifconfig eth0 192.168.1.2 up
+	
+	Your device name should be the same, or did you plug in two HIT-0300 :-) ?
+	
+
+A patch for recent kernels will (hopefully, I do my best :-) exist under
+
+http://www-public.tu-bs.de:8080/~y0018536/dc
+
+Have fun!
+
+    Christian Berger <c.berger@tu-braunschweig.de>

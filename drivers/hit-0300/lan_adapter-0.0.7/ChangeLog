@@ -1,0 +1,5 @@
+2003-02-28  Christian Berger  <c.berger@tu-braunschweig.de>
+
+	* lan_adapter.h: First public release.
+
+	* lan_adapter.c: First public release.
