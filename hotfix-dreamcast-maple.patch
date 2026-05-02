@@ -1,62 +1,98 @@
-From 01a12c6d9dbada4dd29180540817b1d125a9cca1 Mon Sep 17 00:00:00 2001
+From cb688aa11768f6d6fd7d97fbd729e4b05c7d75d6 Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
-Date: Wed, 12 Nov 2025 00:28:29 +0100
-Subject: [PATCH] sh: maple: fix empty port handling
+Date: Sun, 26 Apr 2026 19:20:27 +0200
+Subject: [PATCH v2] sh: maple: fix empty port handling
 
-Handle timeout response from empty ports of the maple bus to prevent a
-stuck maple_sentq and a blocked maple bus.
+Fix the handling of empty ports, to restore the ability to use the device
+with less than 4 populated ports and also be able to hot-plug new devices
+in empty ports at runtime.
 
-When only some ports are used, e.g. if only keyboard is connected and the
-other ports are empty, the device tends to timeout and return 0xff for
-the empty port. This needs to be handled, just like the
-MAPLE_RESPONSE_NONE response, to detect empty ports and to have usable
-peripherals, if not all of the ports are utilized. Previously, an empty
-port resulted in a never cleared maple_sentq which totally blocked the
-maple bus to be used.
+Explicitly cast the response code in maple_response_devinfo() to s8 so
+that 0xFF from the device gets interpreted as signed and flows like the
+NONE response, previously it was considered unknown response code, which
+blocked the maple bus.
+
+Remove the locking variable from maple_vblank_handler() as there is no
+locking information returned from maple_add_packet() and it lead to only
+ever check exactly one empty port.
+
+Update maple_response_devinfo() to explicitly check for empty ports on
+unit 0, to be able to hot-plug devices in empty ports.
 
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
-Note: This patch was tested on real Sega Dreamcast hardware and resulted
-in a usable keyboard, even when only 1 or 2 ports where populated. The
-hot-plugging of the keyboard does also work fine.
+v1->v2: Don't break hot-plugging of new devices to empty ports.
+	Explicitly cast the response code to s8 to use the existing
+	logic, that relies on signed chars. In the case of 0xff (all 1s,
+	DCs TIMEOUT response) that was interpreted as 255 unknown response
+	code, which blocked the maple bus, as busy was never reset. Add
+	condition to maple_response_devinfo() to process the devinfo 
+	for currently empty ports.
 
-The description of the timeout response can be obtained on the bottom of
-of the page: https://mc.pp.se/dc/maplebus.html: "If no response is
-received before the timeout, a word with all bits set (FFFFFFFF) is
-written at the Result address."
+v1: https://lore.kernel.org/all/20251112190444.3631533-1-fuchsfl@gmail.com/
 
- drivers/sh/maple/maple.c | 1 +
- include/linux/maple.h    | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+Note that the removal of peripherals is possible, the ports get marked as
+empty, but the driver is never detached. That means a peripheral can be
+removed, but the port keeps "reserved" for this peripheral and can't be
+reused with another peripheral.
+
+VMUs can't be removed at runtime, as MTD keeps a reference to it, so that
+mdev->can_unload() is never true. But the same peripheral can be
+inserted to the same port again.
+
+ drivers/sh/maple/maple.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/sh/maple/maple.c b/drivers/sh/maple/maple.c
-index 6dc0549f7900..3d6c716cfc98 100644
+index 5585f220e495..8e7bb42aef07 100644
 --- a/drivers/sh/maple/maple.c
 +++ b/drivers/sh/maple/maple.c
-@@ -649,6 +649,7 @@ static void maple_dma_handler(struct work_struct *work)
+@@ -445,7 +445,7 @@ static int setup_maple_commands(struct device *device, void *ignored)
+ /* VBLANK bottom half - implemented via workqueue */
+ static void maple_vblank_handler(struct work_struct *work)
+ {
+-	int x, locking;
++	int x;
+ 	struct maple_device *mdev;
+ 
+ 	if (!maple_dma_done())
+@@ -474,13 +474,10 @@ static void maple_vblank_handler(struct work_struct *work)
+ 				if (!mdev)
+ 					break;
+ 				atomic_set(&mdev->busy, 1);
+-				locking = maple_add_packet(mdev, 0,
++				maple_add_packet(mdev, 0,
+ 					MAPLE_COMMAND_DEVINFO, 0, NULL);
+-				if (!locking)
+-					break;
+-				}
+ 			}
+-
++		}
+ 		maple_pnp_time = jiffies + MAPLE_PNP_INTERVAL;
+ 	}
+ 
+@@ -578,7 +575,8 @@ static void maple_response_devinfo(struct maple_device *mdev,
+ 				   char *recvbuf)
+ {
+ 	char submask;
+-	if (!started || (scanning == 2) || !fullscan) {
++	if (!started || (scanning == 2) || !fullscan ||
++	    ((mdev->unit == 0) && empty[mdev->port])) {
+ 		if ((mdev->unit == 0) && (checked[mdev->port] == false)) {
+ 			checked[mdev->port] = true;
+ 			maple_attach_driver(mdev);
+@@ -644,7 +642,7 @@ static void maple_dma_handler(struct work_struct *work)
+ 			recvbuf = mq->recvbuf->buf;
+ 			__flush_invalidate_region(sh_cacheop_vaddr(recvbuf),
+ 					0x400);
+-			code = recvbuf[0];
++			code = (s8)recvbuf[0];
+ 			kfree(mq->sendbuf);
  			list_del_init(&mq->list);
  			switch (code) {
- 			case MAPLE_RESPONSE_NONE:
-+			case MAPLE_RESPONSE_TIMEOUT:
- 				maple_response_none(mdev);
- 				break;
- 
-diff --git a/include/linux/maple.h b/include/linux/maple.h
-index 3be4e567473c..4ae3cc6678a8 100644
---- a/include/linux/maple.h
-+++ b/include/linux/maple.h
-@@ -27,7 +27,8 @@ enum maple_code {
- 	MAPLE_COMMAND_BWRITE,
- 	MAPLE_COMMAND_BSYNC,
- 	MAPLE_COMMAND_SETCOND,
--	MAPLE_COMMAND_MICCONTROL
-+	MAPLE_COMMAND_MICCONTROL,
-+	MAPLE_RESPONSE_TIMEOUT = 255
- };
- 
- enum maple_file_errors {
 
-base-commit: 24172e0d79900908cf5ebf366600616d29c9b417
+base-commit: 6de23f81a5e08be8fbf5e8d7e9febc72a5b5f27f
 -- 
 2.43.0
 
