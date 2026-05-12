@@ -1,7 +1,7 @@
-From ed57d91a98dde1946413eddd684a9ba909d0fe85 Mon Sep 17 00:00:00 2001
+From 7b9c7fc14559ac322b1b94e07280be6bc5270354 Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
-Date: Thu, 23 Apr 2026 17:59:39 +0200
-Subject: [PATCH v3 0/3] cdrom: gdrom: fix block I/O and capacity setting
+Date: Tue, 12 May 2026 22:16:15 +0200
+Subject: [PATCH v4 0/3] cdrom: gdrom: fix block I/O and capacity setting
 
 Hi all,
 
@@ -18,6 +18,8 @@ and use the inserted medium.
 Thanks,
 Florian
 ---
+v3->v4: Simplified condition in "cdrom: gdrom: update gendisk capacity
+	on open" according to review feedback. Sort trailers correctly.
 v2->v3: Added patch "cdrom: gdrom: verify device access after disc swap"
         from Artur Rojek to also handle the disc swap case reliably. And
         added Acked-by, Reviewed-by from v2 to the respective patches.
@@ -27,6 +29,7 @@ v1->v2: for "cdrom: gdrom: replace port I/O with MMIO accessors": Don't
         local in the respective functions. Improved failure case of
         gdrom_update_capacity() in gdrom_bdops_open().
 
+v3: https://lore.kernel.org/linux-sh/20260423194132.693271-1-fuchsfl@gmail.com/
 v2: https://lore.kernel.org/linux-sh/20260419162823.2829286-1-fuchsfl@gmail.com/
 v1: https://lore.kernel.org/linux-sh/20260405082330.4104672-1-fuchsfl@gmail.com/
 
@@ -37,18 +40,18 @@ Florian Fuchs (2):
   cdrom: gdrom: replace port I/O with MMIO accessors
   cdrom: gdrom: update gendisk capacity on open
 
- drivers/cdrom/gdrom.c | 65 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 61 insertions(+), 4 deletions(-)
+ drivers/cdrom/gdrom.c | 61 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 57 insertions(+), 4 deletions(-)
 
 
 base-commit: 6de23f81a5e08be8fbf5e8d7e9febc72a5b5f27f
 -- 
 2.43.0
 
-From 7c671003abd97a89f50bd472b2634e80bd42a151 Mon Sep 17 00:00:00 2001
+From c0c5f7d1629e769fb4d2934a5067ba600f517079 Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Fri, 3 Apr 2026 23:24:55 +0200
-Subject: [PATCH v3 1/3] cdrom: gdrom: replace port I/O with MMIO accessors
+Subject: [PATCH v4 1/3] cdrom: gdrom: replace port I/O with MMIO accessors
 
 GDROM_DATA_REG is a memory-mapped data register, but the driver uses
 outsw() and insw() only for this register. Replace this with MMIO
@@ -61,15 +64,17 @@ unusable drive:
         BUG: unable to handle kernel paging request at 405f7080
         PC: [<8c28d5b4>] gdrom_spicommand+0x6c/0xb0
 
-Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 Acked-by: Artur Rojek <contact@artur-rojek.eu>
 Reviewed-by: Adrian McMenamin <adrianmcmenamin@gmail.com>
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
+v3->v4: Sort trailers.
 v2->v3: no functional change. Added Acked-by from Artur Rojek.
         Added Reviewed-by tag from Adrian McMenamin.
 v1->v2: Don't use helper functions with io.*_rep(), but writesw() and
         readsw() local in the respective functions
 
+v3: https://lore.kernel.org/linux-sh/20260423194132.693271-2-fuchsfl@gmail.com/
 v2: https://lore.kernel.org/linux-sh/20260419162823.2829286-2-fuchsfl@gmail.com/
 v1: https://lore.kernel.org/linux-sh/20260405082330.4104672-2-fuchsfl@gmail.com/
 
@@ -116,59 +121,60 @@ index 4ba4dd06cbf4..094d55b2d004 100644
  	timeout = jiffies + HZ / 2;
  	/* Wait for any pending DMA to finish */
  	while (__raw_readb(GDROM_DMA_STATUS_REG) &&
+
+base-commit: 6de23f81a5e08be8fbf5e8d7e9febc72a5b5f27f
 -- 
 2.43.0
 
-From 2f19bd023a9b6cc40e0da3eff832f2aed18c877c Mon Sep 17 00:00:00 2001
+From 4e56039d4bdbc6b70b37bc32dbda73eef7cbcfcd Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Sat, 4 Apr 2026 22:16:07 +0200
-Subject: [PATCH v3 2/3] cdrom: gdrom: update gendisk capacity on open
+Subject: [PATCH v4 2/3] cdrom: gdrom: update gendisk capacity on open
 
 Update the gendisk capacity of the media. Without the capacity, the block
 reads fail before reaching the request queue, which prevented ISO9660
 mounts. Refresh the capacity from the TOC leadout in gdrom_bdops_open()
 so it checks the inserted media.
 
+Acked-by: Artur Rojek <contact@artur-rojek.eu>
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
-v2->v3: Also theoretically handle proprietary GDROMs, using the same
-        quirk like in gdrom_get_last_session() try session 1 first for
-        GDROM, then session 0 for CDROMs. Dropped Acked-By due to code
-	change.
+v3->v4: Simplify condition in gdrom_update_capacity()
+v2->v3: Also add quirk to handle proprietary GDROMs, using the same
+        mechanic like in gdrom_get_last_session() try session 1 first
+        for GDROM, then session 0 for CDROMs. Dropped Acked-By due to
+        code change.
 v1->v2: no change for gdrom_update_capacity(), but for
         gdrom_bdops_open(): handle the failure case when
         gdrom_update_capacity() fails but previous cdrom_open() succeeded,
         to cleanup the successful cdrom_open() with cdrom_release()
 
+v3: https://lore.kernel.org/linux-sh/20260423194132.693271-3-fuchsfl@gmail.com/
 v2: https://lore.kernel.org/linux-sh/20260419162823.2829286-3-fuchsfl@gmail.com/
 v1: https://lore.kernel.org/linux-sh/20260405082330.4104672-3-fuchsfl@gmail.com/
 
- drivers/cdrom/gdrom.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/cdrom/gdrom.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
 diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
-index 094d55b2d004..1e73617b39ac 100644
+index 094d55b2d004..603429756a34 100644
 --- a/drivers/cdrom/gdrom.c
 +++ b/drivers/cdrom/gdrom.c
-@@ -474,6 +474,27 @@ static const struct cdrom_device_ops gdrom_ops = {
+@@ -474,6 +474,23 @@ static const struct cdrom_device_ops gdrom_ops = {
  				  CDC_RESET | CDC_DRIVE_STATUS | CDC_CD_R,
  };
  
 +static int gdrom_update_capacity(void)
 +{
 +	sector_t cap;
-+	int ret;
 +
 +	if (gdrom_drivestatus(gd.cd_info, CDSL_CURRENT) != CDS_DISC_OK) {
 +		set_capacity(gd.disk, 0);
 +		return -ENOMEDIUM;
 +	}
-+	ret = gdrom_readtoc_cmd(gd.toc, 1);
-+	if (ret)
-+		ret = gdrom_readtoc_cmd(gd.toc, 0);
-+	if (ret) {
++	if (gdrom_readtoc_cmd(gd.toc, 1) && gdrom_readtoc_cmd(gd.toc, 0)) {
 +		set_capacity(gd.disk, 0);
-+		return ret;
++		return -EINVAL;
 +	}
 +	cap = (sector_t)get_entry_lba(gd.toc->leadout) * GD_TO_BLK;
 +	set_capacity(gd.disk, cap);
@@ -178,7 +184,7 @@ index 094d55b2d004..1e73617b39ac 100644
  static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
  {
  	int ret;
-@@ -482,6 +503,12 @@ static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
+@@ -482,6 +499,12 @@ static int gdrom_bdops_open(struct gendisk *disk, blk_mode_t mode)
  
  	mutex_lock(&gdrom_mutex);
  	ret = cdrom_open(gd.cd_info, mode);
@@ -194,10 +200,10 @@ index 094d55b2d004..1e73617b39ac 100644
 -- 
 2.43.0
 
-From ed57d91a98dde1946413eddd684a9ba909d0fe85 Mon Sep 17 00:00:00 2001
+From 551d15f3dbe2c14140d3aef6ac75a89a8b63ac74 Mon Sep 17 00:00:00 2001
 From: Artur Rojek <contact@artur-rojek.eu>
 Date: Sun, 19 Apr 2026 13:08:53 +0200
-Subject: [PATCH v3 3/3] cdrom: gdrom: verify device access after disc swap
+Subject: [PATCH v4 3/3] cdrom: gdrom: verify device access after disc swap
 
 To ready the drive for cdrom_open(), this driver sends a spin disc
 command. However, if the cd lid has been opened and the disc de-spinned,
@@ -210,13 +216,16 @@ above error, and allow subsequent commands to execute correctly.
 Signed-off-by: Artur Rojek <contact@artur-rojek.eu>
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
+v3->v4: no change
 v3: new patch added from Artur Rojek and also verified that it works.
+
+v3: https://lore.kernel.org/linux-sh/20260423194132.693271-4-fuchsfl@gmail.com/
 
  drivers/cdrom/gdrom.c | 30 ++++++++++++++++++++++++++++++
  1 file changed, 30 insertions(+)
 
 diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
-index 1e73617b39ac..21ef4657dd2b 100644
+index 603429756a34..0827f4f0344d 100644
 --- a/drivers/cdrom/gdrom.c
 +++ b/drivers/cdrom/gdrom.c
 @@ -219,6 +219,33 @@ static char gdrom_execute_diagnostic(void)
