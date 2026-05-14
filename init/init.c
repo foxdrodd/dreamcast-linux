@@ -11,10 +11,10 @@
 #include <stdlib.h>
 
 // Maybe use a tiny custom init, instead of busybox to exec the userland shell
-// build like: 
+// build like:
 // sh4-linux-gnu-gcc -fno-asynchronous-unwind-tables -fno-ident -s -Os -nostdlib \
 //   -static -include nolibc.h -o init init.c -lgcc -I ~/devel/linux/tools/include/nolibc
-static void spawn_shell(const char *tty)
+static void spawn_shell(const char *tty, char *envp[])
 {
     pid_t pid = fork();
 
@@ -82,6 +82,15 @@ static int bind_mount(const char *src, const char *dst)
 }
 
 
+static int tty_exists(const char *path)
+{
+    struct stat st;
+
+    if (stat(path, &st) < 0)
+        return 0;
+
+    return S_ISCHR(st.st_mode);
+}
 
 int main(void)
 {
@@ -127,12 +136,25 @@ int main(void)
 	if (access("/bin/mksh", X_OK) < 0)        
 		perror("err /bin/mksh"); 
 
-	printf("Hello hello hello hello");
-	printf("Hello hello hello hello");
-	printf("Hello hello hello hello");
-	printf("Hello hello hello hello");
-	spawn_shell("/dev/console");
-	spawn_shell("/dev/tty0");
+	if (tty_exists("/dev/console")) {
+		char *envp[] = {
+	            "HOME=/root",
+	            "PATH=/bin:/sbin:/usr/bin:/usr/sbin",
+	            "TERM=vt100",
+	            NULL
+        	};
+		spawn_shell("/dev/console", envp);
+	}
+
+        if (tty_exists("/dev/tty0")) {
+		char *envptty[] = {
+	            "HOME=/root",
+	            "PATH=/bin:/sbin:/usr/bin:/usr/sbin",
+	            "TERM=linux",
+	            NULL
+	        };
+		spawn_shell("/dev/tty0", envptty);
+	}
 
 	for (;;) {
 		int status;
