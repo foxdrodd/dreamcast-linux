@@ -1,0 +1,40 @@
+It looks like the output auto-detection paths were non-functional, since
+initial git commit and it was hardcoded to VGA and PAL output. Which is
+sad for composite, TV and our good NTSC friends all over the world. Let's
+give them output as well.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+Digging into the tglx/history.git repository got me this commit as the
+one that replaced -1 autodetection with VGA only, with no further
+explanation.
+
+commit 434502754f2273c6664d318bd9ffac636a214611
+Author: Andrew Morton <akpm@osdl.org>
+Date:   Sun Jan 18 18:05:04 2004 -0800
+
+    [PATCH] SH Merge
+    
+    From: Paul Mundt <lethal@linux-sh.org>
+    
+    Here's a rather large update for SH (this is a bit large mainly since a
+    number of things have piled up, and Linus didn't want any of this during
+    feature freeze time). All of these changes are specific to the SH platform,
+    and as such, shouldn't effect any other platforms.
+
+
+diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
+index 3f6384e631b1..da748e377716 100644
+--- a/drivers/video/fbdev/pvr2fb.c
++++ b/drivers/video/fbdev/pvr2fb.c
+@@ -171,8 +171,8 @@ static const struct fb_var_screeninfo pvr2_var = {
+        .vmode =        FB_VMODE_NONINTERLACED,
+ };
+ 
+-static int cable_type = CT_VGA;
+-static int video_output = VO_VGA;
++static int cable_type = -1;
++static int video_output = -1;
+ 
+ static int nopan = 0;
+ static int nowrap = 1;
