@@ -4,8 +4,8 @@
 
 # Paths to the built userlands:
 declare -A userland=(
-	[uclibc]=/media/flo/nvme0-ssd/shuclibc-701
-	[musl]=/media/flo/nvme0-ssd/shmusl-701
+	[uclibc]=/media/flo/nvme0-ssd/shuclibc-711
+	[musl]=/media/flo/nvme0-ssd/shmusl-711
 )
 
 linux_version=$(cat dreamcast/build-dreamcast.sh|grep '^LINUX_VERSION=.*'|cut -d"=" -f2|tr -d '"')
