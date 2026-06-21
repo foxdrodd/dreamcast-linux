@@ -19,13 +19,13 @@
  * then runs an mksh login shell on each console.  No second shell layer,
  * no `script` wrapper, no busybox resident in RAM.
  *
- * Console policy (matches busybox inittab behaviour):
- *   - physical framebuffer console (/dev/tty0): shell spawned immediately,
- *     respawned when it exits.
- *   - serial console (/dev/ttySC1): "askfirst" - no shell process exists
- *     until a key arrives on the line, then respawned on each exit.
- *     The Dreamcast coder's cable is 3-wire (no DCD/DSR), so a keypress
- *     is the only reliable "someone is connected" signal.
+ * Console policy (matches busybox "askfirst" inittab behaviour):
+ *   - physical framebuffer console (/dev/tty0) and serial console
+ *     (/dev/ttySC1): no shell process exists until a key arrives on the
+ *     line, then it is respawned on each exit.
+ *     For the serial line this doubles as connection detection - the
+ *     Dreamcast coder's cable is 3-wire (no DCD/DSR), so a keypress is
+ *     the only reliable "someone is connected" signal.
  *
  * build like:
  * sh4-linux-gnu-gcc -fno-asynchronous-unwind-tables -fno-ident -s -Os -nostdlib \
@@ -58,7 +58,7 @@ static char *const envp_serial[] = {
 };
 
 static struct console consoles[] = {
-	{ "/dev/tty0",   envp_fb,     0, -1 },  /* physical: framebuffer + maple kbd */
+	{ "/dev/tty0",   envp_fb,     1, -1 },  /* physical: framebuffer + maple kbd */
 	{ "/dev/ttySC1", envp_serial, 1, -1 },  /* serial: askfirst                  */
 };
 #define NR_CONSOLES (sizeof(consoles) / sizeof(consoles[0]))
