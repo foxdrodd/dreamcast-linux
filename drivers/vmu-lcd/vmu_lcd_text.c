@@ -1,0 +1,191 @@
+/*
+ * vmu_lcd_text - render text to the SEGA Dreamcast VMU LCD framebuffer.
+ *
+ * Writes exactly 192 bytes (48x32 pixels, 1 bit per pixel, 6 bytes per row,
+ * MSB = leftmost pixel, row 0 at the top) to stdout, ready to be fed to the
+ * vmu-lcd character device:
+ *
+ *     vmu_lcd_text "HELLO WORLD" > /dev/vmu_lcd0
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2.
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define LCD_W		48
+#define LCD_H		32
+#define LCD_STRIDE	(LCD_W / 8)		/* 6 bytes per row */
+#define LCD_FB_SIZE	(LCD_STRIDE * LCD_H)	/* 192 bytes */
+
+/* Glyphs are 4 pixels wide, 7 rows tall (bit3 = leftmost pixel). */
+#define GLYPH_W		4
+#define GLYPH_H		7
+#define CHAR_ADV	5			/* glyph + 1px gap */
+#define LINE_ADV	8			/* glyph + 1px gap */
+#define COLS		(LCD_W / CHAR_ADV)	/* 9 chars per line */
+#define ROWS		(LCD_H / LINE_ADV)	/* 4 lines */
+
+static const unsigned char BLANK[GLYPH_H] = { 0, 0, 0, 0, 0, 0, 0 };
+
+/* A-Z, 4x7 (from the original mlcd font). */
+static const unsigned char ALPHABET[26][GLYPH_H] = {
+	{ 0x00, 0x06, 0x09, 0x09, 0x0f, 0x09, 0x09 }, /* A */
+	{ 0x00, 0x0e, 0x09, 0x0a, 0x0d, 0x09, 0x0e }, /* B */
+	{ 0x00, 0x06, 0x09, 0x08, 0x08, 0x09, 0x06 }, /* C */
+	{ 0x00, 0x0e, 0x09, 0x09, 0x09, 0x09, 0x0e }, /* D */
+	{ 0x00, 0x0f, 0x08, 0x08, 0x0e, 0x08, 0x0f }, /* E */
+	{ 0x00, 0x0f, 0x08, 0x08, 0x0e, 0x08, 0x08 }, /* F */
+	{ 0x00, 0x06, 0x09, 0x08, 0x0b, 0x09, 0x06 }, /* G */
+	{ 0x00, 0x09, 0x09, 0x09, 0x0f, 0x09, 0x09 }, /* H */
+	{ 0x00, 0x0f, 0x04, 0x04, 0x04, 0x04, 0x0f }, /* I */
+	{ 0x00, 0x0f, 0x01, 0x01, 0x01, 0x09, 0x06 }, /* J */
+	{ 0x00, 0x09, 0x09, 0x0a, 0x0e, 0x0a, 0x09 }, /* K */
+	{ 0x00, 0x08, 0x08, 0x08, 0x08, 0x08, 0x0f }, /* L */
+	{ 0x00, 0x05, 0x0a, 0x0b, 0x09, 0x09, 0x09 }, /* M */
+	{ 0x00, 0x09, 0x0d, 0x0d, 0x0b, 0x0b, 0x09 }, /* N */
+	{ 0x00, 0x06, 0x09, 0x09, 0x09, 0x09, 0x06 }, /* O */
+	{ 0x00, 0x0e, 0x09, 0x09, 0x0e, 0x08, 0x08 }, /* P */
+	{ 0x00, 0x06, 0x09, 0x09, 0x09, 0x0a, 0x05 }, /* Q */
+	{ 0x00, 0x0e, 0x09, 0x09, 0x0e, 0x0a, 0x09 }, /* R */
+	{ 0x00, 0x06, 0x09, 0x0c, 0x02, 0x09, 0x06 }, /* S */
+	{ 0x00, 0x0f, 0x04, 0x04, 0x04, 0x04, 0x04 }, /* T */
+	{ 0x00, 0x09, 0x09, 0x09, 0x09, 0x09, 0x06 }, /* U */
+	{ 0x00, 0x09, 0x09, 0x09, 0x09, 0x06, 0x02 }, /* V */
+	{ 0x00, 0x09, 0x09, 0x09, 0x0b, 0x0a, 0x05 }, /* W */
+	{ 0x00, 0x09, 0x09, 0x06, 0x06, 0x09, 0x09 }, /* X */
+	{ 0x00, 0x09, 0x09, 0x05, 0x02, 0x02, 0x02 }, /* Y */
+	{ 0x00, 0x0f, 0x01, 0x02, 0x04, 0x08, 0x0f }, /* Z */
+};
+
+/* 0-9, 4x7. */
+static const unsigned char DIGITS[10][GLYPH_H] = {
+	{ 0x00, 0x06, 0x09, 0x0b, 0x0d, 0x09, 0x06 }, /* 0 */
+	{ 0x00, 0x02, 0x06, 0x02, 0x02, 0x02, 0x07 }, /* 1 */
+	{ 0x00, 0x06, 0x09, 0x01, 0x06, 0x08, 0x0f }, /* 2 */
+	{ 0x00, 0x0e, 0x01, 0x06, 0x01, 0x09, 0x06 }, /* 3 */
+	{ 0x00, 0x02, 0x06, 0x0a, 0x0f, 0x02, 0x02 }, /* 4 */
+	{ 0x00, 0x0f, 0x08, 0x0e, 0x01, 0x09, 0x06 }, /* 5 */
+	{ 0x00, 0x06, 0x08, 0x0e, 0x09, 0x09, 0x06 }, /* 6 */
+	{ 0x00, 0x0f, 0x01, 0x02, 0x04, 0x04, 0x04 }, /* 7 */
+	{ 0x00, 0x06, 0x09, 0x06, 0x09, 0x09, 0x06 }, /* 8 */
+	{ 0x00, 0x06, 0x09, 0x09, 0x07, 0x01, 0x06 }, /* 9 */
+};
+
+static const unsigned char *glyph(int c)
+{
+	c = toupper((unsigned char)c);
+
+	if (c >= 'A' && c <= 'Z')
+		return ALPHABET[c - 'A'];
+	if (c >= '0' && c <= '9')
+		return DIGITS[c - '0'];
+
+	switch (c) {
+	case '.':  { static const unsigned char g[] = { 0, 0, 0, 0, 0, 0, 0x02 }; return g; }
+	case ',':  { static const unsigned char g[] = { 0, 0, 0, 0, 0, 0x02, 0x04 }; return g; }
+	case '-':  { static const unsigned char g[] = { 0, 0, 0, 0x0f, 0, 0, 0 }; return g; }
+	case '+':  { static const unsigned char g[] = { 0, 0, 0x02, 0x02, 0x0f, 0x02, 0x02 }; return g; }
+	case ':':  { static const unsigned char g[] = { 0, 0, 0x02, 0, 0, 0x02, 0 }; return g; }
+	case '!':  { static const unsigned char g[] = { 0, 0x02, 0x02, 0x02, 0x02, 0, 0x02 }; return g; }
+	case '?':  { static const unsigned char g[] = { 0, 0x06, 0x09, 0x01, 0x02, 0, 0x02 }; return g; }
+	case '/':  { static const unsigned char g[] = { 0, 0x01, 0x01, 0x02, 0x04, 0x08, 0x08 }; return g; }
+	case '=':  { static const unsigned char g[] = { 0, 0, 0x0f, 0, 0x0f, 0, 0 }; return g; }
+	case '\'': { static const unsigned char g[] = { 0, 0x02, 0x02, 0, 0, 0, 0 }; return g; }
+	default:   return BLANK;	/* space and anything unsupported */
+	}
+}
+
+static void set_pixel(unsigned char *fb, int x, int y)
+{
+	if (x < 0 || x >= LCD_W || y < 0 || y >= LCD_H)
+		return;
+	fb[y * LCD_STRIDE + x / 8] |= 0x80 >> (x % 8);
+}
+
+static void draw_glyph(unsigned char *fb, const unsigned char *g, int x0, int y0)
+{
+	int gx, gy;
+
+	for (gy = 0; gy < GLYPH_H; gy++)
+		for (gx = 0; gx < GLYPH_W; gx++)
+			if (g[gy] & (1 << (GLYPH_W - 1 - gx)))
+				set_pixel(fb, x0 + gx, y0 + gy);
+}
+
+/* Rotate the whole image 180 degrees (VMU shown upright when in a controller). */
+static void flip180(unsigned char *fb)
+{
+	unsigned char out[LCD_FB_SIZE] = { 0 };
+	int x, y;
+
+	for (y = 0; y < LCD_H; y++)
+		for (x = 0; x < LCD_W; x++)
+			if (fb[y * LCD_STRIDE + x / 8] & (0x80 >> (x % 8)))
+				set_pixel(out, LCD_W - 1 - x, LCD_H - 1 - y);
+
+	memcpy(fb, out, LCD_FB_SIZE);
+}
+
+int main(int argc, char **argv)
+{
+	unsigned char fb[LCD_FB_SIZE];
+	const char *text = NULL;
+	int verbose = 0, flip = 0;
+	int col = 0, row = 0, i;
+	const char *p;
+
+	for (i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "-v"))
+			verbose = 1;
+		else if (!strcmp(argv[i], "-r"))
+			flip = 1;
+		else
+			text = argv[i];
+	}
+
+	if (!text) {
+		fprintf(stderr, "usage: %s [-r] [-v] \"TEXT\"  > /dev/vmu_lcd0\n"
+			"  -r  rotate 180 degrees\n"
+			"  -v  also dump the 192 framebuffer bytes to stderr\n",
+			argv[0]);
+		return 1;
+	}
+
+	memset(fb, 0, sizeof(fb));
+
+	for (p = text; *p; p++) {
+		if (*p == '\n') {
+			col = 0;
+			row++;
+			continue;
+		}
+		if (col >= COLS) {
+			col = 0;
+			row++;
+		}
+		if (row >= ROWS)
+			break;
+
+		draw_glyph(fb, glyph(*p), col * CHAR_ADV, row * LINE_ADV);
+		col++;
+	}
+
+	if (flip)
+		flip180(fb);
+
+	if (fwrite(fb, 1, LCD_FB_SIZE, stdout) != LCD_FB_SIZE) {
+		fprintf(stderr, "%s: short write\n", argv[0]);
+		return 1;
+	}
+
+	if (verbose) {
+		for (i = 0; i < LCD_FB_SIZE; i++)
+			fprintf(stderr, "0x%02x,%s", fb[i],
+				(i % LCD_STRIDE == LCD_STRIDE - 1) ? "\n" : " ");
+	}
+
+	return 0;
+}

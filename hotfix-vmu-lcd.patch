@@ -1,0 +1,566 @@
+From 4559312f52b434311d5152be629f1c6bf9d51a2d Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sun, 21 Jun 2026 17:56:40 +0200
+Subject: [PATCH] VMU LCD port
+
+---
+ drivers/auxdisplay/Kconfig   |  18 ++
+ drivers/auxdisplay/Makefile  |   1 +
+ drivers/auxdisplay/vmu-lcd.c | 410 +++++++++++++++++++++++++++++++++++
+ drivers/mtd/maps/Kconfig     |   5 +
+ drivers/mtd/maps/vmu-flash.c |  17 +-
+ include/linux/vmu-lcd.h      |  23 ++
+ 6 files changed, 473 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/auxdisplay/vmu-lcd.c
+ create mode 100644 include/linux/vmu-lcd.h
+
+diff --git a/drivers/auxdisplay/Kconfig b/drivers/auxdisplay/Kconfig
+index 1ea7c039160c..65cc1dde74cf 100644
+--- a/drivers/auxdisplay/Kconfig
++++ b/drivers/auxdisplay/Kconfig
+@@ -539,6 +539,24 @@ config ARM_CHARLCD
+ 	  line and the Linux version on the second line, but that's
+ 	  still useful.
+ 
++config VMU_LCD
++	tristate "SEGA Dreamcast VMU LCD display support"
++	depends on MAPLE
++	help
++	  This driver supports the 48x32 monochrome LCD found on the SEGA
++	  Dreamcast Visual Memory Unit (VMU), which connects to a Dreamcast
++	  controller's expansion slot over the maple bus.
++
++	  The VMU is a single maple device shared with its memory card, so
++	  the LCD is driven through the vmu-flash storage driver (MTD_VMU):
++	  enable that as well to actually attach to a display.  Each connected
++	  display is exposed as a character device (/dev/vmu_lcdN); userspace
++	  draws to it by writing the 192 byte framebuffer (48 * 32 pixels, one
++	  bit per pixel) to the device node.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called vmu-lcd.
++
+ endif # AUXDISPLAY
+ 
+ #
+diff --git a/drivers/auxdisplay/Makefile b/drivers/auxdisplay/Makefile
+index f5c13ed1cd4f..66310759a17f 100644
+--- a/drivers/auxdisplay/Makefile
++++ b/drivers/auxdisplay/Makefile
+@@ -16,3 +16,4 @@ obj-$(CONFIG_LINEDISP)		+= line-display.o
+ obj-$(CONFIG_MAX6959)		+= max6959.o
+ obj-$(CONFIG_PARPORT_PANEL)	+= panel.o
+ obj-$(CONFIG_SEG_LED_GPIO)	+= seg-led-gpio.o
++obj-$(CONFIG_VMU_LCD)		+= vmu-lcd.o
+diff --git a/drivers/auxdisplay/vmu-lcd.c b/drivers/auxdisplay/vmu-lcd.c
+new file mode 100644
+index 000000000000..94fbba662466
+--- /dev/null
++++ b/drivers/auxdisplay/vmu-lcd.c
+@@ -0,0 +1,410 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * vmu-lcd.c - Character device for the SEGA Dreamcast VMU LCD display
++ *
++ * The Visual Memory Unit (VMU) is a single maple-bus device that exposes
++ * several functions at once (memory card, LCD, clock).  The maple bus binds
++ * exactly one driver per device, so the LCD cannot be a separate maple
++ * driver competing with the storage driver - instead vmu-flash (the driver
++ * that owns the VMU) calls vmu_lcd_register()/vmu_lcd_unregister() to hand
++ * the display to this module.
++ *
++ * Each connected display is exposed as /dev/vmu_lcdN.  Userspace draws by
++ * writing exactly 192 bytes (48x32 pixels, one bit per pixel, packed MSB
++ * first) to the device node.  All hardware writes happen here from the
++ * char-device write() in process context; they must never be driven from
++ * the maple bus probe/callback (workqueue) context, which would deadlock
++ * the bus while waiting for the write to complete.
++ *
++ * Based on the out-of-tree mlcd-0.0.4 driver by Christian Berger (2003);
++ * the maple LCD block-write format matches KallistiOS' vmu_draw_lcd().
++ */
++
++#include <linux/cdev.h>
++#include <linux/device.h>
++#include <linux/fs.h>
++#include <linux/idr.h>
++#include <linux/init.h>
++#include <linux/kref.h>
++#include <linux/maple.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <linux/vmu-lcd.h>
++#include <linux/wait.h>
++#include <linux/workqueue.h>
++
++#define DRV_NAME		"vmu_lcd"
++
++#define VMU_LCD_WIDTH		48
++#define VMU_LCD_HEIGHT		32
++/* One bit per pixel: 48 * 32 / 8 == 192 bytes. */
++#define VMU_LCD_FB_SIZE		(VMU_LCD_WIDTH * VMU_LCD_HEIGHT / 8)
++
++/* Maximum number of VMU displays (4 ports * a couple of expansion units). */
++#define VMU_LCD_MAX_DEVS	8
++
++/*
++ * A maple block write to the LCD carries the function code (prepended by
++ * maple_add_packet()), one word selecting block/phase/partition, then the
++ * 192 byte framebuffer.  Lengths are in 32 bit words.
++ */
++#define VMU_LCD_PT_WORDS	(1 + VMU_LCD_FB_SIZE / 4)	/* phase word + fb */
++#define VMU_LCD_PKT_WORDS	(1 + VMU_LCD_PT_WORDS)		/* + function word */
++
++static dev_t vmu_lcd_devt;
++static struct class *vmu_lcd_class;
++static struct cdev vmu_lcd_cdev;
++static DEFINE_IDA(vmu_lcd_ida);
++
++/*
++ * Splash draws run here, NOT on the system workqueue.  The maple core runs
++ * its bottom halves on system_wq and relies on them being serialised (it
++ * touches maple_sentq without a lock); a sleeping work item on system_wq
++ * lets those handlers run concurrently and corrupt the queue.  A private
++ * workqueue keeps our blocking maple writes off system_wq entirely.
++ */
++static struct workqueue_struct *vmu_lcd_wq;
++
++/* Maps a minor number onto a live display; guards against hotplug races. */
++static DEFINE_MUTEX(vmu_lcd_table_lock);
++static struct vmu_lcd *vmu_lcd_table[VMU_LCD_MAX_DEVS];
++
++struct vmu_lcd {
++	struct maple_device *mdev;	/* NULL once disconnected */
++	struct kref kref;
++	struct mutex lock;		/* serialises draws, guards @mdev */
++	struct work_struct splash_work;	/* draws the splash off probe context */
++	int minor;
++	bool connected;
++};
++
++/*
++ * Initial splash, drawn when a display connects: a small Tux.  48x32 pixels,
++ * one bit per pixel, packed MSB first (1 == pixel on).
++ */
++static const u8 vmu_lcd_splash[VMU_LCD_FB_SIZE] = {
++	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1f, 0x00, 0x00, 0x00, 0x00,
++	0x00, 0x3f, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x3f, 0xc0, 0x88, 0x00, 0x00,
++	0x00, 0x3f, 0xe0, 0x80, 0x00, 0x00, 0x00, 0x6e, 0xe0, 0x8a, 0x94, 0xa0,
++	0x00, 0x5d, 0x60, 0x8b, 0x54, 0x40, 0x00, 0x5f, 0x60, 0x8a, 0x54, 0xa0,
++	0x00, 0x3f, 0xe0, 0xea, 0x4a, 0xa0, 0x00, 0x3f, 0xf0, 0x00, 0x00, 0x00,
++	0x00, 0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x3e, 0x70, 0x00, 0x00, 0x00,
++	0x00, 0x40, 0x38, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x3c, 0x00, 0x00, 0x00,
++	0x01, 0x80, 0x3c, 0x00, 0x00, 0x00, 0x01, 0x80, 0x1e, 0x00, 0x00, 0x00,
++	0x03, 0x00, 0x1f, 0x00, 0x00, 0x00, 0x03, 0x00, 0x0f, 0x00, 0x00, 0x00,
++	0x02, 0x00, 0x0f, 0x80, 0x00, 0x00, 0x06, 0x00, 0x0f, 0x80, 0x00, 0x00,
++	0x06, 0x00, 0x0f, 0x80, 0x00, 0x00, 0x0e, 0x00, 0x0f, 0x80, 0x00, 0x00,
++	0x0e, 0x00, 0x0f, 0x80, 0x00, 0x00, 0x0f, 0x00, 0x1f, 0x80, 0x00, 0x00,
++	0x3f, 0x80, 0x3f, 0x80, 0x00, 0x00, 0x7f, 0xe0, 0x3f, 0xc0, 0x00, 0x00,
++	0x7f, 0xe0, 0x3f, 0xe0, 0x00, 0x00, 0x7f, 0xc0, 0x7f, 0xf0, 0x00, 0x00,
++	0xff, 0xe1, 0xff, 0xe0, 0x00, 0x00, 0xff, 0xff, 0xff, 0xc0, 0x00, 0x00,
++	0x3f, 0xff, 0xff, 0x00, 0x00, 0x00, 0x03, 0xe0, 0x3c, 0x00, 0x00, 0x00,
++};
++
++static void vmu_lcd_free(struct kref *kref)
++{
++	struct vmu_lcd *lcd = container_of(kref, struct vmu_lcd, kref);
++
++	ida_free(&vmu_lcd_ida, lcd->minor);
++	kfree(lcd);
++}
++
++/*
++ * Push a 192 byte framebuffer to the display.  Must be called with
++ * lcd->lock held, from process context only, and while still connected.
++ */
++static int vmu_lcd_draw(struct vmu_lcd *lcd, const u8 *fb)
++{
++	struct maple_device *mdev = lcd->mdev;
++	__be32 *sendbuf;
++	long wait;
++	int error;
++
++	sendbuf = kcalloc(VMU_LCD_PT_WORDS, sizeof(*sendbuf), GFP_KERNEL);
++	if (!sendbuf)
++		return -ENOMEM;
++
++	/* Word 0 selects block/phase/partition - always 0 for the LCD. */
++	sendbuf[0] = 0;
++	memcpy(&sendbuf[1], fb, VMU_LCD_FB_SIZE);
++
++	/* Wait for any in-flight maple transaction on this device to finish. */
++	if (atomic_read(&mdev->busy) == 1) {
++		wait_event_interruptible_timeout(mdev->maple_wait,
++			atomic_read(&mdev->busy) == 0, HZ);
++		if (atomic_read(&mdev->busy) == 1) {
++			error = -EBUSY;
++			goto out;
++		}
++	}
++	atomic_set(&mdev->busy, 1);
++
++	error = maple_add_packet(mdev, MAPLE_FUNC_LCD, MAPLE_COMMAND_BWRITE,
++				 VMU_LCD_PKT_WORDS, sendbuf);
++	if (error) {
++		atomic_set(&mdev->busy, 0);
++		goto out;
++	}
++
++	wait = wait_event_interruptible_timeout(mdev->maple_wait,
++		atomic_read(&mdev->busy) == 0 ||
++		atomic_read(&mdev->busy) == 2, HZ);
++
++	/* busy == 2 means the maple core saw the device drop off the bus. */
++	if (atomic_read(&mdev->busy) == 2) {
++		atomic_set(&mdev->busy, 0);
++		error = -ENXIO;
++	} else if (wait <= 0) {
++		/*
++		 * The transfer did not complete in time - typically the bus is
++		 * just congested (e.g. another VMU is enumerating).  Leave the
++		 * packet queued and the busy flag set: the maple core owns the
++		 * queue and will send it and clear busy once the bus frees up,
++		 * so the draw still lands.  Dequeuing it here without the bus
++		 * lock would race maple_dma_handler() and corrupt the queue.
++		 */
++		error = (wait == -ERESTARTSYS) ? -ERESTARTSYS : -EIO;
++		dev_warn(&mdev->dev, "LCD write to (%d, %d) %s\n",
++			 mdev->port, mdev->unit,
++			 wait == -ERESTARTSYS ? "interrupted" : "timed out");
++	}
++
++out:
++	kfree(sendbuf);
++	return error;
++}
++
++/*
++ * Draw the splash image.  Deferred to the system workqueue so the blocking
++ * maple write runs in process context - it must never run from the maple
++ * probe/callback (workqueue) context that registers the display.
++ */
++static void vmu_lcd_splash_work(struct work_struct *work)
++{
++	struct vmu_lcd *lcd = container_of(work, struct vmu_lcd, splash_work);
++
++	mutex_lock(&lcd->lock);
++	if (lcd->connected)
++		vmu_lcd_draw(lcd, vmu_lcd_splash);
++	mutex_unlock(&lcd->lock);
++}
++
++static int vmu_lcd_open(struct inode *inode, struct file *file)
++{
++	unsigned int minor = iminor(inode);
++	struct vmu_lcd *lcd;
++
++	if (minor >= VMU_LCD_MAX_DEVS)
++		return -ENODEV;
++
++	mutex_lock(&vmu_lcd_table_lock);
++	lcd = vmu_lcd_table[minor];
++	if (lcd)
++		kref_get(&lcd->kref);
++	mutex_unlock(&vmu_lcd_table_lock);
++
++	if (!lcd)
++		return -ENODEV;
++
++	file->private_data = lcd;
++	return 0;
++}
++
++static int vmu_lcd_close(struct inode *inode, struct file *file)
++{
++	struct vmu_lcd *lcd = file->private_data;
++
++	kref_put(&lcd->kref, vmu_lcd_free);
++	return 0;
++}
++
++static ssize_t vmu_lcd_write(struct file *file, const char __user *buf,
++			     size_t count, loff_t *ppos)
++{
++	struct vmu_lcd *lcd = file->private_data;
++	u8 fb[VMU_LCD_FB_SIZE];
++	int error;
++
++	/* The framebuffer is a fixed size; demand the whole thing at once. */
++	if (count != VMU_LCD_FB_SIZE)
++		return -EINVAL;
++
++	if (copy_from_user(fb, buf, VMU_LCD_FB_SIZE))
++		return -EFAULT;
++
++	if (mutex_lock_interruptible(&lcd->lock))
++		return -ERESTARTSYS;
++
++	if (!lcd->connected) {
++		mutex_unlock(&lcd->lock);
++		return -ENODEV;
++	}
++
++	error = vmu_lcd_draw(lcd, fb);
++	mutex_unlock(&lcd->lock);
++
++	return error ? error : count;
++}
++
++static const struct file_operations vmu_lcd_fops = {
++	.owner		= THIS_MODULE,
++	.open		= vmu_lcd_open,
++	.release	= vmu_lcd_close,
++	.write		= vmu_lcd_write,
++};
++
++/*
++ * Called by the maple driver that owns the VMU (vmu-flash) once it has
++ * attached the device.  Runs in maple probe context, so it must not touch
++ * the hardware - it only sets up the character device.
++ */
++int vmu_lcd_register(struct maple_device *mdev)
++{
++	struct vmu_lcd *lcd;
++	struct device *cdev;
++	int minor, error;
++
++	lcd = kzalloc_obj(*lcd);
++	if (!lcd)
++		return -ENOMEM;
++
++	kref_init(&lcd->kref);
++	mutex_init(&lcd->lock);
++	INIT_WORK(&lcd->splash_work, vmu_lcd_splash_work);
++	lcd->mdev = mdev;
++	lcd->connected = true;
++
++	minor = ida_alloc_range(&vmu_lcd_ida, 0, VMU_LCD_MAX_DEVS - 1,
++				GFP_KERNEL);
++	if (minor < 0) {
++		error = minor;
++		goto err_free;
++	}
++	lcd->minor = minor;
++
++	cdev = device_create(vmu_lcd_class, &mdev->dev,
++			     MKDEV(MAJOR(vmu_lcd_devt), minor), lcd,
++			     DRV_NAME "%d", minor);
++	if (IS_ERR(cdev)) {
++		error = PTR_ERR(cdev);
++		goto err_ida;
++	}
++
++	mutex_lock(&vmu_lcd_table_lock);
++	vmu_lcd_table[minor] = lcd;
++	mutex_unlock(&vmu_lcd_table_lock);
++
++	dev_info(&mdev->dev, "VMU LCD at (%d, %d) registered as %s%d\n",
++		 mdev->port, mdev->unit, DRV_NAME, minor);
++
++	/*
++	 * Show the splash; the draw runs on our private workqueue, never on
++	 * system_wq, so it cannot perturb the maple core's bottom halves.
++	 */
++	queue_work(vmu_lcd_wq, &lcd->splash_work);
++	return 0;
++
++err_ida:
++	ida_free(&vmu_lcd_ida, minor);
++err_free:
++	kfree(lcd);
++	return error;
++}
++EXPORT_SYMBOL_GPL(vmu_lcd_register);
++
++/* Called by vmu-flash when the VMU is removed. */
++void vmu_lcd_unregister(struct maple_device *mdev)
++{
++	struct vmu_lcd *lcd = NULL;
++	int i;
++
++	mutex_lock(&vmu_lcd_table_lock);
++	for (i = 0; i < VMU_LCD_MAX_DEVS; i++) {
++		if (vmu_lcd_table[i] && vmu_lcd_table[i]->mdev == mdev) {
++			lcd = vmu_lcd_table[i];
++			vmu_lcd_table[i] = NULL;
++			break;
++		}
++	}
++	mutex_unlock(&vmu_lcd_table_lock);
++
++	if (!lcd)
++		return;
++
++	/* Stop any in-progress or future writes from touching the hardware. */
++	mutex_lock(&lcd->lock);
++	lcd->connected = false;
++	lcd->mdev = NULL;
++	mutex_unlock(&lcd->lock);
++
++	/* connected is now false, so a pending splash will no-op; wait it out. */
++	cancel_work_sync(&lcd->splash_work);
++
++	device_destroy(vmu_lcd_class, MKDEV(MAJOR(vmu_lcd_devt), lcd->minor));
++
++	kref_put(&lcd->kref, vmu_lcd_free);
++}
++EXPORT_SYMBOL_GPL(vmu_lcd_unregister);
++
++static int __init vmu_lcd_init(void)
++{
++	int error;
++
++	error = alloc_chrdev_region(&vmu_lcd_devt, 0, VMU_LCD_MAX_DEVS,
++				    DRV_NAME);
++	if (error)
++		return error;
++
++	vmu_lcd_class = class_create(DRV_NAME);
++	if (IS_ERR(vmu_lcd_class)) {
++		error = PTR_ERR(vmu_lcd_class);
++		goto err_chrdev;
++	}
++
++	cdev_init(&vmu_lcd_cdev, &vmu_lcd_fops);
++	vmu_lcd_cdev.owner = THIS_MODULE;
++	error = cdev_add(&vmu_lcd_cdev, vmu_lcd_devt, VMU_LCD_MAX_DEVS);
++	if (error)
++		goto err_class;
++
++	vmu_lcd_wq = alloc_ordered_workqueue("vmu_lcd", 0);
++	if (!vmu_lcd_wq) {
++		error = -ENOMEM;
++		goto err_cdev;
++	}
++
++	return 0;
++
++err_cdev:
++	cdev_del(&vmu_lcd_cdev);
++err_class:
++	class_destroy(vmu_lcd_class);
++err_chrdev:
++	unregister_chrdev_region(vmu_lcd_devt, VMU_LCD_MAX_DEVS);
++	return error;
++}
++
++static void __exit vmu_lcd_exit(void)
++{
++	destroy_workqueue(vmu_lcd_wq);
++	cdev_del(&vmu_lcd_cdev);
++	class_destroy(vmu_lcd_class);
++	unregister_chrdev_region(vmu_lcd_devt, VMU_LCD_MAX_DEVS);
++	ida_destroy(&vmu_lcd_ida);
++}
++
++/*
++ * Bring the char-device infrastructure up at subsys level: vmu-flash is a
++ * device_initcall and probes the VMU (calling vmu_lcd_register()) as soon as
++ * it registers, so our class and cdev must already exist by then.  When built
++ * as a module the symbol dependency makes modprobe load us first instead.
++ */
++subsys_initcall(vmu_lcd_init);
++module_exit(vmu_lcd_exit);
++
++MODULE_AUTHOR("Christian Berger <c.berger@tu-braunschweig.de>");
++MODULE_DESCRIPTION("Character device driver for the SEGA Dreamcast VMU LCD");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
+index 99d5ff9a1fbe..b86c9d3d89d4 100644
+--- a/drivers/mtd/maps/Kconfig
++++ b/drivers/mtd/maps/Kconfig
+@@ -342,8 +342,13 @@ config MTD_PLATRAM
+ config MTD_VMU
+ 	tristate "Map driver for Dreamcast VMU"
+ 	depends on MAPLE
++	# vmu-flash also registers the VMU's LCD via the vmu-lcd module, so it
++	# must not be built-in while VMU_LCD is a module.
++	depends on VMU_LCD || VMU_LCD=n
+ 	help
+ 	  This driver enables access to the Dreamcast Visual Memory Unit (VMU).
++	  The same device also drives the VMU's LCD screen; enable VMU_LCD
++	  (under Auxiliary Display support) to expose it as /dev/vmu_lcdN.
+ 
+ 	  Most Dreamcast users will want to say Y here.
+ 
+diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
+index 75e06d249ce9..25471d4211a0 100644
+--- a/drivers/mtd/maps/vmu-flash.c
++++ b/drivers/mtd/maps/vmu-flash.c
+@@ -12,6 +12,7 @@
+ #include <linux/maple.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/map.h>
++#include <linux/vmu-lcd.h>
+ 
+ struct vmu_cache {
+ 	unsigned char *buffer;		/* Cache */
+@@ -772,18 +773,32 @@ static int probe_maple_vmu(struct device *dev)
+ {
+ 	struct maple_device *mdev = to_maple_dev(dev);
+ 	struct maple_driver *mdrv = to_maple_driver(dev->driver);
++	int error;
+ 
+ 	mdev->can_unload = vmu_can_unload;
+ 	mdev->fileerr_handler = vmu_file_error;
+ 	mdev->driver = mdrv;
+ 
+-	return vmu_connect(mdev);
++	error = vmu_connect(mdev);
++	if (error)
++		return error;
++
++	/*
++	 * The same maple device also drives the VMU's LCD.  Expose it as a
++	 * character device; failure here is not fatal to flash operation.
++	 */
++	error = vmu_lcd_register(mdev);
++	if (error)
++		dev_warn(&mdev->dev, "could not register VMU LCD: %d\n", error);
++
++	return 0;
+ }
+ 
+ static int remove_maple_vmu(struct device *dev)
+ {
+ 	struct maple_device *mdev = to_maple_dev(dev);
+ 
++	vmu_lcd_unregister(mdev);
+ 	vmu_disconnect(mdev);
+ 	return 0;
+ }
+diff --git a/include/linux/vmu-lcd.h b/include/linux/vmu-lcd.h
+new file mode 100644
+index 000000000000..d12675dcbd48
+--- /dev/null
++++ b/include/linux/vmu-lcd.h
+@@ -0,0 +1,23 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Registration hooks for the SEGA Dreamcast VMU LCD character device.
++ *
++ * A VMU is a single maple-bus device that exposes the memory card, LCD and
++ * clock functions at once, and the maple bus binds only one driver per
++ * device.  vmu-flash (the driver that owns the VMU) calls these to hand the
++ * LCD function to the vmu-lcd char-device driver.
++ */
++#ifndef _LINUX_VMU_LCD_H
++#define _LINUX_VMU_LCD_H
++
++struct maple_device;
++
++#if IS_ENABLED(CONFIG_VMU_LCD)
++int vmu_lcd_register(struct maple_device *mdev);
++void vmu_lcd_unregister(struct maple_device *mdev);
++#else
++static inline int vmu_lcd_register(struct maple_device *mdev) { return 0; }
++static inline void vmu_lcd_unregister(struct maple_device *mdev) { }
++#endif
++
++#endif /* _LINUX_VMU_LCD_H */
+-- 
+2.43.0
+
