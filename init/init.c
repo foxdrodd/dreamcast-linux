@@ -20,7 +20,8 @@
  * no `script` wrapper, no busybox resident in RAM.
  *
  * Console policy (matches busybox "askfirst" inittab behaviour):
- *   - physical framebuffer console (/dev/tty0) and serial console
+ *   - NR_VTS framebuffer virtual terminals (/dev/tty1 .. /dev/ttyN,
+ *     reachable with Ctrl+Alt+F1 .. F<N>) and the serial console
  *     (/dev/ttySC1): no shell process exists until a key arrives on the
  *     line, then it is respawned on each exit.
  *     For the serial line this doubles as connection detection - the
@@ -36,8 +37,16 @@
 #define TIOCSCTTY 0x540E
 #endif
 
+/*
+ * Number of framebuffer virtual terminals to offer.  They become
+ * /dev/tty1 .. /dev/ttyN and are reachable with Ctrl+Alt+F1 .. F<N>; the
+ * kernel VT layer does the actual switching, we just run a shell on each.
+ * Bump or lower this to taste (kernel cap is MAX_NR_CONSOLES, 63).
+ */
+#define NR_VTS 6
+
 struct console {
-	const char  *path;     /* tty device node                          */
+	char         path[16]; /* tty device node                          */
 	char *const *envp;     /* environment (mainly TERM) for the shell  */
 	int          askfirst; /* wait for a keypress before spawning      */
 	pid_t        pid;      /* current manager pid, -1 when not running */
@@ -57,11 +66,28 @@ static char *const envp_serial[] = {
 	NULL
 };
 
-static struct console consoles[] = {
-	{ "/dev/tty0",   envp_fb,     1, -1 },  /* physical: framebuffer + maple kbd */
-	{ "/dev/ttySC1", envp_serial, 1, -1 },  /* serial: askfirst                  */
-};
+/* NR_VTS framebuffer VTs followed by the serial console */
+static struct console consoles[NR_VTS + 1];
 #define NR_CONSOLES (sizeof(consoles) / sizeof(consoles[0]))
+
+static void init_consoles(void)
+{
+	size_t i;
+
+	for (i = 0; i < NR_VTS; i++) {
+		snprintf(consoles[i].path, sizeof(consoles[i].path),
+			 "/dev/tty%d", (int)(i + 1));
+		consoles[i].envp     = envp_fb;
+		consoles[i].askfirst = 1;
+		consoles[i].pid      = -1;
+	}
+
+	/* serial line: askfirst doubles as connection detection */
+	snprintf(consoles[i].path, sizeof(consoles[i].path), "/dev/ttySC1");
+	consoles[i].envp     = envp_serial;
+	consoles[i].askfirst = 1;
+	consoles[i].pid      = -1;
+}
 
 static const char askfirst_msg[] =
 	"\r\nPlease press Enter to activate this console.\r\n";
@@ -215,6 +241,7 @@ int main(void)
 		perror("err /bin/mksh");
 
 	/* Launch a manager per console that actually exists. */
+	init_consoles();
 	for (size_t i = 0; i < NR_CONSOLES; i++) {
 		if (tty_exists(consoles[i].path))
 			start_manager(&consoles[i]);
