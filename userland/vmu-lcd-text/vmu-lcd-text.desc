@@ -1,0 +1,17 @@
+[I] Text to vmu
+
+[T] Text to vmu.
+
+[A] foxdrodd
+[M] foxdrodd
+
+[C] extra/graphic
+[F] CROSS
+
+[L] MIT
+[V] 1.0
+[D] 0 vmu_lcd_text.c https://raw.githubusercontent.com/foxdrodd/dreamcast-linux/refs/heads/master/drivers/vmu-lcd/
+
+runmake=0 runconf=0 autoextract=0
+hook_add inmake 5 "cd $archdir;$CC -o vmu_lcd_text vmu_lcd_text.c"
+hook_add postmake 5 "cd $archdir;cp -vf vmu_lcd_text $root$bindir/"

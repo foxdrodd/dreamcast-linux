@@ -1,0 +1,36 @@
+[COPY] --- T2-COPYRIGHT-BEGIN ---
+[COPY] t2/package/*/inetutils/inetutils.desc
+[COPY] Copyright (C) 2004 - 2026 The T2 SDE Project
+[COPY] SPDX-License-Identifier: GPL-2.0
+[COPY] --- T2-COPYRIGHT-END ---
+
+[I] A collection of common network programs
+
+[T] Inetutils is a collection of common network programs. It includes:
+[T] An inetd meta-server, an ftp client and server, a telnet client and
+[T] server, an rsh client and server, an rlogin client and server,
+[T] a tftp client and server, a talk client and server, a syslogd daemonm,
+[T] Network tools: ping, ping6, traceroute, whois. Admin tools: hostname,
+[T] dnsdomainname, ifconfig, logger
+
+[U] https://www.gnu.org/software/inetutils/
+
+[A] GNU
+[M] René Rebe <rene@exactco.de>
+
+[C] base/system
+[F] CROSS
+
+[L] GPL
+[V] 2.8
+[P] O -----5---9 117.400
+
+[D] c1822486cdb897110a64dc7165682a353f7c5613debcfb4c00972878 inetutils-2.8.tar.gz https://ftp.gnu.org/gnu/inetutils/
+
+[ "$prefix_auto" = 1 ] && prefix="/usr" && set_confopt && bindir="$sbindir"
+var_append makeopt ' ' libexecdir=$root$libexecdir
+var_append confopt ' ' --disable-ifconfig
+var_append confopt ' ' --disable-logger
+var_append confopt ' ' --disable-hostname
+var_append confopt ' ' --disable-dnsdomainname
+var_append confopt ' ' --disable-syslogd
