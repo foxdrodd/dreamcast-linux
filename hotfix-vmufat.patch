@@ -1,7 +1,7 @@
-From 6de03ddd0f024c585d2957c58e67b42f602f8f62 Mon Sep 17 00:00:00 2001
+From 852906250794f0f77564b79bd89419398fd5c187 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 4 Dec 2025 16:34:29 +0000
-Subject: [PATCH 001/101] Documentation update
+Subject: [PATCH 001/103] Documentation update
 
 ---
  Documentation/filesystems/vmufat.rst | 105 +++++++++++++++++++++++++++
@@ -121,10 +121,10 @@ index 00000000000000..cde87531e9f607
 +support 1 block files in all user blocks.
 \ No newline at end of file
 
-From 84056c419d5d2f10ee213a78c924b37b26161c16 Mon Sep 17 00:00:00 2001
+From 92b01cdd4c8c42e57bfac5c6882e9044b0badbc7 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 4 Dec 2025 16:44:39 +0000
-Subject: [PATCH 002/101] Makefile and related changes
+Subject: [PATCH 002/103] Makefile and related changes
 
 ---
  fs/Kconfig         |  1 +
@@ -136,10 +136,10 @@ Subject: [PATCH 002/101] Makefile and related changes
  create mode 100644 fs/vmufat/Makefile
 
 diff --git a/fs/Kconfig b/fs/Kconfig
-index 0bfdaecaa87751..89a37c9c58a09d 100644
+index 43cb06de297ffc..235c37d8a6b58f 100644
 --- a/fs/Kconfig
 +++ b/fs/Kconfig
-@@ -332,6 +332,7 @@ source "fs/pstore/Kconfig"
+@@ -333,6 +333,7 @@ source "fs/pstore/Kconfig"
  source "fs/ufs/Kconfig"
  source "fs/erofs/Kconfig"
  source "fs/vboxsf/Kconfig"
@@ -148,10 +148,10 @@ index 0bfdaecaa87751..89a37c9c58a09d 100644
  endif # MISC_FILESYSTEMS
  
 diff --git a/fs/Makefile b/fs/Makefile
-index cf4a745e967984..3cdc3d7b804c76 100644
+index ae1b07f9c6a0cc..1e6d81320f6a50 100644
 --- a/fs/Makefile
 +++ b/fs/Makefile
-@@ -129,3 +129,4 @@ obj-$(CONFIG_VBOXSF_FS)		+= vboxsf/
+@@ -130,3 +130,4 @@ obj-$(CONFIG_VBOXSF_FS)		+= vboxsf/
  obj-$(CONFIG_ZONEFS_FS)		+= zonefs/
  obj-$(CONFIG_BPF_LSM)		+= bpf_fs_kfuncs.o
  obj-$(CONFIG_RESCTRL_FS)	+= resctrl/
@@ -191,10 +191,10 @@ index 00000000000000..da423b0c7eec86
 +
 +vmufat-y := inode.o super.o
 
-From 7c45c15eb250c13c68ac5da887f2e15741352529 Mon Sep 17 00:00:00 2001
+From 37a1ff0fc254a630fe33c6072c8bedb89e53d60f Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 4 Dec 2025 16:49:01 +0000
-Subject: [PATCH 003/101] vmufat driver code files
+Subject: [PATCH 003/103] vmufat driver code files
 
 ---
  fs/vmufat/inode.c  | 902 +++++++++++++++++++++++++++++++++++++++++++++
@@ -1787,10 +1787,10 @@ index 00000000000000..884784cafacc9f
 +}
 +#endif
 
-From aeac7617d1b34c9112c70d09f7233b0a22a3d631 Mon Sep 17 00:00:00 2001
+From f49f4ac873e273d0b3eb56ee32872abc51392f08 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 4 Dec 2025 19:41:17 +0000
-Subject: [PATCH 004/101] superblock magic fixes
+Subject: [PATCH 004/103] superblock magic fixes
 
 ---
  fs/vmufat/super.c          | 5 ++---
@@ -1854,10 +1854,10 @@ index 4f2da935a76cca..7a3ab866ef4843 100644
  
  #define REISERFS_SUPER_MAGIC	0x52654973	/* used by gcc */
 
-From 0548b9f06328ad66c66effc5fa10d5de994e2f4a Mon Sep 17 00:00:00 2001
+From fc350d0807f2e49cb1d14e5dd006cd6826cc66ab Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 4 Dec 2025 21:42:00 +0000
-Subject: [PATCH 005/101] beware of null pointer dereference and match new API
+Subject: [PATCH 005/103] beware of null pointer dereference and match new API
  for status
 
 ---
@@ -1907,10 +1907,10 @@ index 61a8e90b25c41e..f5663ba891b38a 100644
  
  static void vmufat_populate_vmudata(struct memcard *vmudata,
 
-From 8ba577e457d14d0f6b7615fe5d890bebfeff4cf3 Mon Sep 17 00:00:00 2001
+From 9eaf33c4f0d911141db6d06f3b0c0d9546de9b59 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 24 Jan 2026 20:41:07 +0000
-Subject: [PATCH 006/101] add comma, tidy
+Subject: [PATCH 006/103] add comma, tidy
 
 ---
  fs/vmufat/super.c | 7 +------
@@ -1954,10 +1954,10 @@ index f5663ba891b38a..a3a196dde26ae0 100644
  
  static int __init init_vmufat_fs(void)
 
-From 904c8dc218650823e79f6c18ae119ef5b170e2ae Mon Sep 17 00:00:00 2001
+From 0d3188eea3cf1ea1b1ae6517e02ab3e0107d1f87 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 1 Feb 2026 19:28:14 +0000
-Subject: [PATCH 007/101] create the vmudata structure in sb code
+Subject: [PATCH 007/103] create the vmudata structure in sb code
 
 ---
  fs/vmufat/super.c | 28 ++++++++++++++--------------
@@ -2044,10 +2044,10 @@ index a3a196dde26ae0..da52e34d2e0eea 100644
  
  static const struct fs_context_operations vmufat_fs_context_ops = {
 
-From 01c281681271afacca88eed9251a35d6d4cd6f03 Mon Sep 17 00:00:00 2001
+From 48363fc05274f2b7ca7897236c42d09158d3a3ca Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 13 Feb 2026 19:10:28 +0000
-Subject: [PATCH 008/101] use ctx
+Subject: [PATCH 008/103] use ctx
 
 ---
  fs/vmufat/inode.c | 25 ++++++++++++++-----------
@@ -2119,10 +2119,10 @@ index da52e34d2e0eea..52d0e26316b2e0 100644
  
  static int vmufat_get_size(struct super_block *sb, struct buffer_head **bh)
 
-From 4914df2218a5b8db951cf247b6926b2b39e7abdc Mon Sep 17 00:00:00 2001
+From 695636c259f1ef89cc5972d1f9cd8b176e327af5 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Feb 2026 12:50:06 +0000
-Subject: [PATCH 009/101] attempy to fix slab and leap year issues
+Subject: [PATCH 009/103] attempy to fix slab and leap year issues
 
 ---
  fs/vmufat/inode.c  | 42 ++++++++++++++++++++++--------------------
@@ -2303,10 +2303,10 @@ index 1d116525646e13..9204dc6ed938e0 100644
  struct memcard {
  	unsigned int sb_bnum;
 
-From 1ab356b812472413ee0fe88112573be1c03dbb92 Mon Sep 17 00:00:00 2001
+From 602445f6b7db84b45cc0d9b40051ea2e3877b065 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Feb 2026 12:56:20 +0000
-Subject: [PATCH 010/101] correct logging constant
+Subject: [PATCH 010/103] correct logging constant
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -2326,10 +2326,10 @@ index 2ccebe1cf2e698..2a21df564e51e5 100644
  		}
  		else {
 
-From 8cdb259104d306c723fff6421edc859106c71468 Mon Sep 17 00:00:00 2001
+From b882f7359d745ce2f8428e6260498ff1a7f32675 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Feb 2026 12:58:02 +0000
-Subject: [PATCH 011/101] Remove bad bool
+Subject: [PATCH 011/103] Remove bad bool
 
 ---
  fs/vmufat/inode.c | 1 -
@@ -2348,10 +2348,10 @@ index 2a21df564e51e5..ed0346ba77dc11 100644
  
  	unix_date = in->i_mtime_sec;
 
-From 2a7e1856c50fadfded4618995cdf14481ad6813e Mon Sep 17 00:00:00 2001
+From 54ddb0a402d6dc8714516eaea2a32106fc48b877 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Feb 2026 19:06:50 +0000
-Subject: [PATCH 012/101] fixing BCD date
+Subject: [PATCH 012/103] fixing BCD date
 
 ---
  fs/vmufat/inode.c | 9 +++++----
@@ -2382,10 +2382,10 @@ index ed0346ba77dc11..c19eaf15d7d474 100644
  	}
  }
 
-From 1db7eac8492d53121f59c32629edb7178da558e2 Mon Sep 17 00:00:00 2001
+From d052893a83635a674c2f03cb7d3a806b67e77929 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Feb 2026 19:48:44 +0000
-Subject: [PATCH 013/101] better file name length handling
+Subject: [PATCH 013/103] better file name length handling
 
 ---
  fs/vmufat/inode.c | 4 +---
@@ -2407,10 +2407,10 @@ index c19eaf15d7d474..ab6e821dcb8ac1 100644
  				index++, saved_file->fblk, DT_REG);
  			if (error < 0)
 
-From 9e9d858b283324f6800c4977572a8bc0b2be7d7c Mon Sep 17 00:00:00 2001
+From 1508b5fdf985b1524c361418175ae1d770684e95 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Mon, 16 Feb 2026 15:44:50 +0000
-Subject: [PATCH 014/101] simplify looking for blocks in inode block chain
+Subject: [PATCH 014/103] simplify looking for blocks in inode block chain
 
 ---
  fs/vmufat/inode.c | 56 +++++++++++++++++++----------------------------
@@ -2513,10 +2513,10 @@ index ab6e821dcb8ac1..4b5b22b0796cd3 100644
  		nxtblk = vmufat_find_free(sb);
  		if (nxtblk < 0) {
 
-From b2355137beb19f4823eb0a1418e4763ab2df26b0 Mon Sep 17 00:00:00 2001
+From d1cde5ff36ec5b4c4dc47a305e658a34dcd9d9e9 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Mon, 16 Feb 2026 18:18:40 +0000
-Subject: [PATCH 015/101] further modification of cache code
+Subject: [PATCH 015/103] further modification of cache code
 
 ---
  fs/vmufat/inode.c |  2 +-
@@ -2570,10 +2570,10 @@ index e7161dbd78953a..30edbb4362b777 100644
  }
  
 
-From 51249fe630fa342b829cc49213f2e003ce77a068 Mon Sep 17 00:00:00 2001
+From af27b8b884f61889d60d79840301878571158e47 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 17 Feb 2026 13:58:50 +0000
-Subject: [PATCH 016/101] only iterate the list if it's not empty
+Subject: [PATCH 016/103] only iterate the list if it's not empty
 
 ---
  fs/vmufat/inode.c | 12 +++++++-----
@@ -2610,10 +2610,10 @@ index 718455ae1d1513..6d37633cef65b6 100644
  	vi->nblcks = 0;
  	do {
 
-From fc2f0641210ce6d8bd726cda527a6aa40463023b Mon Sep 17 00:00:00 2001
+From f0c1d05e69971472e5a9353611cfc69526a10e21 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 17 Feb 2026 17:03:45 +0000
-Subject: [PATCH 017/101] revert unneeded change
+Subject: [PATCH 017/103] revert unneeded change
 
 ---
  fs/vmufat/inode.c | 10 ++++------
@@ -2641,10 +2641,10 @@ index 6d37633cef65b6..4b5b22b0796cd3 100644
  	vi->nblcks = 0;
  	do {
 
-From 212025636c7f9a0f337d8a8310025b5aff52e0d9 Mon Sep 17 00:00:00 2001
+From 196854d5b8cacf2d8af5611b20646642be2cc2f9 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 17 Feb 2026 22:34:12 +0000
-Subject: [PATCH 018/101] skip over unfound entries, don't fail on them
+Subject: [PATCH 018/103] skip over unfound entries, don't fail on them
 
 ---
  fs/vmufat/super.c | 2 +-
@@ -2664,10 +2664,10 @@ index 30edbb4362b777..cdc49e5cf42506 100644
  					[j * VMU_DIR_RECORD_LEN16 +
  					VMUFAT_FIRSTBLOCK_OFFSET16]) == ino) {
 
-From 2b676be3a7f233e72fc73a0ff9c34d8cdd12766c Mon Sep 17 00:00:00 2001
+From 34c09f6f0cdd6d8615e4443633a2cfd3d4c09d62 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 11:57:31 +0000
-Subject: [PATCH 019/101] simplifications
+Subject: [PATCH 019/103] simplifications
 
 ---
  fs/vmufat/super.c | 20 ++++++++------------
@@ -2712,10 +2712,10 @@ index cdc49e5cf42506..336290053c7985 100644
  				}
  			}
 
-From 64b469942e97ae637458bbea07b1058576e9e1a1 Mon Sep 17 00:00:00 2001
+From 8ebc05fae7b667eb75811edf6b835dbec5720e8c Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 12:08:51 +0000
-Subject: [PATCH 020/101] add missing bracket
+Subject: [PATCH 020/103] add missing bracket
 
 ---
  fs/vmufat/super.c | 2 +-
@@ -2735,10 +2735,10 @@ index 336290053c7985..7f107b53d027bf 100644
  					}
  				}
 
-From 46ed72744e60c72d195c1dc70fc41e539be5a18b Mon Sep 17 00:00:00 2001
+From 2ccfa4035afb1506a6e1b62ae2073bdd7390a5df Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 12:57:26 +0000
-Subject: [PATCH 021/101] properly walk the buffer head
+Subject: [PATCH 021/103] properly walk the buffer head
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -2758,10 +2758,10 @@ index 4b5b22b0796cd3..82c6f667a68fff 100644
  				if (IS_ERR(ino)) {
  					error = PTR_ERR(ino);
 
-From b8f3e1b26d527e9a77eebaa42e1e2082a7c24c50 Mon Sep 17 00:00:00 2001
+From eaf0ede31d2c3e4f4a49b781f5141eef76f00ed9 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 17:42:18 +0000
-Subject: [PATCH 022/101] use approved helpers etc
+Subject: [PATCH 022/103] use approved helpers etc
 
 ---
  fs/vmufat/inode.c | 11 ++++-------
@@ -2803,10 +2803,10 @@ index 82c6f667a68fff..661aebfa2b3e89 100644
  
  	/* Write to the directory
 
-From 2a366542624e6ed91d1dd2a341c3890cf5b07d34 Mon Sep 17 00:00:00 2001
+From c6cc9dd84cb7858a35f73218b5ed482a03af26f3 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 18:00:19 +0000
-Subject: [PATCH 023/101] fix bad call
+Subject: [PATCH 023/103] fix bad call
 
 ---
  fs/vmufat/inode.c | 3 +--
@@ -2834,10 +2834,10 @@ index 661aebfa2b3e89..6ba7ca0f233e4e 100644
  
  	/* Write to the directory
 
-From 84f201106ac470f3d985d26fec2d933165f9c85d Mon Sep 17 00:00:00 2001
+From 6828d0d8bde178caa9bbeaf103583bd3c5c4f278 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 18:03:14 +0000
-Subject: [PATCH 024/101] further tidy
+Subject: [PATCH 024/103] further tidy
 
 ---
  fs/vmufat/inode.c | 7 +++----
@@ -2869,10 +2869,10 @@ index 6ba7ca0f233e4e..f39e05bf598c62 100644
  	/* Write to the directory
  	 * Now search for space for the directory entry */
 
-From 4d18d9083d413fd4caa83e6712d5f5d83e9e2b14 Mon Sep 17 00:00:00 2001
+From f6f64af7861bd159296dc3549d11716995231bc7 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 18:35:37 +0000
-Subject: [PATCH 025/101] mark as dirty in a diffent place
+Subject: [PATCH 025/103] mark as dirty in a diffent place
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -2899,10 +2899,10 @@ index f39e05bf598c62..5f698629bfa7aa 100644
  	return error;
  
 
-From f4d28a7a4a076c5517fc2b7e065cbcd026852049 Mon Sep 17 00:00:00 2001
+From 4aeefbd734614ee672e1e0e4f906e11f1436ceca Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Feb 2026 19:14:14 +0000
-Subject: [PATCH 026/101] correct variable name
+Subject: [PATCH 026/103] correct variable name
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -2922,10 +2922,10 @@ index 5f698629bfa7aa..87c2165180aa44 100644
  	return error;
  
 
-From d16abf70811fc78329050834be968382f48bf820 Mon Sep 17 00:00:00 2001
+From 66034d6b0629bf29a1275efb13e6b36f61b8560a Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Feb 2026 13:18:15 +0000
-Subject: [PATCH 027/101] simplify code
+Subject: [PATCH 027/103] simplify code
 
 ---
  fs/vmufat/inode.c |  6 ++----
@@ -2999,10 +2999,10 @@ index 7f107b53d027bf..9c8686f3a443de 100644
  	return err;
  }
 
-From 78fc557e6a3b8846e0695126f1a831167035709d Mon Sep 17 00:00:00 2001
+From 8919309b4a77c8646f99d95cba73d74e1f0030d2 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 11:42:36 +0000
-Subject: [PATCH 028/101] Better list management hopefully
+Subject: [PATCH 028/103] Better list management hopefully
 
 ---
  fs/vmufat/inode.c | 7 +++----
@@ -3027,10 +3027,10 @@ index e6111d75945b70..45d42f4e5a47f5 100644
  	vi->nblcks = 0;
  	do {
 
-From 0a9425cb4ed4082cd0a043ebca7d7332a05389e0 Mon Sep 17 00:00:00 2001
+From aada067bf21c80de391360a38efde552bf9b2be1 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 11:50:51 +0000
-Subject: [PATCH 029/101] define objects properly for list traversal
+Subject: [PATCH 029/103] define objects properly for list traversal
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -3050,10 +3050,10 @@ index 45d42f4e5a47f5..d84ff605be1cc9 100644
  	u16 fatdata;
  
 
-From b45449e13870dc99e563e6c7a790a8779a0aef33 Mon Sep 17 00:00:00 2001
+From d2401f84f627ce0909c1ec3d0c313a088284eada Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 12:41:10 +0000
-Subject: [PATCH 030/101] rework linked list code
+Subject: [PATCH 030/103] rework linked list code
 
 ---
  fs/vmufat/inode.c  | 11 +++++------
@@ -3150,10 +3150,10 @@ index 9204dc6ed938e0..3dc4f16a4fb72c 100644
  	struct inode vfs_inode;
  };
 
-From ab67f570e042baaea8d776fc9e2c21a72271a11f Mon Sep 17 00:00:00 2001
+From 905c2bd3a398071eb946bb3ef07e57a9f76aa504 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 12:49:30 +0000
-Subject: [PATCH 031/101] more linked list refactoring
+Subject: [PATCH 031/103] more linked list refactoring
 
 ---
  fs/vmufat/inode.c | 8 ++++----
@@ -3192,10 +3192,10 @@ index d7cd684c600c0d..af0b62b1dd6d3a 100644
  
  	mutex_lock(&vmudetails->mutex);
 
-From b14bd26884fc263f02e8e7c9a194bbbb8ddc449a Mon Sep 17 00:00:00 2001
+From 1b21b8368d376c26c0c689301ffb17a6b60ca3f7 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 12:52:59 +0000
-Subject: [PATCH 032/101] even more linked list refactoring
+Subject: [PATCH 032/103] even more linked list refactoring
 
 ---
  fs/vmufat/inode.c | 4 ++--
@@ -3224,10 +3224,10 @@ index af0b62b1dd6d3a..4201556a051d9b 100644
  			break;
  	}
 
-From 7e48e50e4e4c3b183ce7bef767d9b78fd53284fd Mon Sep 17 00:00:00 2001
+From b101c7e033e43e0f4d4a0f37b2be6ad05d5fb034 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 12:55:09 +0000
-Subject: [PATCH 033/101] still more linked list refactoring
+Subject: [PATCH 033/103] still more linked list refactoring
 
 ---
  fs/vmufat/inode.c | 4 ++--
@@ -3256,10 +3256,10 @@ index 4201556a051d9b..e228f9af8bf1c1 100644
  			break;
  	}
 
-From 6d821bd4a9a7b72ed6833cd6c323434335f1cfa5 Mon Sep 17 00:00:00 2001
+From 83f0bf2f5dcee01bea75b33e92fd4b3f5c851f32 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 12:58:07 +0000
-Subject: [PATCH 034/101] still struggling with linked list code
+Subject: [PATCH 034/103] still struggling with linked list code
 
 ---
  fs/vmufat/inode.c | 4 ++--
@@ -3288,10 +3288,10 @@ index e228f9af8bf1c1..cadb50ff3179fb 100644
  			break;
  	}
 
-From 7b47f10cb59880f8549cbc2d404c382e39494e5b Mon Sep 17 00:00:00 2001
+From 7c4aadf89137e7b85c5498099787ba1d0ea2b7f3 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 13:00:31 +0000
-Subject: [PATCH 035/101] more struggling with linked list code
+Subject: [PATCH 035/103] more struggling with linked list code
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -3311,10 +3311,10 @@ index cadb50ff3179fb..0df72fffe9ef0f 100644
  	struct memcard *vmudetails;
  	int cural;
 
-From b9b01878a2cfe84280843bead3cb039f742a148f Mon Sep 17 00:00:00 2001
+From ce6466576fa4d5ca455db679d33fd933c1ef73e4 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 13:09:22 +0000
-Subject: [PATCH 036/101] more and more linked list stuff
+Subject: [PATCH 036/103] more and more linked list stuff
 
 ---
  fs/vmufat/inode.c | 6 +++---
@@ -3352,10 +3352,10 @@ index 0df72fffe9ef0f..6089cd2060c2b8 100644
  	return error;
  }
 
-From 65873d030ea0306524dce7b050d8b9786c165383 Mon Sep 17 00:00:00 2001
+From 2ab5726ccbe8cc8a59fc55424f6ab864b7a3e77b Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 13:15:36 +0000
-Subject: [PATCH 037/101] restore missing bracket
+Subject: [PATCH 037/103] restore missing bracket
 
 ---
  fs/vmufat/inode.c | 1 +
@@ -3374,10 +3374,10 @@ index 6089cd2060c2b8..94aeb80197ba39 100644
  }
  
 
-From 25d549ed8a3a5295d599921d513f63c7046dde54 Mon Sep 17 00:00:00 2001
+From 486cd7b8542d5e67b7b381b427937fd6e0b9256b Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 13:21:23 +0000
-Subject: [PATCH 038/101] use list_head
+Subject: [PATCH 038/103] use list_head
 
 ---
  fs/vmufat/inode.c | 3 ++-
@@ -3398,10 +3398,10 @@ index 94aeb80197ba39..945ba9f4330931 100644
  	struct memcard *vmudetails;
  	int cural;
 
-From 5624fd5c034d30a20c090c6ca7667d2ecf59299b Mon Sep 17 00:00:00 2001
+From ac77a3c2a97813f916ffefccc16cb7d20c7008a8 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 13:25:06 +0000
-Subject: [PATCH 039/101] fix issues in super.c
+Subject: [PATCH 039/103] fix issues in super.c
 
 ---
  fs/vmufat/super.c | 6 +++---
@@ -3439,10 +3439,10 @@ index 2d6f445b32037b..40ca396a3ca8ab 100644
  		printk(KERN_EMERG "VMUFAT: Could not create block list cache.\n");
  		return -ENOMEM;
 
-From fe22234a25bc687285104f164cfda267526442cd Mon Sep 17 00:00:00 2001
+From 11769927168336ac5644b62a02d240014467d839 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 13:30:34 +0000
-Subject: [PATCH 040/101] fix another issue in super.c
+Subject: [PATCH 040/103] fix another issue in super.c
 
 ---
  fs/vmufat/super.c | 4 +---
@@ -3470,10 +3470,10 @@ index 40ca396a3ca8ab..0b36fa370cab0e 100644
  	}
  	kmem_cache_free(vmufat_inode_cachep, vi);
 
-From 073ae17c3fca3714a945218d42a90c63ea7f504b Mon Sep 17 00:00:00 2001
+From e474a5123f23e3cced39f9892e57769007413a1a Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Feb 2026 23:30:42 +0000
-Subject: [PATCH 041/101] test change in attempt to track down bug
+Subject: [PATCH 041/103] test change in attempt to track down bug
 
 ---
  fs/vmufat/inode.c | 14 +++++++-------
@@ -3528,10 +3528,10 @@ index 0b36fa370cab0e..93cc18a2a8ba44 100644
  	.init_fs_context = vmufat_init_fs_context,
  };
 
-From f0dae2b317942d7d6611d1ceaf36dea30eb72785 Mon Sep 17 00:00:00 2001
+From 97d83db4f00951f7393ddeddb3ea75fec7d01a75 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Feb 2026 18:04:10 +0000
-Subject: [PATCH 042/101] revert last changes, change cache creation code
+Subject: [PATCH 042/103] revert last changes, change cache creation code
  instead
 
 ---
@@ -3595,10 +3595,10 @@ index 93cc18a2a8ba44..8438550eba44c9 100644
  	.init_fs_context = vmufat_init_fs_context,
  };
 
-From 5d9bcdcdb726e3cd78562c9077676dd7c073c729 Mon Sep 17 00:00:00 2001
+From 5d072bfb70e8d39a4270dd6f0e3fccfb9af422a2 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Feb 2026 18:11:52 +0000
-Subject: [PATCH 043/101] fix typos etc
+Subject: [PATCH 043/103] fix typos etc
 
 ---
  fs/vmufat/super.c | 4 ++--
@@ -3626,10 +3626,10 @@ index 8438550eba44c9..d707adea594e68 100644
  		printk(KERN_EMERG "VMUFAT: Could not create inode cache.\n");
  		kmem_cache_destroy(vmufat_inode_cachep);
 
-From 9510fbe84d7edffddccf0a9f4367c0d8e28ec085 Mon Sep 17 00:00:00 2001
+From ee06da3ad602975d53922c176642eb2554afaa5a Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Feb 2026 18:52:35 +0000
-Subject: [PATCH 044/101] comment generic code back in
+Subject: [PATCH 044/103] comment generic code back in
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -3649,10 +3649,10 @@ index eb3c8458aba9a0..945ba9f4330931 100644
  
  const struct inode_operations vmufat_inode_operations = {
 
-From 0d6a1a39da4fe9131b3237c6b7692c7f9e5e11b4 Mon Sep 17 00:00:00 2001
+From e62a52ca886d278edbbc1f8bc57ae6030e2b1da7 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Feb 2026 21:01:15 +0000
-Subject: [PATCH 045/101] fix typo, search for free blocks properly
+Subject: [PATCH 045/103] fix typo, search for free blocks properly
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -3686,10 +3686,10 @@ index d707adea594e68..097d72f5b41684 100644
  		goto out;
  	}
 
-From c21c4e0c5849b331f18c67597f411129f21a176e Mon Sep 17 00:00:00 2001
+From 9d417c1c789d359200fa50a50362d49cf1c5fafb Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 24 Feb 2026 19:22:24 +0000
-Subject: [PATCH 046/101] remove unused code etc
+Subject: [PATCH 046/103] remove unused code etc
 
 ---
  fs/vmufat/inode.c | 3 +--
@@ -3723,10 +3723,10 @@ index 097d72f5b41684..d3347d5c66a814 100644
  			goto failed;
  found:
 
-From b3935d73fa8c8bb7bf8e28da517446ed050343af Mon Sep 17 00:00:00 2001
+From a5cc35a4898fa2d40cf07c6b0b623129e247a787 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 28 Feb 2026 13:51:13 +0000
-Subject: [PATCH 047/101] Further tidy plus avoid inode 0 issue
+Subject: [PATCH 047/103] Further tidy plus avoid inode 0 issue
 
 ---
  fs/vmufat/inode.c |  5 ++++-
@@ -3783,10 +3783,10 @@ index d3347d5c66a814..74c0a65b480512 100644
  		ret = -ENOMEM;
  		goto freevmudata_out;
 
-From b49ae137683e4515cb0fe429cd3fffc5824b78b5 Mon Sep 17 00:00:00 2001
+From b3b17c091d7b5301b16b496a8f2ddaf3715c554e Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 8 Mar 2026 13:07:57 +0000
-Subject: [PATCH 048/101] Collect more stats
+Subject: [PATCH 048/103] Collect more stats
 
 ---
  fs/vmufat/inode.c |  5 ++--
@@ -3910,10 +3910,10 @@ index 74c0a65b480512..91740b87390d48 100644
  	return error;
  }
 
-From f4ab7ba5993e794d20e726d78ac0948fbd425fef Mon Sep 17 00:00:00 2001
+From cec6bf34ede82118cc3dedd6382180b403ed1df3 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 8 Mar 2026 19:46:49 +0000
-Subject: [PATCH 049/101] fix loops etc
+Subject: [PATCH 049/103] fix loops etc
 
 ---
  fs/vmufat/super.c | 12 ++++--------
@@ -3964,10 +3964,10 @@ index 91740b87390d48..87260ffcab8752 100644
  			if (bh->b_data[record_offset] == 0) {
  				files_available++;
 
-From bc0e47310e30793ba18ee916e7faef5067c9ef12 Mon Sep 17 00:00:00 2001
+From c1b69d5df9f65cb0d73e253301dea084f836b255 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Mon, 9 Mar 2026 11:47:50 +0000
-Subject: [PATCH 050/101] remove unneeded variable
+Subject: [PATCH 050/103] remove unneeded variable
 
 ---
  fs/vmufat/super.c | 1 -
@@ -3986,10 +3986,10 @@ index 87260ffcab8752..5055beeeb6807d 100644
  	struct memcard *vmudetails;
  	// get directory
 
-From a7ad63a91abd78808f1481e6e7bfd4e2aa28b099 Mon Sep 17 00:00:00 2001
+From 8215da1ecb026ceb3ae79b8c73c08a343349848e Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 10 Mar 2026 18:45:08 +0000
-Subject: [PATCH 051/101] add a getattr function
+Subject: [PATCH 051/103] add a getattr function
 
 ---
  fs/vmufat/inode.c | 10 ++++++++++
@@ -4024,10 +4024,10 @@ index 1bd4344f72f9fe..8a8f8efc6765f5 100644
  
  const struct file_operations vmufat_file_dir_operations = {
 
-From ae8111de0e1e98b9e3c8efa22f4cc773ddef7576 Mon Sep 17 00:00:00 2001
+From 89601900d9a5cf2f74e9ee0bdde2ad66ed66ad5e Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 10 Mar 2026 18:56:58 +0000
-Subject: [PATCH 052/101] add missing variable name
+Subject: [PATCH 052/103] add missing variable name
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -4047,10 +4047,10 @@ index 8a8f8efc6765f5..5b02d483df0e1e 100644
  	return 0;
  }
 
-From d8a7563c75503dc4956f958e4bd20b3e84f0102f Mon Sep 17 00:00:00 2001
+From 6e756e59a796a1334c9d2bd093783b085c3a11e1 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 11 Mar 2026 15:37:16 +0000
-Subject: [PATCH 053/101] is incrementing pos the answer?
+Subject: [PATCH 053/103] is incrementing pos the answer?
 
 ---
  fs/vmufat/inode.c | 3 +++
@@ -4083,10 +4083,10 @@ index 5b02d483df0e1e..b17effce5793c5 100644
  				goto finish;
  		}
 
-From a3c7c44298d9a013bdc3b174012d9bb9fae0543e Mon Sep 17 00:00:00 2001
+From ec4edf5fc8ca62f5052a6e68641e6bf3ead66f16 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 11 Mar 2026 22:39:33 +0000
-Subject: [PATCH 054/101] Try generic seek for directory file ops
+Subject: [PATCH 054/103] Try generic seek for directory file ops
 
 ---
  fs/vmufat/inode.c | 1 +
@@ -4105,10 +4105,10 @@ index b17effce5793c5..5a732e3c6c7eea 100644
  
  const struct file_operations vmufat_file_operations = {
 
-From fd4e4bbf25130e6a21d64c7029e2e60236ada378 Mon Sep 17 00:00:00 2001
+From b37282360ff87b39ea52e24b76a3c2fae548b7e6 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 12 Mar 2026 14:19:02 +0000
-Subject: [PATCH 055/101] trying to fix directory size issue
+Subject: [PATCH 055/103] trying to fix directory size issue
 
 ---
  fs/vmufat/inode.c | 12 +++++++++++-
@@ -4140,10 +4140,10 @@ index 5a732e3c6c7eea..708cb90cea6596 100644
  }
  
 
-From a158724fc5c602dd831b7fc3bb9fd9eb94cb4a70 Mon Sep 17 00:00:00 2001
+From 454dd450cef210236f050d1d53239948af629e36 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 12 Mar 2026 14:35:49 +0000
-Subject: [PATCH 056/101] use pointer type
+Subject: [PATCH 056/103] use pointer type
 
 ---
  fs/vmufat/inode.c | 4 ++--
@@ -4167,10 +4167,10 @@ index 708cb90cea6596..13334aebe72801 100644
  	if (sb) {
  		vmudetails = sb->s_fs_info;
 
-From 72631b0ffe1033c5db414b2db33b280d72dd8e9c Mon Sep 17 00:00:00 2001
+From aa6d9bbe166d499a6fb53fef9039a09fed63ebe9 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Thu, 12 Mar 2026 20:44:18 +0000
-Subject: [PATCH 057/101] fix link count for directory?
+Subject: [PATCH 057/103] fix link count for directory?
 
 ---
  fs/vmufat/inode.c | 2 ++
@@ -4211,10 +4211,10 @@ index 5055beeeb6807d..09c700a2e51a69 100644
  	int error = -1;
  	int files_found = 0;
 
-From fc491fa1867ae1deb305390c835801f9f9b37eae Mon Sep 17 00:00:00 2001
+From 2e0293b9b2a921bee5984e4baa67f399ace58232 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 13 Mar 2026 11:20:49 +0000
-Subject: [PATCH 058/101] general code tidy
+Subject: [PATCH 058/103] general code tidy
 
 ---
  fs/vmufat/super.c | 50 +++++++++++++++++++++--------------------------
@@ -4338,10 +4338,10 @@ index 09c700a2e51a69..4092f69cd67010 100644
  
  static void __exit exit_vmufat_fs(void)
 
-From 03f53df7c8f16fda5aad4b10fb83cfddba212fb4 Mon Sep 17 00:00:00 2001
+From bdfe3745b1e65f79e02b273de739e63c1134e233 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 13 Mar 2026 11:41:41 +0000
-Subject: [PATCH 059/101] further code tidying
+Subject: [PATCH 059/103] further code tidying
 
 ---
  fs/vmufat/inode.c  |  4 ++--
@@ -4491,10 +4491,10 @@ index 3dc4f16a4fb72c..553ed59dc61d49 100644
 +int vmufat_count_files(struct super_block *sb);
  #endif
 
-From d17e7175b858fb927541817b00e24e9d1572df25 Mon Sep 17 00:00:00 2001
+From cca0c5ce8b3c1ec63e476d8505c9d8837d4b0218 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Mar 2026 20:41:55 +0000
-Subject: [PATCH 060/101] grow files in directory as well as FAT
+Subject: [PATCH 060/103] grow files in directory as well as FAT
 
 ---
  fs/vmufat/inode.c | 55 ++++++++++++++++++++++++++++++++++++++++++++---
@@ -4595,10 +4595,10 @@ index 843925dea19077..2c1782fb4558ed 100644
  		mutex_unlock(&vmudetails->mutex);
  		goto out;
 
-From d123f2c51b61c6d6309e37369cc576e24aa9d693 Mon Sep 17 00:00:00 2001
+From c8c9cf3733d811223860ecf921d6478c1152ebee Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Mar 2026 20:47:04 +0000
-Subject: [PATCH 061/101] fix typo
+Subject: [PATCH 061/103] fix typo
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -4618,10 +4618,10 @@ index 2c1782fb4558ed..7c42e15c811e8b 100644
  			current_count++;
  			((u16 *) bh_>b_data)
 
-From 3dcb514d5fd73908fa85d14d4faa782f9ac64410 Mon Sep 17 00:00:00 2001
+From c5ec5e59be245aad2be3ef249822fdf14ce8874c Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Mar 2026 20:50:16 +0000
-Subject: [PATCH 062/101] further typographical errors etc
+Subject: [PATCH 062/103] further typographical errors etc
 
 ---
  fs/vmufat/inode.c | 10 +++++-----
@@ -4669,10 +4669,10 @@ index 7c42e15c811e8b..f50ed3b3368be6 100644
  				cpu_to_le16(current_count);
  			mark_buffer_dirty(bh);
 
-From e56cbd8f70098fdc8230a374886a063d3c9d53e2 Mon Sep 17 00:00:00 2001
+From 6882d0e5db93b33ec9c438b56032697bd1f4d2b0 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Mar 2026 20:51:56 +0000
-Subject: [PATCH 063/101] even more typographical errors etc
+Subject: [PATCH 063/103] even more typographical errors etc
 
 ---
  fs/vmufat/inode.c | 4 ++--
@@ -4699,10 +4699,10 @@ index f50ed3b3368be6..06096b77934b1b 100644
  	}
  
 
-From 8fde16898c66766c5ad771c51571974570ecbaaf Mon Sep 17 00:00:00 2001
+From 6fc23a90571f5381634af83e70c43d6f85e89eec Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 15 Mar 2026 21:55:11 +0000
-Subject: [PATCH 064/101] trying to fix non-sync issue
+Subject: [PATCH 064/103] trying to fix non-sync issue
 
 ---
  fs/vmufat/super.c | 1 +
@@ -4721,10 +4721,10 @@ index d2fadd4dacb9ff..471c0b8da3edfc 100644
  }
  
 
-From 24b97e1e9dc9e3d1e57ff6a4a5401fbb9d14c834 Mon Sep 17 00:00:00 2001
+From c059ba840d724230626a9991775b1ac9be71c4c4 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Mon, 16 Mar 2026 16:20:18 +0000
-Subject: [PATCH 065/101] don't write bad data out
+Subject: [PATCH 065/103] don't write bad data out
 
 ---
  fs/vmufat/inode.c | 10 +++++-----
@@ -4804,10 +4804,10 @@ index 471c0b8da3edfc..21b21c56380264 100644
  	mark_buffer_dirty(bh);
  	brelse(bh);
 
-From d30315ed04ad2b249fc66feeeb58ca60b9659c45 Mon Sep 17 00:00:00 2001
+From 267d0dbd66da231f5633be242b864671affa6728 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 17 Mar 2026 14:31:05 +0000
-Subject: [PATCH 066/101] working with exec and data files
+Subject: [PATCH 066/103] working with exec and data files
 
 ---
  fs/vmufat/inode.c  | 70 ++++++++++++++++++++++++++++++++++++++++------
@@ -4980,10 +4980,10 @@ index 553ed59dc61d49..60bc77a5924be2 100644
  /* file allocation table markers */
  #define VMUFAT_FILE_END			0xFFFA
 
-From a4d399fac43e1d16c4ee155b0c32cb9d3e616926 Mon Sep 17 00:00:00 2001
+From 2f5cc322d6af4b91782ed3d9046002fd35da61eb Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 13:38:15 +0000
-Subject: [PATCH 067/101] fix typos etc
+Subject: [PATCH 067/103] fix typos etc
 
 ---
  fs/vmufat/inode.c  | 15 +++++++++++----
@@ -5094,10 +5094,10 @@ index 60bc77a5924be2..7daa6a20137e44 100644
  };
  
 
-From edfa5b171e0a9d5ee64541b6edcd98d9684608e1 Mon Sep 17 00:00:00 2001
+From 940b6171de559b25667308a34c7c7ffe44cea456 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 13:44:16 +0000
-Subject: [PATCH 068/101] avoid clashing definitions of EXEC
+Subject: [PATCH 068/103] avoid clashing definitions of EXEC
 
 ---
  fs/vmufat/inode.c  | 6 +++---
@@ -5153,10 +5153,10 @@ index 7daa6a20137e44..1b4358324c3e9b 100644
  	struct inode vfs_inode;
  };
 
-From 74ce2526174212789821699c105d056ba173d269 Mon Sep 17 00:00:00 2001
+From 443a3580ed27988320cf275ef0793599ada3d8fd Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 13:47:48 +0000
-Subject: [PATCH 069/101] get enum declaration right
+Subject: [PATCH 069/103] get enum declaration right
 
 ---
  fs/vmufat/inode.c | 6 +++---
@@ -5194,10 +5194,10 @@ index 1646b3ad8b8812..fa80930b032df6 100644
  		} else {
  			nxtblk = vmufat_find_free_backward(sb);
 
-From 6b707466d450f0287e4291f5ca590928b17d27eb Mon Sep 17 00:00:00 2001
+From 20e4823b27273edbeff818e2a708ae4eac95c2af Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 13:48:54 +0000
-Subject: [PATCH 070/101] include chages in header file
+Subject: [PATCH 070/103] include chages in header file
 
 ---
  fs/vmufat/vmufat.h | 2 +-
@@ -5217,10 +5217,10 @@ index 1b4358324c3e9b..8772395bb73497 100644
  };
  
 
-From 038a3ecd2bb197082803edd6c17e9c15adf9fddd Mon Sep 17 00:00:00 2001
+From 46d6a1899d523cc9464cee0bddab5d18a22ed86d Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 14:31:28 +0000
-Subject: [PATCH 071/101] adjust free block counts
+Subject: [PATCH 071/103] adjust free block counts
 
 ---
  fs/vmufat/inode.c | 6 +++---
@@ -5271,10 +5271,10 @@ index 8ee502e012570c..11e41d7c5cd6b2 100644
  		bh = vmufat_sb_bread(sb, i);
  		if (!bh) {
 
-From cf834f5b1c9013f8592194368125658cfd453252 Mon Sep 17 00:00:00 2001
+From 984d94fe66e7c9289b29be811f38d2e81eda51ce Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 16:37:00 +0000
-Subject: [PATCH 072/101] get the search for a free block correct
+Subject: [PATCH 072/103] get the search for a free block correct
 
 ---
  fs/vmufat/inode.c  | 10 ++++++----
@@ -5379,10 +5379,10 @@ index 8772395bb73497..93f3a73b38126f 100644
  #define EXEC				0111
  #define NOCOPY				0xFF
 
-From b72abfaa621e5e2bad924f612f3d7d69b1b14cce Mon Sep 17 00:00:00 2001
+From 47fc8c2fed06f24ab92f20806e28e742c3b2288c Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 21:41:02 +0000
-Subject: [PATCH 073/101] working on fixing fat for directory
+Subject: [PATCH 073/103] working on fixing fat for directory
 
 ---
  fs/vmufat/inode.c | 39 +++++++++++++++++++++++++++------------
@@ -5478,10 +5478,10 @@ index d944f3707cbc03..e06af0d2d8730c 100644
  	mutex_unlock(&vmudetails->mutex);
  	brelse(bh);
 
-From 78d4724563fd3aeededf14d68670cea67002c43c Mon Sep 17 00:00:00 2001
+From 137bffbc3baed1ea08918c9befb3bb83014d4e06 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 21:55:38 +0000
-Subject: [PATCH 074/101] more dir fat code
+Subject: [PATCH 074/103] more dir fat code
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -5501,10 +5501,10 @@ index e06af0d2d8730c..6709c71722c22c 100644
  
  /*
 
-From 3ac8fb7d4253d5a88b24dd04d9f8e224aa210594 Mon Sep 17 00:00:00 2001
+From 4a5327c7f725f09a1923fb42414b572abcdea077 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 18 Mar 2026 22:47:22 +0000
-Subject: [PATCH 075/101] turns out none of that needed for properly formatted
+Subject: [PATCH 075/103] turns out none of that needed for properly formatted
  device
 
 ---
@@ -5541,10 +5541,10 @@ index 6709c71722c22c..4e6295f8753b53 100644
  	mark_buffer_dirty(bh);
  	brelse(bh_old);
 
-From aff0746d3322354d1a4ae39de24b67f56b0a1bdb Mon Sep 17 00:00:00 2001
+From 5f5d21f2a5a7198d2cd725437a41e58cbf57f932 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Mar 2026 15:30:33 +0000
-Subject: [PATCH 076/101] still not handling non-standard sizes properly - fix?
+Subject: [PATCH 076/103] still not handling non-standard sizes properly - fix?
 
 ---
  fs/vmufat/super.c | 4 ++--
@@ -5572,10 +5572,10 @@ index 9cd6a2bd01b086..670e3d98e2e091 100644
  }
  
 
-From baeb3046facd2dbf910cd4275969f10741504070 Mon Sep 17 00:00:00 2001
+From 7e00d4e2bf4aaaa78c6941fe4b56050c1304b79e Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Mar 2026 15:47:26 +0000
-Subject: [PATCH 077/101] fixing backward search
+Subject: [PATCH 077/103] fixing backward search
 
 ---
  fs/vmufat/inode.c | 3 +--
@@ -5596,10 +5596,10 @@ index 4e6295f8753b53..746765c5d8148b 100644
  		bh_fat = vmufat_sb_bread(sb, fatblk + i);
  		if (!bh_fat) {
 
-From f4ca89a3b9a73ce10ce32c3ffd795dc55880e85d Mon Sep 17 00:00:00 2001
+From de62a1fd05b0bc78353f7ddae86a5be3b1d7563d Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Mar 2026 17:14:25 +0000
-Subject: [PATCH 078/101] search code all messed up - test new backward search
+Subject: [PATCH 078/103] search code all messed up - test new backward search
 
 ---
  fs/vmufat/inode.c | 16 ++++++++++------
@@ -5652,10 +5652,10 @@ index 746765c5d8148b..ed9df1d9a4f3c0 100644
  	return ret;
  
 
-From 180d317f145f6ab05e5486a9b528d32062e72436 Mon Sep 17 00:00:00 2001
+From 45dac6cc88ebd9f352b4c32c9874a61300878c38 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Mar 2026 17:47:06 +0000
-Subject: [PATCH 079/101] more work on multiblock FATs
+Subject: [PATCH 079/103] more work on multiblock FATs
 
 ---
  fs/vmufat/inode.c | 4 ++--
@@ -5684,10 +5684,10 @@ index ed9df1d9a4f3c0..f52420ffdde096 100644
  	put_bh(bh);
  out:
 
-From 2ac554906bd394eb5753c5e29023490d05e4fe3d Mon Sep 17 00:00:00 2001
+From 899a7dfc4cd288a259f915394c80f651e17c4620 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Mar 2026 18:20:39 +0000
-Subject: [PATCH 080/101] still working on multiblock VMUs
+Subject: [PATCH 080/103] still working on multiblock VMUs
 
 ---
  fs/vmufat/inode.c  | 4 ++--
@@ -5723,10 +5723,10 @@ index 93f3a73b38126f..a42c437097d00b 100644
  #define VMU_BLK_SZ				0x200
  #define	VMU_BLK_SZ16			0x100
 
-From da3f0c9b7d9827ddf9f91096797d01a24941e555 Mon Sep 17 00:00:00 2001
+From 15147558c135cf821f4f9187b943741655ccb148 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Mar 2026 19:04:29 +0000
-Subject: [PATCH 081/101] fixing search forward
+Subject: [PATCH 081/103] fixing search forward
 
 ---
  fs/vmufat/inode.c | 11 +++--------
@@ -5771,10 +5771,10 @@ index f45375e2d9305d..81a8bc9475592c 100644
  fail:
  	return ret;
 
-From 239af98b48c46e24fdd90f6c2bab5a20b69853c6 Mon Sep 17 00:00:00 2001
+From 30e662f76293ea266fdbc8ac4ec39502d9cebc2c Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 20 Mar 2026 21:13:27 +0000
-Subject: [PATCH 082/101] trying to identify error
+Subject: [PATCH 082/103] trying to identify error
 
 ---
  fs/vmufat/super.c | 12 ++++++------
@@ -5836,10 +5836,10 @@ index 670e3d98e2e091..3f19f27ec9e437 100644
  	}
  	/* BCD timestamp it */
 
-From c8f5ca9cc1a2fd67a91ddce1d0d13a6d52bde111 Mon Sep 17 00:00:00 2001
+From 7e70cbac07bf83fe3e7fc100ed710805981f9b0c Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Mar 2026 18:41:14 +0000
-Subject: [PATCH 083/101] still working on multiblock issue
+Subject: [PATCH 083/103] still working on multiblock issue
 
 ---
  fs/vmufat/inode.c  | 18 +++++++++---------
@@ -5921,10 +5921,10 @@ index a42c437097d00b..e541b9515b7506 100644
  /* specifcations for directory entries */
  #define VMU_DIR_RECORD_LEN			0x20
 
-From 3cf41a38e980144c8d188c7f731ca15f6401690c Mon Sep 17 00:00:00 2001
+From 4a5ba83d1e2816fa76404d40cbd8868e134ad1c9 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Mar 2026 18:59:34 +0000
-Subject: [PATCH 084/101] simplify search code
+Subject: [PATCH 084/103] simplify search code
 
 ---
  fs/vmufat/inode.c  | 12 +++++-------
@@ -5986,10 +5986,10 @@ index e541b9515b7506..b716777d6aa963 100644
  /* specifcations for directory entries */
  #define VMU_DIR_RECORD_LEN			0x20
 
-From b8739bd103398cd29790f3f10164c22198dcf1dd Mon Sep 17 00:00:00 2001
+From 69de65c480d5f80517adc237e3108b1b85ea3cac Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sat, 21 Mar 2026 19:35:59 +0000
-Subject: [PATCH 085/101] use correct offset to read FAT in many block FATs
+Subject: [PATCH 085/103] use correct offset to read FAT in many block FATs
 
 ---
  fs/vmufat/inode.c | 3 +--
@@ -6010,10 +6010,10 @@ index 51f0bb42457818..e536cd8ef7cb15 100644
  		error = -EIO;
  		goto out;
 
-From 131fc2c9d326c0ed9913f498779cbf376daf1115 Mon Sep 17 00:00:00 2001
+From c1fcc4a5cdb3229d3b0e6e674481e14ad9b37f81 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Mar 2026 12:10:49 +0000
-Subject: [PATCH 086/101] use correct multiples for multiblock search
+Subject: [PATCH 086/103] use correct multiples for multiblock search
 
 ---
  fs/vmufat/inode.c | 12 ++++++------
@@ -6071,10 +6071,10 @@ index e536cd8ef7cb15..31ffbe739ae0d1 100644
  	return ret;
  
 
-From 42dc03526145be32df364405e195edae97089f71 Mon Sep 17 00:00:00 2001
+From 625c60d6308671c2f8979709e9e060bf9e8d9d77 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Mar 2026 12:15:07 +0000
-Subject: [PATCH 087/101] more use of correct multiples for multiblock search
+Subject: [PATCH 087/103] more use of correct multiples for multiblock search
 
 ---
  fs/vmufat/inode.c | 8 ++++----
@@ -6121,10 +6121,10 @@ index 31ffbe739ae0d1..e6bb520115a064 100644
  	put_bh(bh);
  out:
 
-From f934c9e82c3bf64775d00af74c0df947a219befd Mon Sep 17 00:00:00 2001
+From 07e9a8f57cbc6400e34ef7559c41364550e7be9b Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Mar 2026 17:35:25 +0000
-Subject: [PATCH 088/101] working on directory cleaning
+Subject: [PATCH 088/103] working on directory cleaning
 
 ---
  fs/vmufat/inode.c | 110 +++++++++++++++++++++++-----------------------
@@ -6291,10 +6291,10 @@ index e6bb520115a064..6e59c73da11dfa 100644
  failure:
  	printk(KERN_WARNING "VMUFAT: Failure to read volume,"
 
-From 13daff14e7189ad6ed439a3f5fb0b1eb3f92d889 Mon Sep 17 00:00:00 2001
+From f9d83574310ed2d2e3ccaa38556f169b75dc42c8 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Mar 2026 18:06:45 +0000
-Subject: [PATCH 089/101] fix typos etc
+Subject: [PATCH 089/103] fix typos etc
 
 ---
  fs/vmufat/inode.c | 24 ++++++++++++------------
@@ -6379,10 +6379,10 @@ index 6e59c73da11dfa..7547581a4df8f8 100644
  	brelse(bh);
  	brelse(bh_old);
 
-From 81eb21dd010644ac133945c0bf7ffd61060c0bf7 Mon Sep 17 00:00:00 2001
+From 05567ac190db9e6512a793f3a8d08356a52606d9 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Mar 2026 18:50:26 +0000
-Subject: [PATCH 090/101] search in the correct direction
+Subject: [PATCH 090/103] search in the correct direction
 
 ---
  fs/vmufat/inode.c | 8 ++++----
@@ -6429,10 +6429,10 @@ index 7547581a4df8f8..bcb76c7dfa77b0 100644
  		brelse(bh_old);
  		bh_old = vmufat_sb_bread(sb, i);
 
-From 43d538fdc7826ecc4b89da5db184237760f4435f Mon Sep 17 00:00:00 2001
+From 5a53dbf81b937a8721fca21ddc90dc0292cc2260 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Mar 2026 19:06:59 +0000
-Subject: [PATCH 091/101] replace with the correct record
+Subject: [PATCH 091/103] replace with the correct record
 
 ---
  fs/vmufat/inode.c | 7 +++++++
@@ -6457,10 +6457,10 @@ index bcb76c7dfa77b0..25a4743afd337e 100644
  	{
  		bh->b_data[k + (j * VMU_DIR_RECORD_LEN)] = bh_old->b_data[k + (l * VMU_DIR_RECORD_LEN)];
 
-From 59ab7f95c17dd5ce69269485da0ffcf2b69d496f Mon Sep 17 00:00:00 2001
+From 6c59f9383a51be45bee5d75a883d03661c472b56 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Sun, 22 Mar 2026 19:21:49 +0000
-Subject: [PATCH 092/101] fix = for == typo
+Subject: [PATCH 092/103] fix = for == typo
 
 ---
  fs/vmufat/inode.c | 2 +-
@@ -6480,10 +6480,10 @@ index 25a4743afd337e..8113e4fef37d12 100644
  		brelse(bh_old);
  		bh_old = vmufat_sb_bread(sb, i - 1);
 
-From f134ebda77105254b786d9e785c7e752d5f14000 Mon Sep 17 00:00:00 2001
+From 90c6c5cab64e2d0f1e28a55385c204225586cd5f Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Mon, 23 Mar 2026 13:59:35 +0000
-Subject: [PATCH 093/101] update documentation
+Subject: [PATCH 093/103] update documentation
 
 ---
  Documentation/filesystems/vmufat.rst | 38 ++++++++++++++++++----------
@@ -6558,10 +6558,10 @@ index cde87531e9f607..b6ec6271027267 100644
 +
 +A phsyicali, factory-set, VMU is unlikely to require reformatting, of course.
 
-From e6782a3146e396a4294b5e8769159cee6c732746 Mon Sep 17 00:00:00 2001
+From 19ca437e5be9b3ba6ffa3de8a5f9bacce8bfea95 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Mon, 23 Mar 2026 22:46:02 +0000
-Subject: [PATCH 094/101] formatting fixes
+Subject: [PATCH 094/103] formatting fixes
 
 ---
  fs/vmufat/inode.c | 193 ++++++++++++++++++++--------------------------
@@ -7363,10 +7363,10 @@ index 3f19f27ec9e437..907839654416dd 100644
  	unregister_filesystem(&vmufat_fs_type);
  }
 
-From dd939cd34260721490e0cd3d0c5a945bbb0b3cf4 Mon Sep 17 00:00:00 2001
+From 3d398c29e33695243f5b12b88ff399f5670daa42 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Mon, 23 Mar 2026 22:51:30 +0000
-Subject: [PATCH 095/101] further small formatting changes
+Subject: [PATCH 095/103] further small formatting changes
 
 ---
  fs/vmufat/inode.c  |  6 +++---
@@ -7436,10 +7436,10 @@ index b716777d6aa963..369ee59738eeab 100644
  struct memcard {
  	unsigned int sb_bnum;
 
-From 26e5d14cb747fff2fe00fa14a5a85d6ad67f3ea5 Mon Sep 17 00:00:00 2001
+From 84bd14b615cfba69b5125e358020778209f65677 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 24 Mar 2026 17:36:06 +0000
-Subject: [PATCH 096/101] further tidy
+Subject: [PATCH 096/103] further tidy
 
 ---
  fs/vmufat/inode.c | 10 ++++------
@@ -7515,10 +7515,10 @@ index 907839654416dd..fa8f01be65b09a 100644
  }
  
 
-From c68901f720939ce4712bde6fb1fdf2e0d3d6f318 Mon Sep 17 00:00:00 2001
+From 55e912834a5d3750af09234d6f7ebcb5448881a7 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Tue, 24 Mar 2026 17:42:35 +0000
-Subject: [PATCH 097/101] add extern keyword back
+Subject: [PATCH 097/103] add extern keyword back
 
 ---
  fs/vmufat/super.c | 10 +++++-----
@@ -7546,10 +7546,10 @@ index fa8f01be65b09a..69f4852f3d030c 100644
  static time64_t vmufat_get_date(struct buffer_head *bh, int offset)
  {
 
-From a59cfeb109755fe16cc6e6d5b38d0640b36fa8eb Mon Sep 17 00:00:00 2001
+From ca4bb7607a82200b834d37778779af0d315c90db Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 25 Mar 2026 14:09:08 +0000
-Subject: [PATCH 098/101] fix documentation typo
+Subject: [PATCH 098/103] fix documentation typo
 
 ---
  Documentation/filesystems/vmufat.rst | 2 +-
@@ -7566,10 +7566,10 @@ index b6ec6271027267..e342d9c81e642f 100644
 -A phsyicali, factory-set, VMU is unlikely to require reformatting, of course.
 +A physical, factory-set, VMU is unlikely to require reformatting, of course.
 
-From 5d5e6a8b5ae2a4105218117f4183c1df7f9dec16 Mon Sep 17 00:00:00 2001
+From 71b0b81c1e58acdf657a7cc0251fa94a990e60fa Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 25 Mar 2026 16:13:58 +0000
-Subject: [PATCH 099/101] fix up documentation
+Subject: [PATCH 099/103] fix up documentation
 
 ---
  Documentation/filesystems/index.rst  |  1 +
@@ -7578,10 +7578,10 @@ Subject: [PATCH 099/101] fix up documentation
  3 files changed, 28 insertions(+), 15 deletions(-)
 
 diff --git a/Documentation/filesystems/index.rst b/Documentation/filesystems/index.rst
-index f4873197587df7..893b585d17a9cf 100644
+index fc7254d01a2b2d..5ced9aedf0f52e 100644
 --- a/Documentation/filesystems/index.rst
 +++ b/Documentation/filesystems/index.rst
-@@ -120,5 +120,6 @@ Documentation for filesystem implementations.
+@@ -122,5 +122,6 @@ Documentation for filesystem implementations.
     udf
     virtiofs
     vfat
@@ -7689,10 +7689,10 @@ index cdc7282924b362..92553a24691144 100644
 \ No newline at end of file
 +	  vmufat.
 
-From a0c2bd23393242e9ed174513bc9bf0b6afd88906 Mon Sep 17 00:00:00 2001
+From 7b92762a4eb0ae72aa87cce4078db038d2e6675a Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Wed, 25 Mar 2026 20:36:37 +0000
-Subject: [PATCH 100/101] testing 32 bits with no RTC
+Subject: [PATCH 100/103] testing 32 bits with no RTC
 
 ---
  fs/vmufat/inode.c | 24 ++++++++++++++++++------
@@ -7779,10 +7779,10 @@ index 9c2ae8279b4f77..bc328483476759 100644
  		error = ctx->actor(ctx, "..", 2, index++,
  			    dentry->d_parent->d_inode->i_ino, DT_DIR);
 
-From 8e45e357d960faf446a081c8c41b883fde79e742 Mon Sep 17 00:00:00 2001
+From fa2647ea20ac6dfea1022b1e21c5568897a4e715 Mon Sep 17 00:00:00 2001
 From: Adrian McMenamin <adrianmcmenamin@gmail.com>
 Date: Fri, 27 Mar 2026 14:39:27 +0000
-Subject: [PATCH 101/101] further work to make code portable across 32 and 64
+Subject: [PATCH 101/103] further work to make code portable across 32 and 64
  bit kernels
 
 ---
@@ -7830,3 +7830,78 @@ index bc328483476759..62f3e371393ef9 100644
  }
  
  #ifdef CONFIG_RTC_CLASS
+
+From 92cecb514b199b2dc052890fdd0e71e192cbc934 Mon Sep 17 00:00:00 2001
+From: Adrian McMenamin <adrianmcmenamin@gmail.com>
+Date: Sat, 11 Apr 2026 15:06:45 +0100
+Subject: [PATCH 102/103] correct spelling for executable
+
+---
+ Documentation/filesystems/vmufat.rst | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/filesystems/vmufat.rst b/Documentation/filesystems/vmufat.rst
+index 2f7230e8e39030..f2dfb15c0cfbbd 100644
+--- a/Documentation/filesystems/vmufat.rst
++++ b/Documentation/filesystems/vmufat.rst
+@@ -35,7 +35,7 @@ use, though the filesystem can access them if set up as a general file store.
+ If a device is formatted as strictly compatible with the Dreamcast those blocks
+ will not be accessible. Most use cases will want that strict compatibility.
+ 
+-An executible file (generally a game written in the native machine code of
++An executable file (generally a game written in the native machine code of
+ the VMU's microcontroller) must begin at block 0 and be stored linearly in
+ the volume. The filesystem driver seeks to match that policy but it is not
+ absolutely constrained by it.
+@@ -62,7 +62,7 @@ Comstedt's website - http://mc.pp.se/dc/vms/flashmem.html)
+ 0x1a-0x1b : 16 bits (little endian) : offset of header (in blocks)
+ 
+ 
+-Header positioning is a matter for executible files written in native
++Header positioning is a matter for executable files written in native
+ code for a physical VMU (an 8 bit Sanyo microcontroller).
+ 
+ BCD dates are encoded as follows:
+
+From 7bcd2edd325d4cb1f209193d89e4877678347418 Mon Sep 17 00:00:00 2001
+From: Adrian McMenamin <adrianmcmenamin@gmail.com>
+Date: Wed, 22 Apr 2026 15:42:14 +0100
+Subject: [PATCH 103/103] move on to targeting coming v7.1
+
+---
+ fs/vmufat/inode.c | 4 ++--
+ fs/vmufat/super.c | 1 -
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/fs/vmufat/inode.c b/fs/vmufat/inode.c
+index 62f3e371393ef9..03e0ecf878396d 100644
+--- a/fs/vmufat/inode.c
++++ b/fs/vmufat/inode.c
+@@ -1005,7 +1005,7 @@ const struct inode_operations vmufat_inode_operations = {
+ const struct file_operations vmufat_file_dir_operations = {
+ 	.read =			generic_read_dir,
+ 	.iterate_shared =	vmufat_readdir,
+-	.fsync =		generic_file_fsync,
++	.fsync =		simple_fsync,
+ 	.llseek =		generic_file_llseek,
+ };
+ 
+@@ -1013,5 +1013,5 @@ const struct file_operations vmufat_file_operations = {
+ 	.llseek =	generic_file_llseek,
+ 	.read_iter =	generic_file_read_iter,
+ 	.write_iter =	generic_file_write_iter,
+-	.fsync =	generic_file_fsync,
++	.fsync =	simple_fsync,
+ };
+diff --git a/fs/vmufat/super.c b/fs/vmufat/super.c
+index 69f4852f3d030c..f3ba6cc768898a 100644
+--- a/fs/vmufat/super.c
++++ b/fs/vmufat/super.c
+@@ -297,7 +297,6 @@ static int vmufat_statfs(struct dentry *dentry, struct kstatfs *kstatbuf)
+ static void vmufat_evict_inode(struct inode *in)
+ {
+ 	truncate_inode_pages(&in->i_data, 0);
+-	invalidate_inode_buffers(in);
+ 	in->i_size = 0;
+ 	clear_inode(in);
+ }
