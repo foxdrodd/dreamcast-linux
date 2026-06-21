@@ -1,164 +1,251 @@
 #define _GNU_SOURCE
 #include <sys/mount.h>
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 
-// Maybe use a tiny custom init, instead of busybox to exec the userland shell
-// build like:
-// sh4-linux-gnu-gcc -fno-asynchronous-unwind-tables -fno-ident -s -Os -nostdlib \
-//   -static -include nolibc.h -o init init.c -lgcc -I ~/devel/linux/tools/include/nolibc
-static void spawn_shell(const char *tty, char *envp[])
+/*
+ * Tiny PID 1 for Dreamcast Linux.
+ *
+ * Replaces busybox as the first-stage init: it only mounts the gdrom,
+ * stacks a writable overlay over it, chroots into the musl sysroot and
+ * then runs an mksh login shell on each console.  No second shell layer,
+ * no `script` wrapper, no busybox resident in RAM.
+ *
+ * Console policy (matches busybox inittab behaviour):
+ *   - physical framebuffer console (/dev/tty0): shell spawned immediately,
+ *     respawned when it exits.
+ *   - serial console (/dev/ttySC1): "askfirst" - no shell process exists
+ *     until a key arrives on the line, then respawned on each exit.
+ *     The Dreamcast coder's cable is 3-wire (no DCD/DSR), so a keypress
+ *     is the only reliable "someone is connected" signal.
+ *
+ * build like:
+ * sh4-linux-gnu-gcc -fno-asynchronous-unwind-tables -fno-ident -s -Os -nostdlib \
+ *   -static -include nolibc.h -o init init.c -lgcc -I ~/devel/linux/tools/include/nolibc
+ */
+
+#ifndef TIOCSCTTY
+#define TIOCSCTTY 0x540E
+#endif
+
+struct console {
+	const char  *path;     /* tty device node                          */
+	char *const *envp;     /* environment (mainly TERM) for the shell  */
+	int          askfirst; /* wait for a keypress before spawning      */
+	pid_t        pid;      /* current manager pid, -1 when not running */
+};
+
+static char *const envp_fb[] = {
+	"HOME=/root",
+	"PATH=/bin:/sbin:/usr/bin:/usr/sbin",
+	"TERM=linux",
+	NULL
+};
+
+static char *const envp_serial[] = {
+	"HOME=/root",
+	"PATH=/bin:/sbin:/usr/bin:/usr/sbin",
+	"TERM=vt100",
+	NULL
+};
+
+static struct console consoles[] = {
+	{ "/dev/tty0",   envp_fb,     0, -1 },  /* physical: framebuffer + maple kbd */
+	{ "/dev/ttySC1", envp_serial, 1, -1 },  /* serial: askfirst                  */
+};
+#define NR_CONSOLES (sizeof(consoles) / sizeof(consoles[0]))
+
+static const char askfirst_msg[] =
+	"\r\nPlease press Enter to activate this console.\r\n";
+
+/*
+ * Run one mksh login shell on `c` to completion, with the shell itself as
+ * the session leader and controlling-terminal owner so job control works.
+ */
+static void run_shell_once(const struct console *c)
 {
-    pid_t pid = fork();
+	int fd = open(c->path, O_RDWR | O_NOCTTY);
 
-    if (pid < 0) {
-        perror("fork");
-        return;
-    }
+	if (fd < 0) {
+		/* device not ready yet - back off so we never busy-spin */
+		usleep(500000);
+		return;
+	}
 
-    if (pid == 0) {
-        int fd;
+	if (c->askfirst) {
+		char ch;
 
-        setsid();
+		write(fd, askfirst_msg, sizeof(askfirst_msg) - 1);
 
-        fd = open(tty, O_RDWR);
-        if (fd < 0) {
-            perror(tty);
-            _exit(1);
-        }
+		/* block until the user presses Enter; bail on hangup/EOF */
+		while (read(fd, &ch, 1) == 1 && ch != '\n')
+			;
+	}
 
-        ioctl(fd, TIOCSCTTY, 0);
+	pid_t pid = fork();
 
-        dup2(fd, STDIN_FILENO);
-        dup2(fd, STDOUT_FILENO);
-        dup2(fd, STDERR_FILENO);
+	if (pid < 0) {
+		close(fd);
+		usleep(500000);
+		return;
+	}
 
-        if (fd > STDERR_FILENO)
-            close(fd);
+	if (pid == 0) {
+		char *const argv[] = { "/bin/mksh", "-l", NULL };
 
-        char *argv[] = { "/bin/mksh", "-l", NULL };
-        char *envp[] = {
-            "HOME=/root",
-            "PATH=/bin:/sbin:/usr/bin:/usr/sbin",
-            "TERM=linux",
-            NULL
-        };
+		setsid();
+		ioctl(fd, TIOCSCTTY, 1);
 
-	execve("/bin/mksh", argv, envp);
+		dup2(fd, STDIN_FILENO);
+		dup2(fd, STDOUT_FILENO);
+		dup2(fd, STDERR_FILENO);
+		if (fd > STDERR_FILENO)
+			close(fd);
 
-        perror("execve /bin/mksh");
-        _exit(1);
-    }
+		execve("/bin/mksh", argv, c->envp);
+		perror("execve /bin/mksh");
+		_exit(127);
+	}
+
+	close(fd);
+	waitpid(pid, NULL, 0);
+}
+
+/*
+ * Per-console manager: respawns the shell forever.  Lives as its own tiny
+ * process (shared text from the static init binary), idle-blocked in read()
+ * for askfirst consoles, so an unused serial port costs almost nothing.
+ */
+static void run_console(const struct console *c)
+{
+	for (;;)
+		run_shell_once(c);
+}
+
+static int tty_exists(const char *path)
+{
+	struct stat st;
+
+	if (stat(path, &st) < 0)
+		return 0;
+
+	return S_ISCHR(st.st_mode);
+}
+
+static void start_manager(struct console *c)
+{
+	pid_t pid = fork();
+
+	if (pid < 0) {
+		perror("fork");
+		c->pid = -1;
+		return;
+	}
+
+	if (pid == 0) {
+		run_console(c);
+		_exit(0); /* never reached */
+	}
+
+	c->pid = pid;
 }
 
 static int xmkdir(const char *path)
 {
-    if (mkdir(path, 0755) < 0 && errno != EEXIST) {
-        fprintf(stderr, "mkdir %s: %s\n", path, strerror(errno));
-        return -1;
-    }
-    return 0;
+	if (mkdir(path, 0755) < 0 && errno != EEXIST) {
+		fprintf(stderr, "mkdir %s: %s\n", path, strerror(errno));
+		return -1;
+	}
+	return 0;
 }
 
 static int bind_mount(const char *src, const char *dst)
 {
-    if (xmkdir(dst) < 0)
-        return -1;
+	if (xmkdir(dst) < 0)
+		return -1;
 
-    if (mount(src, dst, NULL, MS_BIND | MS_REC, NULL) < 0) {
-        fprintf(stderr, "bind mount %s -> %s: %s\n",
-                src, dst, strerror(errno));
-        return -1;
-    }
+	if (mount(src, dst, NULL, MS_BIND | MS_REC, NULL) < 0) {
+		fprintf(stderr, "bind mount %s -> %s: %s\n",
+			src, dst, strerror(errno));
+		return -1;
+	}
 
-    return 0;
-}
-
-
-static int tty_exists(const char *path)
-{
-    struct stat st;
-
-    if (stat(path, &st) < 0)
-        return 0;
-
-    return S_ISCHR(st.st_mode);
+	return 0;
 }
 
 int main(void)
 {
-	int ret = 0;
+	int ret;
+
 	ret = mount("proc",  "/proc", "proc",    0, "");
-	if (ret) printf("proc failed with %d", ret);
+	if (ret) printf("proc failed with %d\n", ret);
 	ret = mount("sysfs", "/sys",  "sysfs",   0, "");
-	if (ret) printf("sysfs failed with %d", ret);
+	if (ret) printf("sysfs failed with %d\n", ret);
 	ret = mount("devtmpfs", "/dev", "devtmpfs", 0, "mode=0755");
-	if (ret) printf("devtmpfs failed with %d", ret);
-	ret = mount("devpts",  "/dev/pts", "devpts",    0, "");
-        if (ret) printf("devpts failed with %d", ret);
+	if (ret) printf("devtmpfs failed with %d\n", ret);
+	ret = mount("devpts",  "/dev/pts", "devpts", 0, "");
+	if (ret) printf("devpts failed with %d\n", ret);
 
 	ret = mount("/dev/gdrom", "/media", "iso9660", MS_RDONLY, NULL);
-	if (ret) printf("gdrom failed with %d", ret);
-	ret = mount("overlay", "/run/overlay-root", "overlay", 0, "rw,lowerdir=/media,upperdir=/run/overlay-rw/upper,workdir=/run/overlay-rw/work,redirect_dir=nofollow,uuid=null");
-	if (ret) printf("overlay failed with %d", ret);
+	if (ret) printf("gdrom failed with %d\n", ret);
+	ret = mount("overlay", "/run/overlay-root", "overlay", 0,
+		    "rw,lowerdir=/media,upperdir=/run/overlay-rw/upper,workdir=/run/overlay-rw/work,redirect_dir=nofollow,uuid=null");
+	if (ret) printf("overlay failed with %d\n", ret);
 
 	ret = chdir("/run/overlay-root");
-	if (ret) printf("chdir overlay-root failed with %d", ret);
-	ret = bind_mount("/dev",  "/run/overlay-root/dev");
-	if (ret) printf("bind dev failed with %d", ret);
-	ret = bind_mount("/dev/pts",  "/run/overlay-root/dev/pts");
-	if (ret) printf("bind pts failed with %d", ret);
-	ret = bind_mount("/proc", "/run/overlay-root/proc");
-	if (ret) printf("bind proc failed with %d", ret);
-	ret = bind_mount("/sys",  "/run/overlay-root/sys");
-	if (ret) printf("bind sys failed with %d", ret);
+	if (ret) printf("chdir overlay-root failed with %d\n", ret);
+	bind_mount("/dev",     "/run/overlay-root/dev");
+	bind_mount("/dev/pts", "/run/overlay-root/dev/pts");
+	bind_mount("/proc",    "/run/overlay-root/proc");
+	bind_mount("/sys",     "/run/overlay-root/sys");
 
-	if (access("/run/overlay-root/bin/mksh", X_OK) < 0)
-        	perror("err /run/overlay-root/bin/mksh");
-
-	if (access("/media/bin/mksh", X_OK) < 0)        
-                perror("err /media/bin/mksh"); 
-
-
-//	ret = mount("/run/overlay-root", "/", NULL, MS_MOVE, NULL);
-//	if (ret) printf("mount move failed with %d", ret);
 	ret = chroot("/run/overlay-root");
-	if (ret) printf("chroot failed with %d", ret);
+	if (ret) printf("chroot failed with %d\n", ret);
 	chdir("/");
 
-	if (access("/bin/mksh", X_OK) < 0)        
-		perror("err /bin/mksh"); 
+	if (access("/bin/mksh", X_OK) < 0)
+		perror("err /bin/mksh");
 
-	if (tty_exists("/dev/console")) {
-		char *envp[] = {
-	            "HOME=/root",
-	            "PATH=/bin:/sbin:/usr/bin:/usr/sbin",
-	            "TERM=vt100",
-	            NULL
-        	};
-		spawn_shell("/dev/console", envp);
+	/* Launch a manager per console that actually exists. */
+	for (size_t i = 0; i < NR_CONSOLES; i++) {
+		if (tty_exists(consoles[i].path))
+			start_manager(&consoles[i]);
+		else
+			fprintf(stderr, "console %s absent, skipping\n",
+				consoles[i].path);
 	}
 
-        if (tty_exists("/dev/tty0")) {
-		char *envptty[] = {
-	            "HOME=/root",
-	            "PATH=/bin:/sbin:/usr/bin:/usr/sbin",
-	            "TERM=linux",
-	            NULL
-	        };
-		spawn_shell("/dev/tty0", envptty);
-	}
-
+	/*
+	 * Reap children. A reaped pid that matches a console manager means
+	 * the manager itself died (shouldn't happen - it loops forever), so
+	 * restart it. Stray orphans reparented to PID 1 just get reaped.
+	 */
 	for (;;) {
-		int status;
-		wait(&status);
+		pid_t pid = wait(NULL);
+
+		if (pid < 0) {
+			if (errno == ECHILD) {
+				/* no managers left; idle instead of spinning */
+				usleep(1000000);
+				continue;
+			}
+			continue;
+		}
+
+		for (size_t i = 0; i < NR_CONSOLES; i++) {
+			if (consoles[i].pid == pid) {
+				start_manager(&consoles[i]);
+				break;
+			}
+		}
 	}
 
 	return 0;
