@@ -20,8 +20,13 @@ sed -i 's,CONFIG_INITRAMFS_SOURCE=.*,CONFIG_INITRAMFS_SOURCE="/usr/src/dreamcast
 cd build
 mkdir -p $reldir
 zstd -f linux616.cdi -o $reldir/linux-$linux_version-base-busybox.cdi.zst &
+cp -vf linux616.cdi linux-$linux_version-base-busybox.cdi
+
 zstd -f 1ST_READ.BIN -o $reldir/1ST_READ.BIN.zst &
+cp -vf 1ST_READ.BIN 1ST_READ.BIN-busybox
+
 zstd -f kernel-boot.bin -o $reldir/kernel-boot.bin.zst &
+cp -vf kernel-boot.bin kernel-boot.bin-busybox
 cd ..
 
 wait
