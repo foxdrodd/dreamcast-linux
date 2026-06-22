@@ -44,7 +44,7 @@ for i in "${!userland[@]}"; do
         echo "hostname dreamcast" >> ${userland[$i]}/etc/profile
         echo flashfetch >> ${userland[$i]}/etc/profile
 
-	cp -vf userland/package/fbdoom/*.wad ${userland[$i]}/
+	cp -vf ../userland/package/fbdoom/*.wad ${userland[$i]}/
 
 	iso=linux-$linux_version-with-userland-$i
 	genisoimage -l -r -C 0,11702 -G IP.BIN -o $iso.iso 1ST_READ.BIN ${userland[$i]}
