@@ -9,12 +9,28 @@ declare -A userland=(
 )
 
 linux_version=$(cat dreamcast/build-dreamcast.sh|grep '^LINUX_VERSION=.*'|cut -d"=" -f2|tr -d '"')
+reldir=release-${linux_version}
 
 # Update Kernel Image to get the 1ST_READ.BIN
+#
+
+# First build the busybox variant:
+sed -i 's,CONFIG_INITRAMFS_SOURCE=.*,CONFIG_INITRAMFS_SOURCE="/usr/src/dreamcast/initrd",' dreamcast/kernel.config
+./rebuildkernel.sh
+cd build
+mkdir -p $reldir
+zstd -f linux616.cdi -o $reldir/linux-$linux_version-base-busybox.cdi.zst &
+zstd -f 1ST_READ.BIN -o $reldir/1ST_READ.BIN.zst &
+zstd -f kernel-boot.bin -o $reldir/kernel-boot.bin.zst &
+cd ..
+
+wait
+
+# then build the userland variants with tiny-initrd:
+sed -i 's,CONFIG_INITRAMFS_SOURCE=.*,CONFIG_INITRAMFS_SOURCE="/usr/src/dreamcast/tiny-initrd",' dreamcast/kernel.config
 ./rebuildkernel.sh
 
 cd build
-reldir=release-${linux_version}
 mkdir -p $reldir
 
 for i in "${!userland[@]}"; do
@@ -36,9 +52,9 @@ for i in "${!userland[@]}"; do
 	tar --zstd -cf $reldir/$usrland.tar.zst -C ${userland[$i]} . &
 done
 
-zstd -f linux616.cdi -o $reldir/linux-$linux_version-base-busybox.cdi.zst &
-zstd -f 1ST_READ.BIN -o $reldir/1ST_READ.BIN.zst &
-zstd -f kernel-boot.bin -o $reldir/kernel-boot.bin.zst &
+# zstd -f linux616.cdi -o $reldir/linux-$linux_version-base-busybox.cdi.zst &
+# zstd -f 1ST_READ.BIN -o $reldir/1ST_READ.BIN.zst &
+# zstd -f kernel-boot.bin -o $reldir/kernel-boot.bin.zst &
 
 wait
 
