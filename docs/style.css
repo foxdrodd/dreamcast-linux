@@ -251,29 +251,6 @@ code {
 .release__notes li { margin-bottom: 0.35rem; }
 .release__notes strong { color: var(--text); }
 
-/* ---- Build steps ---- */
-.steps { display: flex; flex-direction: column; gap: 1.2rem; }
-.step { display: flex; gap: 1.1rem; align-items: flex-start; }
-.step__n {
-  flex: none; width: 2.1rem; height: 2.1rem; border-radius: 50%;
-  display: grid; place-items: center; font-family: var(--mono); font-weight: 700;
-  background: var(--orange); color: #1a0c00; box-shadow: 0 0 18px rgba(240,109,0,0.4);
-}
-.step h3 { margin: 0.2rem 0 0.4rem; font-size: 1.1rem; }
-.step p { margin: 0 0 0.7rem; color: var(--text-dim); font-size: 0.95rem; }
-.code {
-  font-family: var(--mono); font-size: 0.84rem; background: #000;
-  border: 1px solid var(--line); border-radius: 8px; padding: 0.9rem 1.1rem;
-  overflow-x: auto; margin: 0; line-height: 1.7; color: var(--text);
-}
-
-.callout {
-  margin-top: 2rem; padding: 1.1rem 1.3rem; font-size: 0.93rem;
-  background: rgba(240,109,0,0.07); border: 1px solid rgba(240,109,0,0.35);
-  border-left: 3px solid var(--orange); border-radius: 8px; color: var(--text-dim);
-}
-.callout strong { color: var(--text); }
-
 /* ===================== HERITAGE ===================== */
 .section--heritage {
   max-width: none;

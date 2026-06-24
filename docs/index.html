@@ -36,7 +36,6 @@
     <a href="#features">Features</a>
     <a href="#downloads">Downloads</a>
     <a href="#hardware">Hardware</a>
-    <a href="#build">Build</a>
     <a href="#heritage">Heritage</a>
     <a class="nav__gh" href="https://github.com/foxdrodd/dreamcast-linux" target="_blank" rel="noopener">GitHub ↗</a>
   </nav>
@@ -242,63 +241,10 @@
   <p class="section__foot">Full per-device notes and emulator analyses live in the repo's <code>debuggings/</code> directory and the README.</p>
 </section>
 
-<!-- ===== BUILD ===== -->
-<section id="build" class="section">
-  <h2 class="section__title"><span class="accent">#</span> Build it yourself</h2>
-  <p class="section__lead">
-    The <strong>kernel and base system</strong> build inside a Docker container — a
-    self-contained SH4 cross-compilation environment with gcc, glibc, binutils and BusyBox.
-    The <strong>~140 userland packages</strong> are cross-compiled separately with
-    <a href="https://t2sde.org" target="_blank" rel="noopener">T2 SDE</a>. You only need Docker on Linux.
-  </p>
-
-  <div class="steps">
-    <div class="step">
-      <span class="step__n">1</span>
-      <div>
-        <h3>Clone &amp; review</h3>
-        <p>Check the local variables in <code>dreamcast/build-dreamcast.sh</code> first — some defaults may not fit your setup.</p>
-        <pre class="code"><span class="c-dim">$</span> git clone https://github.com/foxdrodd/dreamcast-linux.git
-<span class="c-dim">$</span> cd dreamcast-linux</pre>
-      </div>
-    </div>
-
-    <div class="step">
-      <span class="step__n">2</span>
-      <div>
-        <h3>Apply the Dreamcast patches</h3>
-        <p>From inside the unpacked kernel tree (<code>.dreamcast/src/linux-*</code>):</p>
-        <pre class="code"><span class="c-dim">$</span> patch -p1 &lt; ../../../hotfix-dreamcast-*.patch
-<span class="c-dim">$</span> patch -p1 &lt; ../../../hotfix-vmu*.patch
-<span class="c-dim">$</span> patch -p1 &lt; ../../../hotfix-gdrom*.patch</pre>
-      </div>
-    </div>
-
-    <div class="step">
-      <span class="step__n">3</span>
-      <div>
-        <h3>Build</h3>
-        <p>One command. All building happens in <code>.dreamcast/</code>; final images land in <code>build/</code>.</p>
-        <pre class="code"><span class="c-dim">$</span> make
-<span class="c-ok"># → build/  base-busybox.cdi · with-userland.cdi · 1ST_READ.BIN …</span></pre>
-      </div>
-    </div>
-  </div>
-
-  <div class="callout">
-    <strong>⚙️ Memory layout note.</strong>
-    The kernel uses an integrated initramfs (<code>CONFIG_INITRAMFS_SOURCE</code>), not the sh-boot initrd.
-    You must align <code>BOOT_LINK_OFFSET</code> in <code>arch/sh/Kconfig</code> with the
-    <code>L_binary_zImage_bin_dest</code> / <code>L_entry</code> values in sh-boot's
-    <code>kernel-boot.S</code> — the offset depends on the compressed kernel size
-    (e.g. <code>0x00600000</code> / <code>0xac600000</code>). See the README for the full table.
-  </div>
-</section>
-
 <!-- ===== HERITAGE ===== -->
 <section id="heritage" class="section section--heritage">
   <div class="heritage">
-    <h2 class="section__title"><span class="accent">#</span> Standing on giants' shoulders</h2>
+    <h2 class="section__title"><span class="accent">#</span> Standing on the shoulders of giants</h2>
     <p class="heritage__intro">
       Linux on the Dreamcast is not new. Back in <strong>2000–2001</strong>, the
       <strong>GNU/Linux on SEGA Dreamcast</strong> team made the impossible boot — a full
