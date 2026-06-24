@@ -37,6 +37,17 @@ body {
 a { color: var(--orange-soft); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* External-link marker — auto-appended to any link that opens in a new tab,
+   so visitors can see when a link leaves the site. New external links get it
+   for free; the big CTA buttons and the release badge are opted out. */
+a[target="_blank"]:not(.btn):not(.hero__badge)::after {
+  content: "\00A0↗";
+  font-size: 0.78em;
+  opacity: 0.6;
+  vertical-align: baseline;
+}
+a[target="_blank"]:not(.btn):not(.hero__badge):hover::after { opacity: 0.9; }
+
 code {
   font-family: var(--mono);
   background: #000;
