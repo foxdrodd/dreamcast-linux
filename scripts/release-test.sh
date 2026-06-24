@@ -15,6 +15,7 @@
 # fbdoom starts and works in uclibc/musl
 # ssh, telnet starts
 # fastfetch with custom logo
+# fastfetch with maple devices
 # GDROM access works
 # Audio: Does audio work?
 
