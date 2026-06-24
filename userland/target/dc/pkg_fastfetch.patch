@@ -40,3 +40,559 @@
      // Droidian
      {
 
+From c4186d7ab719f884ccb33e4188db377837fb8f5c Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 24 Jun 2026 21:22:38 +0200
+Subject: [PATCH] Maple devices
+
+---
+ CMakeLists.txt                        |  11 ++
+ src/detection/maple/maple.h           |  16 +++
+ src/detection/maple/maple_linux.c     | 162 ++++++++++++++++++++++++++
+ src/detection/maple/maple_nosupport.c |   5 +
+ src/flashfetch.c                      |   4 +
+ src/modules/maple/maple.c             | 157 +++++++++++++++++++++++++
+ src/modules/maple/maple.h             |  11 ++
+ src/modules/maple/option.h            |   9 ++
+ src/modules/modules.c                 |   3 +
+ src/modules/modules.h                 |   1 +
+ 10 files changed, 379 insertions(+)
+ create mode 100644 src/detection/maple/maple.h
+ create mode 100644 src/detection/maple/maple_linux.c
+ create mode 100644 src/detection/maple/maple_nosupport.c
+ create mode 100644 src/modules/maple/maple.c
+ create mode 100644 src/modules/maple/maple.h
+ create mode 100644 src/modules/maple/option.h
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index add2ab18..12d03ad0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -500,6 +500,7 @@ set(LIBFASTFETCH_SRC
+     src/modules/icons/icons.c
+     src/modules/initsystem/initsystem.c
+     src/modules/gamepad/gamepad.c
++    src/modules/maple/maple.c
+     src/modules/kernel/kernel.c
+     src/modules/keyboard/keyboard.c
+     src/modules/lm/lm.c
+@@ -608,6 +609,7 @@ if(LINUX)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_linux.c
++        src/detection/maple/maple_linux.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_linux.c
+         src/detection/mouse/mouse_linux.c
+@@ -683,6 +685,7 @@ elseif(ANDROID)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_nosupport.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_linux.c
+         src/detection/mouse/mouse_nosupport.c
+@@ -768,6 +771,7 @@ elseif(FreeBSD)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_bsd.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_bsd.c
+         src/detection/mouse/mouse_bsd.c
+@@ -861,6 +865,7 @@ elseif(NetBSD)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_nosupport.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_nbsd.c
+         src/detection/mouse/mouse_nosupport.c
+@@ -947,6 +952,7 @@ elseif(OpenBSD)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_nosupport.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_obsd.c
+         src/detection/mouse/mouse_nosupport.c
+@@ -1015,6 +1021,7 @@ elseif(APPLE)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_apple.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_apple.m
+         src/detection/memory/memory_apple.c
+         src/detection/mouse/mouse_apple.c
+@@ -1107,6 +1114,7 @@ elseif(WIN32)
+         src/detection/locale/locale_windows.c
+         src/detection/localip/localip_windows.c
+         src/detection/gamepad/gamepad_windows.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_windows.cpp
+         src/detection/memory/memory_windows.c
+         src/detection/mouse/mouse_windows.c
+@@ -1189,6 +1197,7 @@ elseif(SunOS)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_nosupport.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_sunos.c
+         src/detection/mouse/mouse_nosupport.c
+@@ -1260,6 +1269,7 @@ elseif(Haiku)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_haiku.cpp
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_haiku.c
+         src/detection/mouse/mouse_haiku.cpp
+@@ -1336,6 +1346,7 @@ elseif(GNU)
+         src/detection/locale/locale_linux.c
+         src/detection/localip/localip_linux.c
+         src/detection/gamepad/gamepad_nosupport.c
++        src/detection/maple/maple_nosupport.c
+         src/detection/media/media_linux.c
+         src/detection/memory/memory_linux.c
+         src/detection/mouse/mouse_nosupport.c
+diff --git a/src/detection/maple/maple.h b/src/detection/maple/maple.h
+new file mode 100644
+index 00000000..9c1dc0a4
+--- /dev/null
++++ b/src/detection/maple/maple.h
+@@ -0,0 +1,16 @@
++#pragma once
++
++#include "fastfetch.h"
++
++// A single device on the Dreamcast Maple bus
++// (controllers, VMUs, keyboards, mice, vibration packs, ...)
++typedef struct FFMapleDevice {
++    FFstrbuf type;          // Human readable type, derived from the kernel driver name
++    uint8_t port;           // Physical port: 0 => A, 1 => B, ...
++    uint8_t unit;           // 0 => base device, 1+ => expansion slot
++    uint32_t functions;     // Maple function bitmask (e.g. 0xE for a VMU)
++    uint64_t storageBytes;  // Storage capacity in bytes (VMUs / memory cards), 0 if none
++    bool hasLcd;            // Whether the device exposes an LCD screen (VMUs)
++} FFMapleDevice;
++
++const char* ffDetectMaple(FFlist* devices /* List of FFMapleDevice */);
+diff --git a/src/detection/maple/maple_linux.c b/src/detection/maple/maple_linux.c
+new file mode 100644
+index 00000000..9c0ae311
+--- /dev/null
++++ b/src/detection/maple/maple_linux.c
+@@ -0,0 +1,162 @@
++#include "maple.h"
++#include "common/io.h"
++#include "common/strutil.h"
++
++#include <dirent.h>
++
++// Turns a kernel driver name like "Dreamcast_visual_memory" into "Visual Memory".
++static void humanizeDriver(FFstrbuf* type, const char* driver) {
++    if (ffStrStartsWith(driver, "Dreamcast_")) {
++        driver += strlen("Dreamcast_");
++    }
++
++    bool startOfWord = true;
++    for (const char* p = driver; *p; ++p) {
++        char c = *p;
++        if (c == '\n' || c == '\r') {
++            break; // End of the DRIVER= line; ignore the rest of the uevent file
++        }
++        if (c == '_') {
++            if (type->length && !startOfWord) {
++                ffStrbufAppendC(type, ' ');
++            }
++            startOfWord = true;
++            continue;
++        }
++        if (startOfWord && c >= 'a' && c <= 'z') {
++            c = (char) (c - 'a' + 'A');
++        }
++        ffStrbufAppendC(type, c);
++        startOfWord = false;
++    }
++    ffStrbufTrimRightSpace(type);
++}
++
++// Reads "DRIVER=..." out of a maple device's uevent file.
++static void readDriver(FFstrbuf* type, FFstrbuf* path) {
++    uint32_t baseLen = path->length;
++    ffStrbufAppendS(path, "uevent");
++
++    FF_STRBUF_AUTO_DESTROY uevent = ffStrbufCreate();
++    if (ffAppendFileBuffer(path->chars, &uevent)) {
++        const char* driver = strstr(uevent.chars, "DRIVER=");
++        if (driver) {
++            humanizeDriver(type, driver + strlen("DRIVER="));
++        }
++    }
++    ffStrbufSubstrBefore(path, baseLen);
++}
++
++// VMUs / memory cards expose their capacity through an MTD child device:
++//   <device>/mtd/mtd0/size
++static uint64_t readStorageBytes(FFstrbuf* path) {
++    uint32_t baseLen = path->length;
++    ffStrbufAppendS(path, "mtd/");
++
++    uint64_t bytes = 0;
++    FF_AUTO_CLOSE_DIR DIR* dirp = opendir(path->chars);
++    if (dirp) {
++        uint32_t mtdBaseLen = path->length;
++        struct dirent* entry;
++        while ((entry = readdir(dirp)) != NULL) {
++            if (entry->d_name[0] == '.') continue;
++
++            ffStrbufAppendS(path, entry->d_name);
++            ffStrbufAppendS(path, "/size");
++            char buf[32];
++            ssize_t nRead = ffReadFileData(path->chars, ARRAY_SIZE(buf) - 1, buf);
++            ffStrbufSubstrBefore(path, mtdBaseLen);
++            if (nRead > 0) {
++                buf[nRead] = '\0';
++                bytes = strtoull(buf, NULL, 10);
++                break;
++            }
++        }
++    }
++
++    ffStrbufSubstrBefore(path, baseLen);
++    return bytes;
++}
++
++// Fallback used when the kernel has no driver bound (uevent lacks DRIVER=):
++// derive a readable type from the Maple function bitmask instead.
++static void decodeFunctions(FFstrbuf* type, uint32_t functions) {
++    // Storage + LCD (+ clock) is the classic Visual Memory Unit
++    if ((functions & 0x002) && (functions & 0x004)) {
++        ffStrbufAppendS(type, "Visual Memory");
++        functions &= ~0x00EU; // consume storage | LCD | clock
++    }
++
++    static const struct { uint32_t bit; const char* name; } table[] = {
++        { 0x001, "Controller" },
++        { 0x040, "Keyboard" },
++        { 0x200, "Mouse" },
++        { 0x080, "Light Gun" },
++        { 0x020, "AR Gun" },
++        { 0x010, "Microphone" },
++        { 0x100, "Puru Puru" },
++        { 0x002, "Storage" },
++        { 0x004, "LCD" },
++        { 0x008, "Clock" },
++    };
++    for (uint32_t i = 0; i < ARRAY_SIZE(table); ++i) {
++        if (functions & table[i].bit) {
++            if (type->length) ffStrbufAppendS(type, ", ");
++            ffStrbufAppendS(type, table[i].name);
++        }
++    }
++}
++
++const char* ffDetectMaple(FFlist* devices /* List of FFMapleDevice */) {
++    FF_AUTO_CLOSE_DIR DIR* dirp = opendir("/sys/bus/maple/devices/");
++    if (dirp == NULL) {
++        return "opendir(\"/sys/bus/maple/devices/\") == NULL (is this a Dreamcast running Linux with maple bus support?)";
++    }
++
++    FF_STRBUF_AUTO_DESTROY path = ffStrbufCreateS("/sys/bus/maple/devices/");
++    uint32_t baseLen = path.length;
++
++    struct dirent* entry;
++    while ((entry = readdir(dirp)) != NULL) {
++        // Device dirs are named "<port>:<unit>.<functionHex>", e.g. "3:01.E"
++        if (!ffCharIsDigit(entry->d_name[0])) {
++            continue;
++        }
++
++        const char* name = entry->d_name;
++        char* end = NULL;
++        unsigned long port = strtoul(name, &end, 10);
++        if (*end != ':') continue;
++        unsigned long unit = strtoul(end + 1, &end, 10);
++        if (*end != '.') continue;
++        unsigned long functions = strtoul(end + 1, &end, 16);
++        if (*end != '\0') continue;
++
++        ffStrbufAppendS(&path, entry->d_name);
++        ffStrbufAppendC(&path, '/');
++
++        FFMapleDevice* device = FF_LIST_ADD(FFMapleDevice, *devices);
++        ffStrbufInit(&device->type);
++        device->port = (uint8_t) port;
++        device->unit = (uint8_t) unit;
++        device->functions = (uint32_t) functions;
++        device->storageBytes = 0;
++        device->hasLcd = false;
++
++        readDriver(&device->type, &path);
++        if (device->type.length == 0) {
++            // No kernel driver bound; name the device from its function bits
++            decodeFunctions(&device->type, device->functions);
++        }
++
++        // VMUs expose storage (MTD) and an LCD screen as child devices
++        device->storageBytes = readStorageBytes(&path);
++
++        ffStrbufAppendS(&path, "vmu_lcd");
++        device->hasLcd = ffPathExists(path.chars, FF_PATHTYPE_DIRECTORY);
++
++        ffStrbufSubstrBefore(&path, baseLen);
++    }
++
++    return NULL;
++}
+diff --git a/src/detection/maple/maple_nosupport.c b/src/detection/maple/maple_nosupport.c
+new file mode 100644
+index 00000000..00999a8b
+--- /dev/null
++++ b/src/detection/maple/maple_nosupport.c
+@@ -0,0 +1,5 @@
++#include "maple.h"
++
++const char* ffDetectMaple(FF_A_UNUSED FFlist* devices /* List of FFMapleDevice */) {
++    return "Maple bus is only supported on Dreamcast Linux";
++}
+diff --git a/src/flashfetch.c b/src/flashfetch.c
+index e056ca29..6d661255 100644
+--- a/src/flashfetch.c
++++ b/src/flashfetch.c
+@@ -113,6 +113,10 @@ int main(void) {
+         ffStrbufSetStatic(&options.moduleArgs.outputFormat, "{} / {}");
+         ffPrintMemory(&options);
+     }
++    {
++        MODULE_OPTION(Maple)
++        ffPrintMaple(&options);
++    }
+     {
+         MODULE_OPTION(Break)
+         ffPrintBreak(&options);
+diff --git a/src/modules/maple/maple.c b/src/modules/maple/maple.c
+new file mode 100644
+index 00000000..cbda8306
+--- /dev/null
++++ b/src/modules/maple/maple.c
+@@ -0,0 +1,157 @@
++#include "common/printing.h"
++#include "common/jsonconfig.h"
++#include "common/size.h"
++#include "detection/maple/maple.h"
++#include "modules/maple/maple.h"
++
++// Builds e.g. "Port D, Slot 1" from a device's physical location.
++static void appendLocation(FFstrbuf* buffer, const FFMapleDevice* device) {
++    ffStrbufAppendF(buffer, "Port %c", 'A' + device->port);
++    if (device->unit > 0) {
++        ffStrbufAppendF(buffer, ", Slot %u", (unsigned) device->unit);
++    }
++}
++
++static void printDevice(FFMapleOptions* options, const FFMapleDevice* device, uint8_t index) {
++    if (options->moduleArgs.outputFormat.length == 0) {
++        ffPrintLogoAndKey(FF_MAPLE_MODULE_NAME, index, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT);
++
++        FF_STRBUF_AUTO_DESTROY buffer = ffStrbufCreate();
++        if (device->type.length)
++            ffStrbufAppend(&buffer, &device->type);
++        else
++            ffStrbufAppendS(&buffer, "Unknown device");
++
++        ffStrbufAppendS(&buffer, " (");
++        appendLocation(&buffer, device);
++
++        if (device->storageBytes > 0) {
++            ffStrbufAppendS(&buffer, ", ");
++            ffSizeAppendNum(device->storageBytes, &buffer);
++        }
++        if (device->hasLcd)
++            ffStrbufAppendS(&buffer, ", LCD");
++
++        ffStrbufAppendC(&buffer, ')');
++        ffStrbufPutTo(&buffer, stdout);
++    } else {
++        FF_STRBUF_AUTO_DESTROY location = ffStrbufCreate();
++        appendLocation(&location, device);
++
++        FF_STRBUF_AUTO_DESTROY size = ffStrbufCreate();
++        if (device->storageBytes > 0)
++            ffSizeAppendNum(device->storageBytes, &size);
++
++        FF_STRBUF_AUTO_DESTROY port = ffStrbufCreate();
++        ffStrbufAppendC(&port, (char) ('A' + device->port));
++
++        FF_PRINT_FORMAT_CHECKED(FF_MAPLE_MODULE_NAME, index, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, ((FFformatarg[]) {
++            FF_ARG(device->type, "type"),
++            FF_ARG(location, "location"),
++            FF_ARG(port, "port"),
++            FF_ARG(device->unit, "slot"),
++            FF_ARG(device->functions, "functions"),
++            FF_ARG(size, "storage"),
++            FF_ARG(device->hasLcd, "has-lcd"),
++        }));
++    }
++}
++
++bool ffPrintMaple(FFMapleOptions* options) {
++    FF_LIST_AUTO_DESTROY result = ffListCreate();
++
++    const char* error = ffDetectMaple(&result);
++
++    if (error) {
++        ffPrintError(FF_MAPLE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, "%s", error);
++        return false;
++    }
++
++    if (!result.length) {
++        ffPrintError(FF_MAPLE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, "No devices detected");
++        return false;
++    }
++
++    uint8_t index = 0;
++    FF_LIST_FOR_EACH (FFMapleDevice, device, result) {
++        printDevice(options, device, result.length > 1 ? ++index : 0);
++    }
++
++    FF_LIST_FOR_EACH (FFMapleDevice, device, result) {
++        ffStrbufDestroy(&device->type);
++    }
++
++    return true;
++}
++
++void ffParseMapleJsonObject(FFMapleOptions* options, yyjson_val* module) {
++    yyjson_val *key, *val;
++    size_t idx, max;
++    yyjson_obj_foreach (module, idx, max, key, val) {
++        if (ffJsonConfigParseModuleArgs(key, val, &options->moduleArgs)) {
++            continue;
++        }
++
++        ffPrintError(FF_MAPLE_MODULE_NAME, 0, &options->moduleArgs, FF_PRINT_TYPE_DEFAULT, "Unknown JSON key %s", unsafe_yyjson_get_str(key));
++    }
++}
++
++void ffGenerateMapleJsonConfig(FFMapleOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
++    ffJsonConfigGenerateModuleArgsConfig(doc, module, &options->moduleArgs);
++}
++
++bool ffGenerateMapleJsonResult(FF_A_UNUSED FFMapleOptions* options, yyjson_mut_doc* doc, yyjson_mut_val* module) {
++    FF_LIST_AUTO_DESTROY result = ffListCreate();
++
++    const char* error = ffDetectMaple(&result);
++
++    if (error) {
++        yyjson_mut_obj_add_str(doc, module, "error", error);
++        return false;
++    }
++
++    yyjson_mut_val* arr = yyjson_mut_obj_add_arr(doc, module, "result");
++    FF_LIST_FOR_EACH (FFMapleDevice, device, result) {
++        yyjson_mut_val* obj = yyjson_mut_arr_add_obj(doc, arr);
++        yyjson_mut_obj_add_strbuf(doc, obj, "type", &device->type);
++        yyjson_mut_obj_add_uint(doc, obj, "port", device->port);
++        yyjson_mut_obj_add_uint(doc, obj, "slot", device->unit);
++        yyjson_mut_obj_add_uint(doc, obj, "functions", device->functions);
++        yyjson_mut_obj_add_uint(doc, obj, "storageBytes", device->storageBytes);
++        yyjson_mut_obj_add_bool(doc, obj, "hasLcd", device->hasLcd);
++    }
++
++    FF_LIST_FOR_EACH (FFMapleDevice, device, result) {
++        ffStrbufDestroy(&device->type);
++    }
++
++    return true;
++}
++
++void ffInitMapleOptions(FFMapleOptions* options) {
++    ffOptionInitModuleArg(&options->moduleArgs, "󰊴");
++}
++
++void ffDestroyMapleOptions(FFMapleOptions* options) {
++    ffOptionDestroyModuleArg(&options->moduleArgs);
++}
++
++FFModuleBaseInfo ffMapleModuleInfo = {
++    .name = FF_MAPLE_MODULE_NAME,
++    .description = "List devices connected to the Dreamcast Maple bus",
++    .initOptions = (void*) ffInitMapleOptions,
++    .destroyOptions = (void*) ffDestroyMapleOptions,
++    .parseJsonObject = (void*) ffParseMapleJsonObject,
++    .printModule = (void*) ffPrintMaple,
++    .generateJsonResult = (void*) ffGenerateMapleJsonResult,
++    .generateJsonConfig = (void*) ffGenerateMapleJsonConfig,
++    .formatArgs = FF_FORMAT_ARG_LIST(((FFModuleFormatArg[]) {
++        { "Device type", "type" },
++        { "Physical location (e.g. \"Port D, Slot 1\")", "location" },
++        { "Port letter (A-D)", "port" },
++        { "Expansion slot (0 = base device)", "slot" },
++        { "Maple function bitmask", "functions" },
++        { "Storage capacity (VMUs)", "storage" },
++        { "Whether the device has an LCD screen", "has-lcd" },
++    }))
++};
+diff --git a/src/modules/maple/maple.h b/src/modules/maple/maple.h
+new file mode 100644
+index 00000000..198b6107
+--- /dev/null
++++ b/src/modules/maple/maple.h
+@@ -0,0 +1,11 @@
++#pragma once
++
++#include "option.h"
++
++#define FF_MAPLE_MODULE_NAME "Maple"
++
++bool ffPrintMaple(FFMapleOptions* options);
++void ffInitMapleOptions(FFMapleOptions* options);
++void ffDestroyMapleOptions(FFMapleOptions* options);
++
++extern FFModuleBaseInfo ffMapleModuleInfo;
+diff --git a/src/modules/maple/option.h b/src/modules/maple/option.h
+new file mode 100644
+index 00000000..835d6f27
+--- /dev/null
++++ b/src/modules/maple/option.h
+@@ -0,0 +1,9 @@
++#pragma once
++
++#include "common/option.h"
++
++typedef struct FFMapleOptions {
++    FFModuleArgs moduleArgs;
++} FFMapleOptions;
++
++static_assert(sizeof(FFMapleOptions) <= FF_OPTION_MAX_SIZE, "FFMapleOptions size exceeds maximum allowed size");
+diff --git a/src/modules/modules.c b/src/modules/modules.c
+index 83787118..76ff8da5 100644
+--- a/src/modules/modules.c
++++ b/src/modules/modules.c
+@@ -171,6 +171,9 @@ static FFModuleBaseInfo* L[] = {
+ };
+ 
+ static FFModuleBaseInfo* M[] = {
++#if !FF_MODULE_DISABLE_MAPLE
++    &ffMapleModuleInfo,
++#endif
+ #if !FF_MODULE_DISABLE_MEDIA
+     &ffMediaModuleInfo,
+ #endif
+diff --git a/src/modules/modules.h b/src/modules/modules.h
+index 37ee242f..38f2b720 100644
+--- a/src/modules/modules.h
++++ b/src/modules/modules.h
+@@ -39,6 +39,7 @@
+ #include "modules/locale/locale.h"
+ #include "modules/localip/localip.h"
+ #include "modules/logo/logo.h"
++#include "modules/maple/maple.h"
+ #include "modules/media/media.h"
+ #include "modules/memory/memory.h"
+ #include "modules/monitor/monitor.h"
+-- 
+2.43.0
+
