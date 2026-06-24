@@ -180,8 +180,15 @@ code {
 /* ===================== TERMINAL ===================== */
 .terminal-wrap { max-width: 760px; margin: 0 auto; padding: 0 1.25rem 1rem; }
 .terminal {
+  position: relative;
   background: #000; border: 1px solid var(--line); border-radius: 10px;
   overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+/* fade hint at the bottom of the scrollable log */
+.terminal__fade {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 52px;
+  background: linear-gradient(rgba(0,0,0,0), #000);
+  pointer-events: none;
 }
 .terminal__bar {
   display: flex; align-items: center; gap: 0.45rem;
@@ -191,10 +198,19 @@ code {
 .dot:nth-child(1){ background:#ff5f56;} .dot:nth-child(2){ background:#ffbd2e;} .dot:nth-child(3){ background:#27c93f;}
 .terminal__title { margin-left: 0.6rem; font-family: var(--mono); font-size: 0.78rem; color: var(--text-dim); }
 .terminal__body {
-  margin: 0; padding: 1.1rem 1.2rem; font-family: var(--mono);
+  margin: 0; padding: 1.1rem 1.2rem 3.4rem; font-family: var(--mono);
   font-size: clamp(0.7rem, 1.9vw, 0.86rem); line-height: 1.7;
   color: var(--text); white-space: pre-wrap; word-break: break-word;
+  max-height: 360px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
 }
+.terminal__body:focus-visible { outline: 1px solid var(--orange); outline-offset: -1px; }
+.terminal__body::-webkit-scrollbar { width: 10px; }
+.terminal__body::-webkit-scrollbar-track { background: transparent; }
+.terminal__body::-webkit-scrollbar-thumb {
+  background: var(--line); border-radius: 6px; border: 2px solid #000;
+}
+.terminal__body::-webkit-scrollbar-thumb:hover { background: var(--orange); }
 .c-ok { color: var(--ok); } .c-acc { color: var(--orange); } .c-dim { color: var(--text-dim); }
 .cursor { color: var(--orange); animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }

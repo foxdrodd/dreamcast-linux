@@ -1,0 +1,169 @@
+Linux version 7.0.1 (root@11a4a40adbe8) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #33 PREEMPT Sat Apr 25 17:45:00 UTC 2026
+Boot params:
+... MOUNT_ROOT_RDONLY - 00000000
+... RAMDISK_FLAGS     - 00000000
+... ORIG_ROOT_DEV     - 00000100
+... LOADER_TYPE       - 00000000
+... INITRD_START      - 00000000
+... INITRD_SIZE       - 00000000
+Booting machvec: Sega Dreamcast
+initrd disabled
+Zone ranges:
+  Normal   [mem 0x000000000c000000-0x000000000cffffff]
+Movable zone start for each node
+Early memory node ranges
+  node   0: [mem 0x000000000c000000-0x000000000cffffff]
+Initmem setup node 0 [mem 0x000000000c000000-0x000000000cffffff]
+pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+pcpu-alloc: [0] 0 
+Kernel command line: console=ttySC1,115200 panic=3 ip=dhcp
+printk: log buffer data + meta data: 16384 + 51200 = 67584 bytes
+Dentry cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
+Inode-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Sorting __ex_table...
+Built 1 zonelists, mobility grouping on.  Total pages: 4096
+mem auto-init: stack:off, heap alloc:off, heap free:off
+PVR=040205c1 CVR=00000000 PRR=00000000
+I-cache : n_ways=1 n_sets=256 way_incr=8192
+I-cache : entry_mask=0x00001fe0 alias_mask=0x00001000 n_aliases=2
+D-cache : n_ways=1 n_sets=512 way_incr=16384
+D-cache : entry_mask=0x00003fe0 alias_mask=0x00003000 n_aliases=4
+virtual kernel memory layout:
+    fixmap  : 0xdfff7000 - 0xdffff000   (  32 kB)
+    vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
+    lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
+            : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
+      .init : 0x8c49a000 - 0x8c5ac000   (1096 kB)
+      .data : 0x8c38333c - 0x8c4996e0   (1112 kB)
+      .text : 0x8c001000 - 0x8c38333c   (3592 kB)
+SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+rcu: Preemptible hierarchical RCU implementation.
+rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+intc: Registered controller 'sh7750' with 20 IRQs
+intc: Registered controller 'sh7750_dma4' with 5 IRQs
+rcu: srcu_init: Setting srcu_struct sizes based on contention.
+Console: colour dummy device 80x25
+ sh-tmu.0: ch0: used for clock events
+ sh-tmu.0: ch0: used for periodic clock events
+ sh-tmu.0: ch1: used as clock source
+clocksource: sh-tmu.0: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 153279423644 ns
+sched_clock: 32 bits at 250 Hz, resolution 4000000ns, wraps every 8589934590000000ns
+Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
+CPU: SH7750
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+VFS: Finished mounting rootfs on nullfs
+Performance Events: sh7750 support registered
+rcu: Hierarchical SRCU implementation.
+rcu: 	Max phase no-delay instances is 1000.
+Memory: 9640K/16384K available (3588K kernel code, 208K rwdata, 900K rodata, 1096K init, 94K bss, 6088K reserved, 0K cma-reserved)
+devtmpfs: initialized
+clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+posixtimers hash table entries: 512 (order: 0, 2048 bytes, linear)
+futex hash table entries: 256 (4096 bytes on 1 NUMA nodes, total 4 KiB, linear).
+NET: Registered PF_NETLINK/PF_ROUTE protocol family
+DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
+registering PCI controller with io_map_base unset
+HugeTLB: registered 64.0 KiB page size, pre-allocated 0 pages
+HugeTLB: 0 KiB vmemmap can be freed for a 64.0 KiB page
+sh_tmu sh-tmu.0: kept as earlytimer
+Advanced Linux Sound Architecture Driver Initialized.
+DMA: Registering sh_dmac handler (4 channels).
+DMA: Registering DMA API.
+DMA: Registering pvr2_dmac handler (1 channel).
+DMA: Registering g2_dmac handler (4 channels).
+PCI host bridge to bus 0000:00
+pci_bus 0000:00: root bus resource [mem 0x01001600-0x010035ff]
+pci_bus 0000:00: root bus resource [mem 0x01840000-0x01847fff]
+pci_bus 0000:00: No busn resource found for root bus, will use [bus 00-ff]
+pci 0000:00:00.0: [11db:1234] type 00 class 0x020000 conventional PCI endpoint
+pci 0000:00:00.0: BAR 0 [io  0x2000-0x20ff]
+pci 0000:00:00.0: BAR 1 [mem 0x01000000-0x010000ff]
+PCI: Fixing up device 0000:00:00.0
+pci_bus 0000:00: busn_res: [bus 00-ff] end is updated to 00
+pci 0000:00:00.0: BAR 0 [io  size 0x0100]: can't assign; no space
+pci 0000:00:00.0: BAR 0 [io  size 0x0100]: failed to assign
+pci 0000:00:00.0: BAR 0 [io  size 0x0100]: can't assign; no space
+pci 0000:00:00.0: BAR 0 [io  size 0x0100]: failed to assign
+vgaarb: loaded
+clocksource: Switched to clocksource sh-tmu.0
+ maple: bus core now registered
+NET: Registered PF_INET protocol family
+IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
+TCP bind hash table entries: 1024 (order: 1, 8192 bytes, linear)
+TCP: Hash tables configured (established 1024 bind 1024)
+UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+UDP-Lite hash table entries: 256 (order: 1, 8192 bytes, linear)
+maple (null): detected Dreamcast Controller: function 0x1: at (0, 0)
+maple (null): no driver found
+maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
+maple (null): no driver found
+maple (null): detected Dreamcast Mouse: function 0x200: at (2, 0)
+maple (null): no driver found
+maple (null): detected Keyboard: function 0x40: at (3, 0)
+maple (null): no driver found
+NET: Registered PF_UNIX/PF_LOCAL protocol family
+RPC: Registered named UNIX socket transport module.
+RPC: Registered udp transport module.
+RPC: Registered tcp transport module.
+RPC: Registered tcp-with-tls transport module.
+RPC: Registered tcp NFSv4.1 backchannel transport module.
+PCI: CLS 0 bytes, default 32
+sq: Registering store queue API.
+maple (null): detected Visual Memory: function 0xE: at (0, 1)
+maple (null): no driver found
+workingset: timestamp_bits=30 max_order=12 bucket_order=0
+squashfs: version 4.0 (2009/01/31) Phillip Lougher
+io scheduler mq-deadline registered
+io scheduler kyber registered
+Console: switching to colour frame buffer device 80x30
+fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
+fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
+fb0: registering with SQ API
+sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
+fb0: Mapped video memory to SQ addr 0xe0000000
+SuperH (H)SCI(F) driver initialized
+sh-sci.0: ttySC0 at MMIO 0xffe00000 (irq = 39, base_baud = 0) is a sci
+sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
+printk: legacy console [ttySC1] enabled
+brd: module loaded
+loop: module loaded
+8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99
+gdrom: CD-ROM DRIVE     from SE               with firmware 6.42            
+gdrom: Registered with major number 254
+cdrom: Uniform CD-ROM driver Revision: 3.20
+mousedev: PS/2 mouse device common for all mice
+input: Keyboard as /devices/maple/3:00.40/input/input0
+input: Dreamcast Mouse as /devices/virtual/input/input1
+input: Dreamcast Controller as /devices/maple/0:00.1/input/input2
+input: Dreamcast Controller as /devices/maple/1:00.1/input/input3
+AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
+random: crng init done
+NET: Registered PF_PACKET protocol family
+8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1
+Sending DHCP requests ., OK
+IP-Config: Got DHCP answer from 192.168.0.1, my address is 192.168.0.38
+IP-Config: Complete:
+     device=eth0, hwaddr=00:d0:f1:03:21:ca, ipaddr=192.168.0.38, mask=255.255.255.0, gw=192.168.0.1
+     host=192.168.0.38, domain=, nis-domain=(none)
+     bootserver=192.168.0.1, rootserver=192.168.0.1, rootpath=
+     nameserver0=192.168.0.1
+     ntpserver0=192.168.0.1
+ALSA device list:
+  #0: Loopback 1
+  #1: Yamaha AICA Super Intelligent Sound Processor for SEGA Dreamcast
+Freeing unused kernel image (initmem) memory: 1096K
+This architecture does not have kernel memory protection.
+Run /init as init process
+  with arguments:
+    /init
+  with environment:
+    HOME=/
+    TERM=linux
+ISO 9660 Extensions: RRIP_1991A
+overlayfs: failed to set xattr on upper
