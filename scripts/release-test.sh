@@ -16,6 +16,7 @@
 # ssh, telnet starts
 # fastfetch with custom logo
 # GDROM access works
+# Audio: Does audio work?
 
 # VMU:
 # VMU: Does hotplugging memcards work after boot?
