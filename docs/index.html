@@ -34,6 +34,7 @@
   </a>
   <nav class="nav__links">
     <a href="#features">Features</a>
+    <a href="#see-it-run">Demos</a>
     <a href="#downloads">Downloads</a>
     <a href="#hardware">Hardware</a>
     <a href="#heritage">Heritage</a>
@@ -56,7 +57,7 @@
     <p class="hero__sub">
       A modern <strong>7.x kernel</strong>, a BusyBox base and a <strong>~140-package</strong>
       userland — booting on real Dreamcast hardware from a humble GD-ROM.
-      Kernel built in a reproducible Docker environment; userland cross-compiled with T2 SDE.
+      Kernel built in a Docker environment; userland cross-compiled with T2 SDE.
     </p>
     <div class="hero__cta">
       <a class="btn btn--primary" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest" target="_blank" rel="noopener">↓ Download latest CDI</a>
@@ -141,6 +142,60 @@ ISO 9660 Extensions: RRIP_1991A
     <a href="assets/dmesg.txt" target="_blank" rel="noopener">raw dmesg</a></p>
 </section>
 
+<!-- ===== SEE IT RUN =====
+     Drop real captures into docs/assets/video/ as MP4 (H.264), 4:3 (640×480).
+     Filenames are wired below: boot.mp4, shell.mp4, doom.mp4, vmu.mp4.
+     Replace the matching *.svg with a real poster frame (e.g. boot.jpg) and
+     update the poster path. Clips are click-to-play (loaded only on click). -->
+<section id="see-it-run" class="section">
+  <h2 class="section__title"><span class="accent">#</span> See it run</h2>
+  <p class="section__lead">See Linux on the Dreamcast in action. Real captures from a Dreamcast.</p>
+
+  <!-- Featured clip — the full boot, framed in a CRT bezel -->
+  <div class="crt">
+    <div class="crt__screen">
+      <button class="video video--feature" type="button"
+              data-src="assets/video/boot.mp4"
+              style="background-image:url('assets/video/boot.svg')"
+              aria-label="Play video: full boot sequence">
+        <span class="video__play" aria-hidden="true"></span>
+      </button>
+    </div>
+    <span class="crt__cap">Full boot — SEGA logo → kernel → shell prompt</span>
+  </div>
+
+  <!-- Gallery — click to play -->
+  <div class="video-grid">
+    <figure class="video-tile">
+      <button class="video" type="button"
+              data-src="assets/video/shell.mp4"
+              style="background-image:url('assets/video/shell.svg')"
+              aria-label="Play video: shell and fastfetch">
+        <span class="video__play" aria-hidden="true"></span>
+      </button>
+      <figcaption>Shell &amp; <code>fastfetch</code></figcaption>
+    </figure>
+    <figure class="video-tile">
+      <button class="video" type="button"
+              data-src="assets/video/doom.mp4"
+              style="background-image:url('assets/video/doom.svg')"
+              aria-label="Play video: fbdoom running">
+        <span class="video__play" aria-hidden="true"></span>
+      </button>
+      <figcaption>Yes, it runs <code>fbdoom</code></figcaption>
+    </figure>
+    <figure class="video-tile">
+      <button class="video" type="button"
+              data-src="assets/video/vmu.mp4"
+              style="background-image:url('assets/video/vmu.svg')"
+              aria-label="Play video: VMU in action">
+        <span class="video__play" aria-hidden="true"></span>
+      </button>
+      <figcaption>VMU read/write &amp; LCD</figcaption>
+    </figure>
+  </div>
+</section>
+
 <!-- ===== STATS ===== -->
 <section class="stats">
   <div class="stat"><span class="stat__num">7.x</span><span class="stat__lbl">Linux kernel</span></div>
@@ -223,7 +278,6 @@ ISO 9660 Extensions: RRIP_1991A
     </div>
     <ul class="release__notes">
       <li>Updated to the <strong>Linux 7.1.2</strong> kernel for SH4.</li>
-      <li>Refreshed the ~140-package T2 SDE userland (musl &amp; uClibc builds).</li>
       <li>VMU LCD display support by adaptation of Christian Berger's original driver</li>
       <li><code>vmufat</code> support as filesystem of VMUs with Adrian McMenamin's code</li>
       <li><code>fbdoom</code> shipped in the userland.</li>

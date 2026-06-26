@@ -216,6 +216,60 @@ code {
 @keyframes blink { 50% { opacity: 0; } }
 .terminal__cap { text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-top: 0.9rem; }
 
+/* ===================== SEE IT RUN (video) ===================== */
+/* Click-to-play facade: a poster button that swaps in a <video> on click. */
+.video {
+  display: block; width: 100%; aspect-ratio: 4 / 3;
+  margin: 0; padding: 0; border: 0; cursor: pointer;
+  background: #000 center / cover no-repeat;
+  position: relative; color: var(--text);
+}
+.video__play {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(10,10,12,0.6); border: 2px solid var(--orange);
+  box-shadow: 0 0 24px rgba(240,109,0,0.4); transition: transform .15s, background .15s;
+}
+.video__play::after {
+  content: ""; position: absolute; top: 50%; left: 54%; transform: translate(-50%, -50%);
+  border-style: solid; border-width: 11px 0 11px 18px;
+  border-color: transparent transparent transparent var(--orange);
+}
+.video:hover .video__play, .video:focus-visible .video__play {
+  transform: translate(-50%, -50%) scale(1.08); background: rgba(10,10,12,0.35);
+}
+.video:focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
+/* the real <video> that replaces the button keeps the same footprint */
+.video__el { display: block; width: 100%; aspect-ratio: 4 / 3; background: #000; }
+
+/* CRT bezel around the featured clip */
+.crt { max-width: 720px; margin: 0 auto; text-align: center; }
+.crt__screen {
+  padding: clamp(14px, 3vw, 26px); border-radius: 18px;
+  background: linear-gradient(160deg, #1c1c22, #0c0c0f);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 0 0 2px #000, inset 0 0 60px rgba(0,0,0,0.8), 0 24px 60px rgba(0,0,0,0.6);
+}
+.crt__screen .video { border-radius: 6px; overflow: hidden; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+.crt__cap { display: block; margin-top: 1rem; color: var(--text-dim); font-size: 0.9rem; }
+
+/* Click-to-play gallery */
+.video-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.1rem; margin-top: 2.4rem;
+}
+.video-tile { margin: 0; }
+.video-tile .video {
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  transition: border-color .15s, transform .15s;
+}
+.video-tile .video:hover { border-color: var(--orange); transform: translateY(-3px); }
+.video-tile figcaption { margin-top: 0.6rem; color: var(--text-dim); font-size: 0.9rem; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .video__play, .video-tile .video { transition: none; }
+}
+
 /* ===================== STATS ===================== */
 .stats {
   display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(1rem, 5vw, 4rem);
