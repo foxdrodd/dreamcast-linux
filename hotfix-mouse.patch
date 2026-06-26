@@ -1,0 +1,44 @@
+From dbeec726e8a5683832989150792c7df918368ec2 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 26 Jun 2026 23:50:13 +0200
+Subject: [PATCH] fix NPE in maple
+
+---
+ drivers/input/mouse/maplemouse.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/mouse/maplemouse.c b/drivers/input/mouse/maplemouse.c
+index c99f7e234219..3d524edd7761 100644
+--- a/drivers/input/mouse/maplemouse.c
++++ b/drivers/input/mouse/maplemouse.c
+@@ -48,7 +48,7 @@ static void dc_mouse_callback(struct mapleq *mq)
+ 
+ static int dc_mouse_open(struct input_dev *dev)
+ {
+-	struct dc_mouse *mse = maple_get_drvdata(to_maple_dev(&dev->dev));
++	struct dc_mouse *mse = input_get_drvdata(dev);
+ 
+ 	maple_getcond_callback(mse->mdev, dc_mouse_callback, HZ/50,
+ 		MAPLE_FUNC_MOUSE);
+@@ -58,7 +58,7 @@ static int dc_mouse_open(struct input_dev *dev)
+ 
+ static void dc_mouse_close(struct input_dev *dev)
+ {
+-	struct dc_mouse *mse = maple_get_drvdata(to_maple_dev(&dev->dev));
++	struct dc_mouse *mse = input_get_drvdata(dev);
+ 
+ 	maple_getcond_callback(mse->mdev, dc_mouse_callback, 0,
+ 		MAPLE_FUNC_MOUSE);
+@@ -88,6 +88,9 @@ static int probe_maple_mouse(struct device *dev)
+ 	mse->dev = input_dev;
+ 	mse->mdev = mdev;
+ 
++	input_set_drvdata(input_dev, mse);
++	input_dev->dev.parent = &mdev->dev;
++
+ 	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REL);
+ 	input_dev->keybit[BIT_WORD(BTN_MOUSE)] = BIT_MASK(BTN_LEFT) |
+ 		BIT_MASK(BTN_RIGHT) | BIT_MASK(BTN_MIDDLE);
+-- 
+2.43.0
+
