@@ -15,10 +15,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define LCD_W		48
-#define LCD_H		32
-#define LCD_STRIDE	(LCD_W / 8)		/* 6 bytes per row */
-#define LCD_FB_SIZE	(LCD_STRIDE * LCD_H)	/* 192 bytes */
+#include "vmu_lcd.h"
 
 /* Glyphs are 4 pixels wide, 7 rows tall (bit3 = leftmost pixel). */
 #define GLYPH_W		4
@@ -98,13 +95,6 @@ static const unsigned char *glyph(int c)
 	}
 }
 
-static void set_pixel(unsigned char *fb, int x, int y)
-{
-	if (x < 0 || x >= LCD_W || y < 0 || y >= LCD_H)
-		return;
-	fb[y * LCD_STRIDE + x / 8] |= 0x80 >> (x % 8);
-}
-
 static void draw_glyph(unsigned char *fb, const unsigned char *g, int x0, int y0)
 {
 	int gx, gy;
@@ -112,21 +102,7 @@ static void draw_glyph(unsigned char *fb, const unsigned char *g, int x0, int y0
 	for (gy = 0; gy < GLYPH_H; gy++)
 		for (gx = 0; gx < GLYPH_W; gx++)
 			if (g[gy] & (1 << (GLYPH_W - 1 - gx)))
-				set_pixel(fb, x0 + gx, y0 + gy);
-}
-
-/* Rotate the whole image 180 degrees (VMU shown upright when in a controller). */
-static void flip180(unsigned char *fb)
-{
-	unsigned char out[LCD_FB_SIZE] = { 0 };
-	int x, y;
-
-	for (y = 0; y < LCD_H; y++)
-		for (x = 0; x < LCD_W; x++)
-			if (fb[y * LCD_STRIDE + x / 8] & (0x80 >> (x % 8)))
-				set_pixel(out, LCD_W - 1 - x, LCD_H - 1 - y);
-
-	memcpy(fb, out, LCD_FB_SIZE);
+				vmu_lcd_set_pixel(fb, x0 + gx, y0 + gy);
 }
 
 int main(int argc, char **argv)
@@ -174,7 +150,7 @@ int main(int argc, char **argv)
 	}
 
 	if (flip)
-		flip180(fb);
+		vmu_lcd_flip180(fb);
 
 	if (fwrite(fb, 1, LCD_FB_SIZE, stdout) != LCD_FB_SIZE) {
 		fprintf(stderr, "%s: short write\n", argv[0]);
