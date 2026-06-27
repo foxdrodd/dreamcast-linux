@@ -1,7 +1,27 @@
-From dbeec726e8a5683832989150792c7df918368ec2 Mon Sep 17 00:00:00 2001
+From d002747f9ca92c35ea9e9808989922ce464e1c16 Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Fri, 26 Jun 2026 23:50:13 +0200
-Subject: [PATCH] fix NPE in maple
+Subject: [PATCH] Input: maplemouse: fix NULL pointer dereference in
+ open/close
+
+Opening a Dreamcast mouse device (e.g. when starting an X server)
+triggers a NULL pointer dereference in dc_mouse_open().
+
+dc_mouse_open() and dc_mouse_close() look up their private data with
+maple_get_drvdata(to_maple_dev(&dev->dev)). But 'dev' is the input_dev,
+so &dev->dev is the input device's own struct device, not the one
+embedded in a struct maple_device. The container_of() in to_maple_dev()
+thus yields a bogus pointer, maple_get_drvdata() returns NULL, and the
+following mse->mdev access faults at offset 4.
+
+Store the private data on the input device via input_set_drvdata() and
+retrieve it with input_get_drvdata() in open/close, where only the
+input_dev is available. Also set the input device's parent for correct
+sysfs topology.
+
+Fixes: 6b3480855aad ("maple: input: fix up maple mouse driver")
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
 
 root@dreamcast:/$ Xfbdev  -fp /usr/X11R7/share/fonts/X11/misc/ &
 [1] 45
