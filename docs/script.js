@@ -2,21 +2,47 @@
 (function () {
   "use strict";
 
-  // Click-to-play videos: each poster button swaps itself for a real <video>
-  // only when clicked, so nothing downloads until the visitor asks for it.
-  document.querySelectorAll(".video[data-src]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var v = document.createElement("video");
-      v.src = btn.getAttribute("data-src");
-      v.className = "video__el";
-      v.controls = true;
-      v.autoplay = true;
-      v.playsInline = true;
-      v.setAttribute("playsinline", "");
-      btn.replaceWith(v);
-      v.focus();
+  // Gallery lightbox: click a photo to view it full-size in an overlay.
+  var lb = document.getElementById("lightbox");
+  if (lb) {
+    var lbImg = lb.querySelector(".lightbox__img");
+    var lbCap = lb.querySelector(".lightbox__cap");
+    var lastFocus = null;
+
+    var openLightbox = function (full, alt, caption) {
+      lbImg.src = full;
+      lbImg.alt = alt || "";
+      lbCap.textContent = caption || "";
+      lb.hidden = false;
+    };
+    var closeLightbox = function () {
+      lb.hidden = true;
+      lbImg.src = "";
+      if (lastFocus) lastFocus.focus();
+    };
+
+    document.querySelectorAll(".shot__btn[data-full]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        lastFocus = btn;
+        var img = btn.querySelector("img");
+        var cap = btn.closest(".shot").querySelector("figcaption");
+        openLightbox(
+          btn.getAttribute("data-full"),
+          img ? img.alt : "",
+          cap ? cap.textContent : ""
+        );
+        lb.querySelector(".lightbox__close").focus();
+      });
     });
-  });
+
+    lb.addEventListener("click", function (e) {
+      // close when clicking the backdrop or the close button (not the image)
+      if (e.target === lb || e.target.classList.contains("lightbox__close")) closeLightbox();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !lb.hidden) closeLightbox();
+    });
+  }
 
   // Reveal sections on scroll (skipped if user prefers reduced motion).
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
