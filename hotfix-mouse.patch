@@ -3,6 +3,66 @@ From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Fri, 26 Jun 2026 23:50:13 +0200
 Subject: [PATCH] fix NPE in maple
 
+root@dreamcast:/$ Xfbdev  -fp /usr/X11R7/share/fonts/X11/misc/ &
+[1] 45
+root@dreamcast:/$ BUG: unable to handle kernel NULL pointer dereference at 00000004
+PC: [<8c26eec4>] dc_mouse_open+0xc/0x28
+pgd = f700ee57
+[00000004] *pgd=00000000
+Oops: 0000 [#1]
+
+CPU: 0 UID: 0 PID: 45 Comm: Xfbdev Not tainted 7.1.1 #84 PREEMPT 
+PC is at dc_mouse_open+0xc/0x28
+PR is at input_open_device+0x7c/0xe0
+PC  : 8c26eec4 SP  : 8c7bbd9c SR  : 40008100 TEA : 00000004
+R0  : 8c26eeb8 R1  : 00000000 R2  : 00000001 R3  : 00000000
+R4  : 8c6b0dc0 R5  : 8c26efa8 R6  : 8c7b64c0 R7  : 00000200
+R8  : 00000000 R9  : 8c6b0d70 R10 : 8c6b0c00 R11 : 8c6ce604
+R12 : 8c390a64 R13 : 8c6b0d3c R14 : 8c0e9ba0
+MACH: 00000006 MACL: 8686868d GBR : 29609ff4 PR  : 8c265fc8
+
+Call trace:
+ [<8c265fc8>] input_open_device+0x7c/0xe0
+ [<8c26b2d0>] mousedev_open_device+0x38/0x68
+ [<8c26b77c>] mousedev_open+0xa4/0x110
+ [<8c0e9cc6>] chrdev_open+0x112/0x15c
+ [<8c0e2e42>] do_dentry_open+0x27e/0x2fc
+ [<8c0e9bb4>] chrdev_open+0x0/0x15c
+ [<8c0f32d2>] path_openat+0x1d2/0x7cc
+ [<8c0f3956>] do_file_open+0x8a/0xf0
+ [<8c0f3100>] path_openat+0x0/0x7cc
+ [<8c1efeac>] strncpy_from_user+0x64/0xe4
+ [<8c0ffc7e>] alloc_fd+0x106/0x124
+ [<8c0e41ed>] sys_openat2+0xb9/0xbc
+ [<8c0e3fc6>] do_sys_openat2+0x76/0xd4
+ [<8c0e40ee>] do_sys_open+0x2a/0x54
+ [<8c00e25a>] syscall_call+0x18/0x1e
+ [<8c0e4118>] sys_open+0x0/0x10
+
+Process: Xfbdev (pid: 45, stack limit = a114aca6)
+Stack: (0x8c7bbd9c to 0x8c7bc000)
+bd80:                                                                8c265fc8 
+bda0: 8c26b2d0 8c9df680 8c9df680 8c6dca6c 8c6ce63c 8c6ce600 00000000 8c26b77c 
+bdc0: 8c6ce600 8c6ce7bc 8c6f6200 8c0e9cc6 8c47f10c 8c6dca6c 8c6ce738 00000000 
+bde0: fffffffa 00000000 6e849a3a 8c0e2e42 00000000 00000000 8c9df6a4 8c0e9bb4 
+be00: 8c6dca6c 00000000 8c9df680 8c0f32d2 00000000 00000006 00000000 00008002 
+be20: 8c9df680 8c7bbe88 8c7bbea0 8c9df780 8c6f6b34 8c4980e8 00000000 c00d123c 
+be40: 00000101 00000000 00000040 8ca1f880 7fffffff 00000000 00000000 8c7b64c0 
+be60: 6e849a3a 8c0f3956 52b3f6c4 295f4c40 8c7bbee0 00000001 8c0f3100 8c7bbf44 
+be80: 8c47f10c 000000f0 8c6ca0d0 8ca1f780 e2eb417d 00000006 8c639eeb 8c6ca190 
+bea0: 8ca20500 8c6dca6c 00010001 00000002 00000000 00000000 0000001a 00000004 
+bec0: 00000000 00000000 00000001 8c7bbed0 8c6ca0d0 8ca60780 00000000 8c7bbefc 
+bee0: 8c1efeac 00000002 40008100 29609ff4 00000000 00000000 ffffffff 8c0ffc7e 
+bf00: 8c6c9600 8c6c960c 00000000 00000002 ffffff9c 00000000 8c0e41ed 6e849a3a 
+bf20: 8c0e3fc6 29608298 00000000 8c7bbf74 8c47f10c 00000005 00000000 8c6c9600 
+bf40: ffffff9c 00008002 00000000 00000006 00010000 00000001 6e849a3a 8c0e40ee 
+bf60: 00000071 00000100 8c47f10c ffffff9c 52b23818 00008002 00000000 00000000 
+bf80: 00000000 00000000 00000000 6e849a3a 8c00e25a 8c0e4118 00000000 00000000 
+bfa0: 00000000 00000000 00000000 00000000 00000005 52b23818 00008002 00000000 
+bfc0: 00000000 29609f84 295f4c00 52b3f6ac 00007728 29608298 295f4c40 52b3f6c4 
+bfe0: 7b967ca8 295ab566 295a836e 00008101 29609ff4 00000000 00000000 0000007c 
+---[ end trace 0000000000000000 ]---
+
 ---
  drivers/input/mouse/maplemouse.c | 7 +++++--
  1 file changed, 5 insertions(+), 2 deletions(-)
