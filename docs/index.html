@@ -75,7 +75,7 @@
       <span class="dot"></span><span class="dot"></span><span class="dot"></span>
       <span class="terminal__title">ttySC1 — Dreamcast serial console · 115200 baud</span>
     </div>
-    <pre class="terminal__body" tabindex="0" aria-label="Real boot log (dmesg) from Dreamcast Linux 7.1.1 on real hardware"><span class="c-dim">Linux version 7.1.1 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #33 PREEMPT Sat Apr 25 2026</span>
+    <pre class="terminal__body" tabindex="0" aria-label="Real boot log (dmesg) from Dreamcast Linux 7.1.2 on real hardware"><span class="c-dim">Linux version 7.1.2 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #3 PREEMPT Sat Jun 27 2026</span>
 <span class="c-ok">Booting machvec: Sega Dreamcast</span>
 Kernel command line: console=ttySC1,115200 panic=3 ip=dhcp
 Zone ranges:
@@ -85,15 +85,14 @@ I-cache : n_ways=1 n_sets=256 way_incr=8192
 D-cache : n_ways=1 n_sets=512 way_incr=16384
 virtual kernel memory layout:
     lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
-      .text : 0x8c001000 - 0x8c38333c   (3592 kB)
+      .text : 0x8c001000 - 0x8c395408   (3665 kB)
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 intc: Registered controller 'sh7750' with 20 IRQs
 Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
 <span class="c-ok">CPU: SH7750</span>
-Memory: 9640K/16384K available (3588K kernel code, 208K rwdata, 900K rodata, 1096K init, 94K bss, 6088K reserved)
+Memory: 10524K/16384K available (3661K kernel code, 205K rwdata, 916K rodata, 160K init, 102K bss, 5244K reserved)
 Performance Events: sh7750 support registered
 Advanced Linux Sound Architecture Driver Initialized.
-DMA: Registering pvr2_dmac handler (1 channel).
 DMA: Registering g2_dmac handler (4 channels).
 PCI host bridge to bus 0000:00
 pci 0000:00:00.0: [11db:1234] type 00 class 0x020000 conventional PCI endpoint
@@ -101,12 +100,12 @@ PCI: Fixing up device 0000:00:00.0
 <span class="c-ok">maple: bus core now registered</span>
 NET: Registered PF_INET protocol family
 TCP: Hash tables configured (established 1024 bind 1024)
-<span class="c-ok">maple (null): detected Dreamcast Controller: function 0x1: at (0, 0)</span>
-<span class="c-ok">maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)</span>
-<span class="c-ok">maple (null): detected Dreamcast Mouse: function 0x200: at (2, 0)</span>
-<span class="c-ok">maple (null): detected Keyboard: function 0x40: at (3, 0)</span>
-<span class="c-ok">maple (null): detected Visual Memory: function 0xE: at (0, 1)</span>
 sq: Registering store queue API.
+<span class="c-ok">maple (null): detected Dreamcast Mouse: function 0x200: at (0, 0)</span>
+<span class="c-ok">maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)</span>
+<span class="c-ok">maple (null): detected Keyboard: function 0x40: at (2, 0)</span>
+<span class="c-ok">maple (null): detected Dreamcast Controller: function 0x1: at (3, 0)</span>
+<span class="c-ok">maple (null): detected Visual Memory: function 0xE: at (3, 1)</span>
 squashfs: version 4.0 (2009/01/31) Phillip Lougher
 Console: switching to colour frame buffer device 80x30
 <span class="c-ok">fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory</span>
@@ -115,13 +114,17 @@ sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
 SuperH (H)SCI(F) driver initialized
 sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
 printk: legacy console [ttySC1] enabled
+<span class="c-ok">Dreamcast_visual_memory 3:01.E: VMU LCD at (3, 1) registered as vmu_lcd0</span>
 <span class="c-ok">8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99</span>
+PPP generic driver version 2.4.2
+<span class="c-ok">Dreamcast_visual_memory 3:01.E: VMU device at partition 0 has 240 user blocks with a root block at 255</span>
+SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, max=256).
 <span class="c-ok">gdrom: CD-ROM DRIVE     from SE               with firmware 6.42</span>
 gdrom: Registered with major number 254
 cdrom: Uniform CD-ROM driver Revision: 3.20
-<span class="c-ok">input: Keyboard as /devices/maple/3:00.40/input/input0</span>
-<span class="c-ok">input: Dreamcast Mouse as /devices/virtual/input/input1</span>
-<span class="c-ok">input: Dreamcast Controller as /devices/maple/0:00.1/input/input2</span>
+<span class="c-ok">input: Keyboard as /devices/maple/2:00.40/input/input0</span>
+<span class="c-ok">input: Dreamcast Mouse as /devices/maple/0:00.200/input/input1</span>
+<span class="c-ok">input: Dreamcast Controller as /devices/maple/1:00.1/input/input2</span>
 <span class="c-ok">AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor</span>
 random: crng init done
 <span class="c-ok">8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1</span>
@@ -130,14 +133,14 @@ Sending DHCP requests ., OK
      device=eth0, hwaddr=00:d0:f1:03:21:ca, ipaddr=192.168.0.38, mask=255.255.255.0, gw=192.168.0.1
 ALSA device list:
   #1: Yamaha AICA Super Intelligent Sound Processor for SEGA Dreamcast
-Freeing unused kernel image (initmem) memory: 1096K
+Freeing unused kernel image (initmem) memory: 160K
 <span class="c-ok">Run /init as init process</span>
 ISO 9660 Extensions: RRIP_1991A
 
 <span class="c-acc">root@dreamcast:/$</span> <span class="cursor">_</span></pre>
     <div class="terminal__fade" aria-hidden="true"></div>
   </div>
-  <p class="terminal__cap">Real boot log — Linux 7.1.1 on actual Dreamcast hardware, scroll it.
+  <p class="terminal__cap">Real boot log — Linux 7.1.2 on actual Dreamcast hardware, scroll it.
     <a href="https://asciinema.org/a/722003?t=5" target="_blank" rel="noopener">▶ Watch it boot</a> ·
     <a href="assets/dmesg.txt" target="_blank" rel="noopener">raw dmesg</a></p>
 </section>
