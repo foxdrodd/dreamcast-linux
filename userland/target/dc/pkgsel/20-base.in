@@ -178,9 +178,11 @@ X mkfs.vmufat
 X netcat
 X wget
 X lrzsz
+X glib
 X alsa-lib
 X alsa-utils
 X argp
+X mrsh
 X cmatrix
 X vmu-lcd-text
 X inetutils
@@ -188,3 +190,40 @@ X fbset
 X libsdl
 X fbdoom
 X xinetd
+
+# Stuff for tinyx:
+xterm
+font-cursor-misc
+tinyx
+libxfont
+libfontenc
+xorg-util-macros
+mkfontscale
+font-adobe
+font-sun-misc
+font-bitstream
+font-misc-misc
+font-util
+xclock
+twm
+libxaw
+libxpm
+xeyes
+libxrender
+libxmu
+libxt
+libsm
+libice
+libxtst
+libxi
+libxfixes
+libxdmcp
+libxext
+libx11
+libxcb
+libxau
+xcb-proto
+freetype
+xorgproto
+xrandr
+xtrans
