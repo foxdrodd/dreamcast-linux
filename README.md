@@ -2,6 +2,13 @@
 
 Dreamcast Linux is a full Linux distribution for the Sega Dreamcast, with a Docker-based build environment for producing a minimal bootable Dreamcast Linux system.
 
+## Screenshots
+
+| Shell | htop | Doom |
+|:---:|:---:|:---:|
+| <img src="docs/assets/pictures/booted.jpeg" width="380"> | <img src="docs/assets/pictures/htop.png" width="380"> | <img src="docs/assets/pictures/doom.png" width="380"> |
+| Booted to the shell with flashfetch info | Running htop | Yes, it's running Doom |
+
 See the [latest release](https://github.com/foxdrodd/dreamcast-linux/releases/latest) for the available bootable CDI images:
 - `base-busybox`: kernel + initrd with a minimal BusyBox shell, supporting NFS, GD-ROM mounts, and more
 - `with-userland`: full system with about 140 packages on GD-ROM, mounted via overlayfs. Available as musl or uclibc builds.
@@ -51,43 +58,18 @@ I use kernel-integrated initramfs and not the sh-boot initrd. The path to the in
 
 ## Apply patches
 
-```
-dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-dreamcast-*.patch
-dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-vmu*.patch
-dreamcast-linux/.dreamcast/src/linux-6.19.9 ❯ patch -p1 < ../../../hotfix-gdrom*.patch
-```
+You need to apply the patches manually on the kernel tree.
 
 ## About
 
-Creates a cross-compilation environment for the SH4 architecture using:
-
-* gcc
-* glibc
-* linux
-* binutils
-* busybox
-
-## Requirements
-
-Docker on Linux.
-
-## Usage
-
-> Please inspect the local variables in the `dreamcast/build-dreamcast.sh` script before running this. Some options might not fit your setup.
-
-```
-make
-```
-
-You should now have the final images in `build/` folder.
-
-All building happens in `.dreamcast/`.
+Creates a cross-compilation environment for the SH4 architecture using Docker. The `with-userland` variants are using additionally the T2 built sysroot.
 
 ## Links
 
 * https://github.com/foxdrodd/dc-hacking
 * http://linuxdevices.org/running-linux-on-the-sega-dreamcast-a/
 * https://github.com/foxdrodd/sh-boot/
+* https://linuxdc.net
 * https://asciinema.org/a/722003?t=5
 
 ## License
