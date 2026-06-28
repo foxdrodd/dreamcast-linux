@@ -54,14 +54,14 @@ struct console {
 
 static char *const envp_fb[] = {
 	"HOME=/root",
-	"PATH=/bin:/sbin:/usr/bin:/usr/sbin",
+	"PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R7/bin",
 	"TERM=linux",
 	NULL
 };
 
 static char *const envp_serial[] = {
 	"HOME=/root",
-	"PATH=/bin:/sbin:/usr/bin:/usr/sbin",
+	"PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R7/bin",
 	"TERM=vt100",
 	NULL
 };
@@ -217,6 +217,7 @@ int main(void)
 	if (ret) printf("sysfs failed with %d\n", ret);
 	ret = mount("devtmpfs", "/dev", "devtmpfs", 0, "mode=0755");
 	if (ret) printf("devtmpfs failed with %d\n", ret);
+	xmkdir("/dev/pts");
 	ret = mount("devpts",  "/dev/pts", "devpts", 0, "");
 	if (ret) printf("devpts failed with %d\n", ret);
 
