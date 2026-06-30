@@ -1,12 +1,18 @@
-From 391e042f5ea1165ba641ef6e340458f8e15ba577 Mon Sep 17 00:00:00 2001
+From 8f350860483f63b4339fea96c6873451f5c284e1 Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Tue, 30 Jun 2026 21:22:17 +0200
-Subject: [PATCH] fix joystick buffering
+Subject: [PATCH] Input: maplecontrol - add missing input_sync()
 
-Call input_sync() just like maple_keyb and maple_mouse do.
-Without it, it batches the button presses and sends them in burst
-over evdev.
+dc_pad_callback() reports button and axis state on every poll but never
+calls input_sync(), so no EV_SYN/SYN_REPORT is emitted. evdev only wakes
+readers on SYN_REPORT, so events accumulate unseen until the buffer
+overflows and flushes them in a burst.
 
+The maplemouse and maple_keyb drivers already sync; add the missing call
+to the joystick driver so each poll delivers a complete event packet.
+
+Fixes: 01461d7e65a6 ("Input: add support for Maple controller as a joystick")
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
  drivers/input/joystick/maplecontrol.c | 2 ++
  1 file changed, 2 insertions(+)
