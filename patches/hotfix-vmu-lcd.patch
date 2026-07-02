@@ -1,8 +1,23 @@
 From 4559312f52b434311d5152be629f1c6bf9d51a2d Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Sun, 21 Jun 2026 17:56:40 +0200
-Subject: [PATCH] VMU LCD port
+Subject: [PATCH] auxdisplay: Add SEGA Dreamcast VMU LCD character device
 
+The VMU is a maple-bus memory card with a 48x32 mono LCD.  The bus binds
+one driver per device, so the LCD cannot compete with the storage driver:
+vmu-flash owns the VMU and calls vmu_lcd_register()/unregister() to hand
+the display to this module.
+
+Each display appears as /dev/vmu_lcdN; userspace draws by writing 192 bytes
+(48x32, 1bpp, MSB first).  Hardware writes are issued from write() in
+process context - driving them from maple callback context would deadlock
+the bus.  A boot splash showing the kernel release is drawn on connect from
+a private ordered workqueue, since the maple core's unlocked send queue
+must not be touched concurrently from system_wq.
+
+Based on the out-of-tree mlcd-0.0.4 driver by Christian Berger (2003).
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
  drivers/auxdisplay/Kconfig   |  18 ++
  drivers/auxdisplay/Makefile  |   1 +
