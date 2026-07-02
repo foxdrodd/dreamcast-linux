@@ -1,0 +1,696 @@
+From 94b54e648214dcb060f101bb2da99bde9e444e2a Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Thu, 2 Jul 2026 15:30:02 +0200
+Subject: [PATCH] HIT-0300 lan driver import
+
+---
+ drivers/net/ethernet/Kconfig               |   1 +
+ drivers/net/ethernet/Makefile              |   1 +
+ drivers/net/ethernet/fujitsu/Kconfig       |  32 ++
+ drivers/net/ethernet/fujitsu/Makefile      |   6 +
+ drivers/net/ethernet/fujitsu/lan_adapter.c | 597 +++++++++++++++++++++
+ 5 files changed, 637 insertions(+)
+ create mode 100644 drivers/net/ethernet/fujitsu/Kconfig
+ create mode 100644 drivers/net/ethernet/fujitsu/Makefile
+ create mode 100644 drivers/net/ethernet/fujitsu/lan_adapter.c
+
+diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
+index 78c79ad7bba5..571cad81218d 100644
+--- a/drivers/net/ethernet/Kconfig
++++ b/drivers/net/ethernet/Kconfig
+@@ -62,6 +62,7 @@ source "drivers/net/ethernet/engleder/Kconfig"
+ source "drivers/net/ethernet/ezchip/Kconfig"
+ source "drivers/net/ethernet/faraday/Kconfig"
+ source "drivers/net/ethernet/freescale/Kconfig"
++source "drivers/net/ethernet/fujitsu/Kconfig"
+ source "drivers/net/ethernet/fungible/Kconfig"
+ source "drivers/net/ethernet/google/Kconfig"
+ source "drivers/net/ethernet/hisilicon/Kconfig"
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index bba55d9af387..7c0db889900c 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -41,6 +41,7 @@ obj-$(CONFIG_NET_VENDOR_ENGLEDER) += engleder/
+ obj-$(CONFIG_NET_VENDOR_EZCHIP) += ezchip/
+ obj-$(CONFIG_NET_VENDOR_FARADAY) += faraday/
+ obj-$(CONFIG_NET_VENDOR_FREESCALE) += freescale/
++obj-$(CONFIG_NET_VENDOR_FUJITSU) += fujitsu/
+ obj-$(CONFIG_NET_VENDOR_FUNGIBLE) += fungible/
+ obj-$(CONFIG_NET_VENDOR_GOOGLE) += google/
+ obj-$(CONFIG_NET_VENDOR_HISILICON) += hisilicon/
+diff --git a/drivers/net/ethernet/fujitsu/Kconfig b/drivers/net/ethernet/fujitsu/Kconfig
+new file mode 100644
+index 000000000000..10464d8c09c4
+--- /dev/null
++++ b/drivers/net/ethernet/fujitsu/Kconfig
+@@ -0,0 +1,32 @@
++# SPDX-License-Identifier: GPL-2.0-only
++#
++# Fujitsu Network device configuration
++#
++
++config NET_VENDOR_FUJITSU
++	bool "Fujitsu devices"
++	default y
++	depends on SH_DREAMCAST
++	help
++	  If you have a network (Ethernet) card belonging to this class, say Y.
++
++	  Note that the answer to this question doesn't directly affect the
++	  kernel: saying N will just cause the configurator to skip all the
++	  questions about Fujitsu cards. If you say Y, you will be asked for
++	  your specific card in the following questions.
++
++if NET_VENDOR_FUJITSU
++
++config LAN_ADAPTER
++	tristate "SEGA Dreamcast HIT-0300 LAN adapter support"
++	depends on SH_DREAMCAST
++	select CRC32
++	help
++	  Driver for the SEGA HIT-0300 LAN adapter, a 10baseT Ethernet
++	  adapter for the Dreamcast expansion (G2) bus built around the
++	  Fujitsu MB86967 controller.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called lan_adapter.
++
++endif # NET_VENDOR_FUJITSU
+diff --git a/drivers/net/ethernet/fujitsu/Makefile b/drivers/net/ethernet/fujitsu/Makefile
+new file mode 100644
+index 000000000000..fba4f99fb64d
+--- /dev/null
++++ b/drivers/net/ethernet/fujitsu/Makefile
+@@ -0,0 +1,6 @@
++# SPDX-License-Identifier: GPL-2.0-only
++#
++# Makefile for the Fujitsu network device drivers.
++#
++
++obj-$(CONFIG_LAN_ADAPTER) += lan_adapter.o
+diff --git a/drivers/net/ethernet/fujitsu/lan_adapter.c b/drivers/net/ethernet/fujitsu/lan_adapter.c
+new file mode 100644
+index 000000000000..ce351db33a9e
+--- /dev/null
++++ b/drivers/net/ethernet/fujitsu/lan_adapter.c
+@@ -0,0 +1,597 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * lan_adapter.c: SEGA LAN adapter (HIT-0300) driver for the Dreamcast.
++ *
++ * The HIT-0300 plugs into the Dreamcast's G2 expansion bus and is built
++ * around the Fujitsu MB86967, a member of the MB8696x Ethernet controller
++ * family (the same register layout used by the old fmvj18x_cs PCMCIA driver).
++ *
++ * Copyright (c) 2003 Christian Berger <c.berger@tu-braunschweig.de>
++ *	Original driver for linux-2.6.0-test9.
++ * Copyright (c) 2026 Florian Fuchs <fuchsfl@gmail.com>
++ *	Ported to the modern net_device / platform_device API.
++ *
++ * Thanks to Dan Potter (KallistiOS, dcload-ip) and Christian Groessler
++ * (NetBSD if_mbe_g2.c) whose work documented this hardware.
++ */
++
++#include <linux/delay.h>
++#include <linux/etherdevice.h>
++#include <linux/if_ether.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/ioport.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/netdevice.h>
++#include <linux/platform_device.h>
++#include <linux/skbuff.h>
++
++#include <mach/sysasic.h>
++
++#define DRV_NAME	"lan_adapter"
++
++/*
++ * The HIT-0300 lives at a fixed location on the G2 bus.  This is the base
++ * I/O port (relative to the Dreamcast P2 I/O window installed by
++ * __set_io_port_base(P2SEG) in the board setup) and the register stride:
++ * consecutive registers are four bytes apart.
++ */
++#define HIT_BASE	0x00600400
++#define HIT_IO_EXTENT	32
++#define HIT_REG(reg)	(HIT_BASE + (reg) * 4)
++
++/*
++ * G2 bus reset register.  The generic System ASIC code does not reset the
++ * expansion slot for us, so the adapter is kicked by hand before probing.
++ * 0x00600480 maps to physical 0xa0600480 through the P2 I/O window.
++ */
++#define HIT_G2_RESET	0x00600480
++
++/* Data Link Control Registers (always accessible). */
++#define HIT_DLCR0	0	/* transmit status */
++#define HIT_DLCR1	1	/* receive status */
++#define HIT_DLCR2	2	/* transmit interrupt mask */
++#define HIT_DLCR3	3	/* receive interrupt mask */
++#define HIT_DLCR4	4	/* transmit mode */
++#define HIT_DLCR5	5	/* receive mode */
++#define HIT_DLCR6	6	/* config register 0 */
++#define HIT_DLCR7	7	/* config register 1 (bank select) */
++
++/* Upper registers, bank 0: node ID (MAC). */
++#define HIT_DLCR8	8
++
++/* Upper registers, bank 1: multicast address filter. */
++#define HIT_MAR8	8
++
++/* Upper registers, bank 2: buffer memory port. */
++#define HIT_BMPR8	8	/* buffer memory data port */
++#define HIT_BMPR10	10	/* transmit packet count / start */
++#define HIT_BMPR11	11	/* 16-collision control */
++#define HIT_BMPR12	12	/* DMA enable (unused) */
++#define HIT_BMPR13	13	/* DMA burst / transceiver (unused) */
++#define HIT_BMPR14	14	/* receive control (unused) */
++#define HIT_BMPR15	15	/* transceiver status/control */
++
++/* EEPROM access registers (jumperless mode). */
++#define HIT_BMPR16	16	/* EEPROM control */
++#define HIT_BMPR17	17	/* EEPROM data */
++
++/* Register bits. */
++#define HIT_D0_NET_BSY	0x40	/* carrier detected */
++#define HIT_D3_PKT_RDY	0x80	/* enable receive packet-ready interrupt */
++#define HIT_D5_AM_OTHER	0x02	/* accept broadcast + our node */
++#define HIT_D5_AM_PROM	0x03	/* accept all packets (promiscuous) */
++#define HIT_D5_BUF_EMP	0x40	/* receive buffer empty */
++#define HIT_D6_ENA_DLC	0x80	/* hold Data Link Controller in reset */
++#define HIT_D7_STBY	0x20	/* leave standby (operate) */
++#define HIT_D7_RBMASK	0x0c	/* register bank select mask */
++#define HIT_B10_TX	0x80	/* start transmission */
++#define HIT_B11_AUTO	0x06	/* auto-retransmit on collision */
++#define HIT_B15_CLR_ALL	0x4a	/* reset transceiver status */
++#define HIT_B16_SELECT	0x20	/* EEPROM chip select */
++#define HIT_B16_CLOCK	0x40	/* EEPROM shift clock */
++#define HIT_B17_DATA	0x80	/* EEPROM data bit */
++
++/* Controller ID reported in the top two bits of DLCR7. */
++#define HIT_CONTROLLER_ID	0x02	/* MB86967 == binary 10 */
++
++/*
++ * The HIT-0300 is an 8-bit G2 external device and raises System ASIC
++ * hardware event 34.  This is NOT HW_EVENT_EXTERNAL (event 35), which is
++ * the PCI/GAPS line used by the Broadband Adapter -- requesting that one
++ * means our receive interrupt never fires.  (Per Christian Groessler's
++ * NetBSD if_mbe_g2 work, as noted in the original 2003 driver.)
++ */
++#define HIT_HW_EVENT		(HW_EVENT_IRQ_BASE + 34)
++
++#define HIT_TX_TIMEOUT		(HZ / 4)
++
++struct hit_private {
++	spinlock_t lock;	/* serialises register access vs. the IRQ */
++	int irq;
++};
++
++static int debug;
++module_param(debug, int, 0644);
++MODULE_PARM_DESC(debug, "debug level (0 = off)");
++
++#define hit_dbg(dev, fmt, ...)					\
++	do {							\
++		if (debug)					\
++			netdev_warn(dev, fmt, ##__VA_ARGS__);	\
++	} while (0)
++
++/*
++ * Shift clocks to the EEPROM are generated by repeatedly writing 1 or 0 to
++ * the clock bit (per the Fujitsu data sheet).
++ */
++static void strobe_eeprom(void)
++{
++	outb(HIT_B16_SELECT, HIT_REG(HIT_BMPR16));
++	outb(HIT_B16_SELECT | HIT_B16_CLOCK, HIT_REG(HIT_BMPR16));
++	outb(HIT_B16_SELECT | HIT_B16_CLOCK, HIT_REG(HIT_BMPR16));
++	outb(HIT_B16_SELECT, HIT_REG(HIT_BMPR16));
++}
++
++/* Read the six-byte MAC address out of the serial EEPROM. */
++static void read_eeprom(u8 *data)
++{
++	u8 val;
++	int n, bit;
++
++	/* Bytes are read two at a time. */
++	for (n = 0; n < 3; n++) {
++		outb(0x00, HIT_REG(HIT_BMPR16));	/* reset interface */
++		outb(0x00, HIT_REG(HIT_BMPR17));
++
++		outb(HIT_B16_SELECT, HIT_REG(HIT_BMPR16));	/* start access */
++		outb(HIT_B17_DATA, HIT_REG(HIT_BMPR17));
++		strobe_eeprom();
++
++		/* Shift out the iteration count plus a READ command. */
++		val = 0x80 | n;
++		for (bit = 0x80; bit != 0x00; bit >>= 1) {
++			outb((val & bit) ? HIT_B17_DATA : 0x00,
++			     HIT_REG(HIT_BMPR17));
++			strobe_eeprom();
++		}
++		outb(0x00, HIT_REG(HIT_BMPR17));
++
++		/* Shift in the first byte. */
++		val = 0;
++		for (bit = 0x80; bit != 0x00; bit >>= 1) {
++			strobe_eeprom();
++			if (inb(HIT_REG(HIT_BMPR17)) & HIT_B17_DATA)
++				val |= bit;
++		}
++		*data++ = val;
++
++		/* Shift in the second byte. */
++		val = 0;
++		for (bit = 0x80; bit != 0x00; bit >>= 1) {
++			strobe_eeprom();
++			if (inb(HIT_REG(HIT_BMPR17)) & HIT_B17_DATA)
++				val |= bit;
++		}
++		*data++ = val;
++	}
++}
++
++/*
++ * The MB86967 multiplexes three register banks over addresses 08h-0fh,
++ * selected via bits 2-3 of DLCR7:
++ *
++ *	bank 0: DLCR8..15 (node ID)
++ *	bank 1: MAR8..15  (multicast filter)
++ *	bank 2: BMPR8..15 (buffer memory port)
++ */
++static void switch_bank(int bank)
++{
++	int reg = (inb(HIT_REG(HIT_DLCR7)) & ~HIT_D7_RBMASK) | (bank << 2);
++
++	outb(reg, HIT_REG(HIT_DLCR7));
++}
++
++/* Reset the G2 bus and return the controller ID from DLCR7. */
++static int detect_hit(void)
++{
++	outb(0, HIT_G2_RESET);
++	outb(1, HIT_G2_RESET);
++	outb(0, HIT_G2_RESET);
++	udelay(100);
++
++	return (inb(HIT_REG(HIT_DLCR7)) >> 6) & 0x03;
++}
++
++/* Pull one or more received frames out of the buffer and hand them up. */
++static void hit_rx(struct net_device *dev)
++{
++	struct sk_buff *skb;
++	int status, len;
++	u8 *buf;
++
++	while (!(inb(HIT_REG(HIT_DLCR5)) & HIT_D5_BUF_EMP)) {
++		/* Two-byte receive status followed by the two-byte length. */
++		status = inb(HIT_REG(HIT_BMPR8));
++		(void)inb(HIT_REG(HIT_BMPR8));
++
++		len = inb(HIT_REG(HIT_BMPR8));
++		len |= inb(HIT_REG(HIT_BMPR8)) << 8;
++
++		if ((status & 0xf0) != 0x20) {
++			hit_dbg(dev, "receive error, status 0x%02x\n", status);
++			dev->stats.rx_errors++;
++			break;
++		}
++
++		if (len < ETH_ZLEN || len > ETH_FRAME_LEN) {
++			hit_dbg(dev, "bogus receive length %d\n", len);
++			dev->stats.rx_length_errors++;
++			break;
++		}
++
++		skb = netdev_alloc_skb_ip_align(dev, len);
++		if (!skb) {
++			dev->stats.rx_dropped++;
++			break;
++		}
++
++		buf = skb_put(skb, len);
++		insb(HIT_REG(HIT_BMPR8), buf, len);
++
++		skb->protocol = eth_type_trans(skb, dev);
++		netif_rx(skb);
++
++		dev->stats.rx_packets++;
++		dev->stats.rx_bytes += len;
++	}
++}
++
++static irqreturn_t hit_interrupt(int irq, void *dev_id)
++{
++	struct net_device *dev = dev_id;
++	struct hit_private *priv = netdev_priv(dev);
++	int intr_tx, intr_rx;
++
++	spin_lock(&priv->lock);
++
++	/* Acknowledge transmit and receive interrupts. */
++	intr_tx = inb(HIT_REG(HIT_DLCR0));
++	outb(intr_tx, HIT_REG(HIT_DLCR0));
++
++	intr_rx = inb(HIT_REG(HIT_DLCR1));
++	outb(intr_rx, HIT_REG(HIT_DLCR1));
++
++	hit_dbg(dev, "interrupt tx=0x%02x rx=0x%02x\n", intr_tx, intr_rx);
++
++	if (intr_rx & HIT_D3_PKT_RDY) {
++		outb(0x00, HIT_REG(HIT_DLCR3));		/* mask rx */
++		hit_rx(dev);
++		outb(HIT_D3_PKT_RDY, HIT_REG(HIT_DLCR3));	/* unmask rx */
++	}
++
++	spin_unlock(&priv->lock);
++
++	return IRQ_HANDLED;
++}
++
++static netdev_tx_t hit_start_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	struct hit_private *priv = netdev_priv(dev);
++	unsigned long flags;
++	unsigned int len;
++	int timeout = 50;
++
++	if (skb_padto(skb, ETH_ZLEN))
++		return NETDEV_TX_OK;
++	len = max_t(unsigned int, skb->len, ETH_ZLEN);
++
++	/* Wait for room in the transmit buffer. */
++	while ((inb(HIT_REG(HIT_BMPR10)) & 0x7f) && --timeout > 0)
++		udelay(2);
++	if (timeout == 0) {
++		hit_dbg(dev, "timed out waiting for previous tx\n");
++		return NETDEV_TX_BUSY;
++	}
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	/* Program the length, feed the frame, then start the transmitter. */
++	outb(len & 0xff, HIT_REG(HIT_BMPR8));
++	outb((len >> 8) & 0xff, HIT_REG(HIT_BMPR8));
++	outsb(HIT_REG(HIT_BMPR8), skb->data, len);
++	outb(1 | HIT_B10_TX, HIT_REG(HIT_BMPR10));
++
++	dev->stats.tx_packets++;
++	dev->stats.tx_bytes += len;
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	dev_kfree_skb_any(skb);
++	return NETDEV_TX_OK;
++}
++
++static void hit_tx_timeout(struct net_device *dev, unsigned int txqueue)
++{
++	struct hit_private *priv = netdev_priv(dev);
++	unsigned long flags;
++
++	netdev_warn(dev, "transmit timed out, status 0x%02x (%s?)\n",
++		    inb(HIT_REG(HIT_DLCR0)),
++		    (inb(HIT_REG(HIT_DLCR0)) & HIT_D0_NET_BSY) ?
++		    "cable problem" : "IRQ conflict");
++
++	dev->stats.tx_errors++;
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	/* Bounce the Data Link Controller and restart reception. */
++	outb(HIT_D6_ENA_DLC, HIT_REG(HIT_DLCR6));
++	outb(inb(HIT_REG(HIT_DLCR6)) & ~HIT_D6_ENA_DLC, HIT_REG(HIT_DLCR6));
++
++	switch_bank(2);
++	outb((inb(HIT_REG(HIT_DLCR5)) & ~HIT_D5_AM_PROM) | HIT_D5_AM_OTHER,
++	     HIT_REG(HIT_DLCR5));
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	netif_trans_update(dev);
++	netif_wake_queue(dev);
++}
++
++static void hit_set_rx_mode(struct net_device *dev)
++{
++	u8 mode = inb(HIT_REG(HIT_DLCR5)) & ~HIT_D5_AM_PROM;
++
++	/*
++	 * Multicast filtering is not implemented, so fall back to promiscuous
++	 * mode whenever anything beyond our own address is requested.
++	 */
++	if (dev->flags & (IFF_PROMISC | IFF_ALLMULTI) || !netdev_mc_empty(dev))
++		mode |= HIT_D5_AM_PROM;
++	else
++		mode |= HIT_D5_AM_OTHER;
++
++	outb(mode, HIT_REG(HIT_DLCR5));
++}
++
++static int hit_open(struct net_device *dev)
++{
++	struct hit_private *priv = netdev_priv(dev);
++	int ret;
++
++	ret = request_irq(priv->irq, hit_interrupt, 0, dev->name, dev);
++	if (ret) {
++		netdev_err(dev, "unable to get IRQ %d\n", priv->irq);
++		return ret;
++	}
++
++	switch_bank(2);
++	outb((inb(HIT_REG(HIT_DLCR5)) & ~HIT_D5_AM_PROM) | HIT_D5_AM_OTHER,
++	     HIT_REG(HIT_DLCR5));
++
++	/* Enable receive interrupts and take the DLC out of reset. */
++	outb(HIT_D3_PKT_RDY, HIT_REG(HIT_DLCR3));
++	outb(inb(HIT_REG(HIT_DLCR6)) & ~HIT_D6_ENA_DLC, HIT_REG(HIT_DLCR6));
++
++	netif_start_queue(dev);
++	return 0;
++}
++
++static int hit_stop(struct net_device *dev)
++{
++	struct hit_private *priv = netdev_priv(dev);
++	int timeout = 50;
++
++	netif_stop_queue(dev);
++
++	/* Let any in-flight transmit drain before we shut down. */
++	while ((inb(HIT_REG(HIT_BMPR10)) & 0x7f) && --timeout > 0)
++		udelay(2);
++
++	/* Mask receive interrupts and stop accepting frames. */
++	outb(0x00, HIT_REG(HIT_DLCR3));
++	outb(inb(HIT_REG(HIT_DLCR5)) & ~HIT_D5_AM_PROM, HIT_REG(HIT_DLCR5));
++
++	free_irq(priv->irq, dev);
++	return 0;
++}
++
++static const struct net_device_ops hit_netdev_ops = {
++	.ndo_open		= hit_open,
++	.ndo_stop		= hit_stop,
++	.ndo_start_xmit		= hit_start_xmit,
++	.ndo_tx_timeout		= hit_tx_timeout,
++	.ndo_set_rx_mode	= hit_set_rx_mode,
++	.ndo_set_mac_address	= eth_mac_addr,
++	.ndo_validate_addr	= eth_validate_addr,
++};
++
++/* Bring the controller up far enough to read its MAC and register it. */
++static int hit_init_hw(struct net_device *dev)
++{
++	u8 addr[ETH_ALEN];
++	int i;
++
++	if (detect_hit() != HIT_CONTROLLER_ID) {
++		netdev_err(dev, "no MB86967 found (slot empty or modem fitted?)\n");
++		return -ENODEV;
++	}
++
++	/* Clear pending interrupt status. */
++	outb(0xff, HIT_REG(HIT_DLCR0));
++	outb(0xff, HIT_REG(HIT_DLCR1));
++
++	/* Power-cycle the controller: standby off, DLC reset, standby on. */
++	udelay(2);
++	outb(inb(HIT_REG(HIT_DLCR7)) & ~HIT_D7_STBY, HIT_REG(HIT_DLCR7));
++	udelay(2);
++	outb(inb(HIT_REG(HIT_DLCR6)) | HIT_D6_ENA_DLC, HIT_REG(HIT_DLCR6));
++	udelay(2);
++	outb(inb(HIT_REG(HIT_DLCR7)) | HIT_D7_STBY, HIT_REG(HIT_DLCR7));
++	udelay(2);
++
++	read_eeprom(addr);
++	udelay(100);
++
++	if (!is_valid_ether_addr(addr)) {
++		netdev_err(dev, "invalid MAC address read from EEPROM\n");
++		return -EINVAL;
++	}
++	eth_hw_addr_set(dev, addr);
++
++	/* Program the node ID registers (bank 0). */
++	switch_bank(0);
++	for (i = 0; i < ETH_ALEN; i++)
++		outb(addr[i], HIT_REG(HIT_DLCR8 + i));
++
++	/* Clear the multicast filter (bank 1). */
++	switch_bank(1);
++	for (i = 0; i < ETH_ALEN; i++)
++		outb(0x00, HIT_REG(HIT_MAR8 + i));
++
++	/* Configure the buffer memory port (bank 2). */
++	switch_bank(2);
++	outb(0x00, HIT_REG(HIT_BMPR10));	/* clear transmit count */
++	outb(HIT_B11_AUTO, HIT_REG(HIT_BMPR11));	/* auto-retransmit */
++	outb(0x00, HIT_REG(HIT_BMPR12));	/* no DMA */
++	outb(0x00, HIT_REG(HIT_BMPR13));	/* no DMA burst */
++	outb(0x00, HIT_REG(HIT_BMPR14));	/* no transceiver interrupt */
++	outb(HIT_B15_CLR_ALL, HIT_REG(HIT_BMPR15));	/* reset transceiver */
++
++	outb((inb(HIT_REG(HIT_DLCR5)) & ~HIT_D5_AM_PROM) | HIT_D5_AM_OTHER,
++	     HIT_REG(HIT_DLCR5));
++
++	return 0;
++}
++
++static int lan_adapter_probe(struct platform_device *pdev)
++{
++	struct net_device *dev;
++	struct hit_private *priv;
++	struct resource *io;
++	int irq, ret;
++
++	io = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	if (!io)
++		return -ENODEV;
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0)
++		return irq;
++
++	if (!request_region(io->start, resource_size(io), DRV_NAME)) {
++		dev_err(&pdev->dev, "I/O region 0x%llx busy\n",
++			(unsigned long long)io->start);
++		return -EBUSY;
++	}
++
++	dev = alloc_etherdev(sizeof(struct hit_private));
++	if (!dev) {
++		ret = -ENOMEM;
++		goto err_release;
++	}
++	SET_NETDEV_DEV(dev, &pdev->dev);
++
++	priv = netdev_priv(dev);
++	spin_lock_init(&priv->lock);
++	priv->irq = irq;
++
++	dev->netdev_ops = &hit_netdev_ops;
++	dev->watchdog_timeo = HIT_TX_TIMEOUT;
++	dev->base_addr = io->start;
++	dev->irq = irq;
++	dev->if_port = IF_PORT_10BASET;
++
++	ret = hit_init_hw(dev);
++	if (ret)
++		goto err_free;
++
++	ret = register_netdev(dev);
++	if (ret)
++		goto err_free;
++
++	platform_set_drvdata(pdev, dev);
++	netdev_info(dev, "SEGA LAN adapter (HIT-0300, MB86967), IRQ %d\n", irq);
++	return 0;
++
++err_free:
++	free_netdev(dev);
++err_release:
++	release_region(io->start, resource_size(io));
++	return ret;
++}
++
++static void lan_adapter_remove(struct platform_device *pdev)
++{
++	struct net_device *dev = platform_get_drvdata(pdev);
++
++	unregister_netdev(dev);
++
++	/* Power the controller down. */
++	udelay(2);
++	outb(inb(HIT_REG(HIT_DLCR7)) & ~HIT_D7_STBY, HIT_REG(HIT_DLCR7));
++	udelay(2);
++
++	free_netdev(dev);
++	release_region(HIT_BASE, HIT_IO_EXTENT);
++}
++
++static struct platform_driver lan_adapter_driver = {
++	.probe		= lan_adapter_probe,
++	.remove		= lan_adapter_remove,
++	.driver		= {
++		.name	= DRV_NAME,
++	},
++};
++
++static struct resource lan_adapter_resources[] = {
++	{
++		.start	= HIT_BASE,
++		.end	= HIT_BASE + HIT_IO_EXTENT - 1,
++		.flags	= IORESOURCE_IO,
++	},
++	{
++		.start	= HIT_HW_EVENT,
++		.end	= HIT_HW_EVENT,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device *lan_adapter_device;
++
++static int __init lan_adapter_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&lan_adapter_driver);
++	if (ret)
++		return ret;
++
++	lan_adapter_device =
++		platform_device_register_simple(DRV_NAME, -1,
++						lan_adapter_resources,
++						ARRAY_SIZE(lan_adapter_resources));
++	if (IS_ERR(lan_adapter_device)) {
++		platform_driver_unregister(&lan_adapter_driver);
++		return PTR_ERR(lan_adapter_device);
++	}
++
++	return 0;
++}
++
++static void __exit lan_adapter_exit(void)
++{
++	platform_device_unregister(lan_adapter_device);
++	platform_driver_unregister(&lan_adapter_driver);
++}
++
++module_init(lan_adapter_init);
++module_exit(lan_adapter_exit);
++
++MODULE_AUTHOR("Christian Berger <c.berger@tu-braunschweig.de>");
++MODULE_AUTHOR("Florian Fuchs <fuchsfl@gmail.com>");
++MODULE_DESCRIPTION("SEGA Dreamcast HIT-0300 LAN adapter (Fujitsu MB86967)");
++MODULE_LICENSE("GPL");
+-- 
+2.43.0
+
