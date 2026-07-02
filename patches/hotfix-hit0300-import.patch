@@ -1,8 +1,36 @@
 From 94b54e648214dcb060f101bb2da99bde9e444e2a Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Thu, 2 Jul 2026 15:30:02 +0200
-Subject: [PATCH] HIT-0300 lan driver import
+Subject: [PATCH net-next] net: fujitsu: add SEGA Dreamcast HIT-0300 LAN adapter driver
 
+Add a driver for the SEGA HIT-0300 LAN adapter, a 10baseT Ethernet
+adapter for the Dreamcast expansion (G2) bus built around the Fujitsu
+MB86967 controller (part of the MB8696x family whose register layout
+matched the now-removed fmvj18x_cs PCMCIA driver).
+
+This is a port of Christian Berger's 2003 driver for linux-2.6.0-test9
+to the current APIs:
+
+  - register as a platform_driver/platform_device instead of a static
+    net_device with a ->init hook; use alloc_etherdev()/netdev_priv()
+  - move the open/xmit/etc. hooks into net_device_ops, drop the private
+    net_device_stats in favour of dev->stats, and set the MAC with
+    eth_hw_addr_set()
+  - modern IRQ handler signature, ndo_tx_timeout(dev, txqueue), and
+    netdev_alloc_skb_ip_align()/insb()/outsb() for the data path,
+    removing the static bounce buffer
+  - request the interrupt on ->ndo_open and derive the I/O window and
+    IRQ from platform resources
+
+The adapter is an 8-bit G2 external device and raises System ASIC
+hardware event 34, not HW_EVENT_EXTERNAL (event 35, the PCI/GAPS line
+used by the Broadband Adapter); requesting the latter leaves receive
+interrupts unhooked.
+
+Tested on a Sega Dreamcast with a HIT-0300: interface comes up and
+works totally fine.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
  drivers/net/ethernet/Kconfig               |   1 +
  drivers/net/ethernet/Makefile              |   1 +
