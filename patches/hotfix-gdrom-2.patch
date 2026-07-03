@@ -1,0 +1,182 @@
+From 8c13f24fed55757d5c92f5fbb403e0e84ca4671a Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Thu, 2 Jul 2026 20:15:34 +0200
+Subject: [PATCH] cdrom: gdrom: fix spurious read failures from
+ signal-interrupted waits
+
+The read and packet-command paths waited for completion IRQs with
+wait_event_interruptible_timeout(). With BLK_MQ_F_BLOCKING, queue_rq
+runs in the submitting process's context, so a pending signal made the
+wait return immediately while the transfer was still healthily in
+flight. The driver then declared BLK_STS_IOERR and left an armed DMA
+transfer behind, which wedged the drive (BSY) and could scribble into
+the request's pages after they were freed and reused, corrupting
+unrelated data.
+
+In practice any signal-heavy workload (X11 clients) saw intermittent
+read errors escalating into a dead drive and filesystem corruption.
+
+Hardware command completion must not be aborted by signals: switch all
+completion waits to wait_event_timeout(). The IRQ handlers must wake
+uninterruptible sleepers, so convert wake_up_interruptible() to
+wake_up() alongside.
+
+Also harden the read path for genuine failures:
+- wait for DRQ before feeding the command packet, as the SPI command
+  path already does, instead of writing it blind after !BSY
+- on a failed read, tear down the DMA engine before ending the request
+  and reset the drive if it is stuck busy, so one bad read no longer
+  wedges the device
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ drivers/cdrom/gdrom.c | 67 ++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 51 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+index 2392a927c8cd..63a1f874be79 100644
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -119,6 +119,7 @@ static int gdrom_getsense(short *bufstring);
+ static int gdrom_packetcommand(struct cdrom_device_info *cd_info,
+ 	struct packet_command *command);
+ static int gdrom_hardreset(struct cdrom_device_info *cd_info);
++static int gdrom_init_dma_mode(void);
+ 
+ static bool gdrom_is_busy(void)
+ {
+@@ -238,7 +239,7 @@ static int gdrom_test_unit_cmd(void)
+ 	test_command->buflen = 0;
+ 	gd.pending = 1;
+ 	gdrom_packetcommand(gd.cd_info, test_command);
+-	wait_event_interruptible_timeout(command_queue, gd.pending == 0,
++	wait_event_timeout(command_queue, gd.pending == 0,
+ 					 GDROM_DEFAULT_TIMEOUT);
+ 	gd.pending = 0;
+ 	kfree(test_command);
+@@ -263,7 +264,7 @@ static int gdrom_preparedisk_cmd(void)
+ 	gd.pending = 1;
+ 	gdrom_packetcommand(gd.cd_info, spin_command);
+ 	/* 60 second timeout */
+-	wait_event_interruptible_timeout(command_queue, gd.pending == 0,
++	wait_event_timeout(command_queue, gd.pending == 0,
+ 		GDROM_DEFAULT_TIMEOUT);
+ 	gd.pending = 0;
+ 	kfree(spin_command);
+@@ -303,7 +304,7 @@ static int gdrom_readtoc_cmd(struct gdromtoc *toc, int session)
+ 	}
+ 	gd.pending = 1;
+ 	gdrom_packetcommand(gd.cd_info, toc_command);
+-	wait_event_interruptible_timeout(command_queue, gd.pending == 0,
++	wait_event_timeout(command_queue, gd.pending == 0,
+ 		GDROM_DEFAULT_TIMEOUT);
+ 	if (gd.pending) {
+ 		err = -EINVAL;
+@@ -459,7 +460,7 @@ static int gdrom_getsense(short *bufstring)
+ 	}
+ 	gd.pending = 1;
+ 	gdrom_packetcommand(gd.cd_info, sense_command);
+-	wait_event_interruptible_timeout(command_queue, gd.pending == 0,
++	wait_event_timeout(command_queue, gd.pending == 0,
+ 		GDROM_DEFAULT_TIMEOUT);
+ 	if (gd.pending)
+ 		goto cleanup_sense;
+@@ -581,7 +582,7 @@ static irqreturn_t gdrom_command_interrupt(int irq, void *dev_id)
+ 	if (gd.pending != 1)
+ 		return IRQ_HANDLED;
+ 	gd.pending = 0;
+-	wake_up_interruptible(&command_queue);
++	wake_up(&command_queue);
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -591,7 +592,7 @@ static irqreturn_t gdrom_dma_interrupt(int irq, void *dev_id)
+ 	if (gd.transfer != 1)
+ 		return IRQ_HANDLED;
+ 	gd.transfer = 0;
+-	wake_up_interruptible(&request_queue);
++	wake_up(&request_queue);
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -610,6 +611,24 @@ static int gdrom_set_interrupt_handlers(void)
+ 	return err;
+ }
+ 
++/* Tear down a stalled DMA transfer and recover the drive if it is wedged.
++ *
++ * Stop the host DMA engine before the target page is freed and reused,
++ * otherwise an orphaned transfer can later scribble into that page. If the
++ * drive is still busy it is stuck in a data phase that will never drain and
++ * needs a reset, else every following command-packet handshake would fail.
++ */
++static void gdrom_dma_abort(void)
++{
++	__raw_writeb(0, GDROM_DMA_STATUS_REG);
++	__raw_writel(0, GDROM_DMA_ENABLE_REG);
++
++	if (gdrom_is_busy()) {
++		gdrom_hardreset(gd.cd_info);
++		gdrom_init_dma_mode();
++	}
++}
++
+ /* Implement DMA read using SPI command
+  * 0 -> 0x30
+  * 1 -> mode
+@@ -659,26 +678,42 @@ static blk_status_t gdrom_readdisk_dma(struct request *req)
+ 	while (gdrom_is_busy() && time_before(jiffies, timeout))
+ 		cpu_relax();
+ 	__raw_writeb(GDROM_COM_PACKET, GDROM_STATUSCOMMAND_REG);
++	/* Wait for the drive to request the command packet (DRQ asserted,
++	 * BSY clear) before feeding it. Writing the packet before DRQ makes
++	 * the device mis-receive it, so the DMA never starts and the drive
++	 * is left wedged. */
+ 	timeout = jiffies + HZ / 2;
+-	/* Wait for packet command to finish */
+-	while (gdrom_is_busy() && time_before(jiffies, timeout))
++	while (!gdrom_data_request() && time_before(jiffies, timeout))
+ 		cpu_relax();
++	if (!gdrom_data_request()) {
++		pr_err("read: no command packet request, block %d\n", block);
++		err = BLK_STS_IOERR;
++		goto out_abort;
++	}
+ 	gd.pending = 1;
+ 	gd.transfer = 1;
+ 	writesw((void __iomem *)GDROM_DATA_REG, read_command->cmd, 6);
+-	timeout = jiffies + HZ / 2;
+-	/* Wait for any pending DMA to finish */
+-	while (__raw_readb(GDROM_DMA_STATUS_REG) &&
+-		time_before(jiffies, timeout))
+-		cpu_relax();
+-	/* start transfer */
++	/* start the transfer; any earlier failed transfer has already been
++	 * torn down by gdrom_dma_abort(), so the engine is free here */
+ 	__raw_writeb(1, GDROM_DMA_STATUS_REG);
+-	wait_event_interruptible_timeout(request_queue,
++	wait_event_timeout(request_queue,
+ 		gd.transfer == 0, GDROM_DEFAULT_TIMEOUT);
+-	err = gd.transfer ? BLK_STS_IOERR : BLK_STS_OK;
++	if (gd.transfer) {
++		pr_err("read timed out, block %d\n", block);
++		err = BLK_STS_IOERR;
++		goto out_abort;
++	}
+ 	gd.transfer = 0;
+ 	gd.pending = 0;
+ 
++	blk_mq_end_request(req, BLK_STS_OK);
++	kfree(read_command);
++	return BLK_STS_OK;
++
++out_abort:
++	gd.transfer = 0;
++	gd.pending = 0;
++	gdrom_dma_abort();
+ 	blk_mq_end_request(req, err);
+ 	kfree(read_command);
+ 	return BLK_STS_OK;
+-- 
+2.43.0
+
