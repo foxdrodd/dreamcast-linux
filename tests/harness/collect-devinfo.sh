@@ -29,7 +29,10 @@ done
 
 # grab "<file>|<remote command>" - stable, timestamp-free where possible.
 COLLECT=(
-  "dmesg-t.txt|dmesg -t"
+  # Prefer dmesg -t (untimestamped ring-buffer snapshot); if that's empty, fall
+  # back to a short grab of /proc/kmsg (a blocking, draining stream, so bounded
+  # by timeout) which can still hold messages when the dmesg buffer looks empty.
+  "dmesg-t.txt|dmesg -t 2>/dev/null | grep -q . && dmesg -t 2>/dev/null || timeout 2 cat /proc/kmsg 2>/dev/null; true"
   "lspci-v.txt|lspci -v 2>&1 || echo '(lspci unavailable / no PCI)'"
   "cpuinfo.txt|cat /proc/cpuinfo"
   "meminfo.txt|grep -E 'MemTotal|SwapTotal' /proc/meminfo"

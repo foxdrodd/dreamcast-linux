@@ -165,6 +165,9 @@ writes them under `developer-info/device-info/<tag>/`, ready to commit.
 Commands are deliberately **timestamp-free** (`dmesg -t`, not `dmesg`), so a
 re-collect only diffs when the hardware/driver picture actually changed — the
 git history becomes a meaningful log of driver behaviour across releases.
+`dmesg-t.txt` falls back to a short (`timeout`-bounded) `/proc/kmsg` grab when
+the `dmesg` ring buffer is empty — note `/proc/kmsg` is a draining stream, so it
+only yields messages not already consumed by a logger, not the full history.
 Files: `dmesg-t.txt`, `lspci-v.txt`, `cpuinfo.txt`, `meminfo.txt`,
 `mtd.txt`, `input-devices.txt`, `cmdline.txt`, `manifest.txt`.
 
