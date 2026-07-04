@@ -43,6 +43,7 @@ python3 dc.py ping              # expect: "ok: console alive"
 | `grab.sh` | capture one video frame (VGA dongle) → PNG you can read | no |
 | `native-cc-test.sh` | compile & run hello-world on the DC's native toolchain | no |
 | `vmufat-test.sh` | VMUFAT mkfs/mount/write/remount round-trip (**erases the VMU**) | no |
+| `fetch-test.sh` | fastfetch/flashfetch show name, logo, sysinfo, maple list | no |
 
 **If the DC hangs** (e.g. an OOM from a heavy compile): `python3 dc.py sysrq b
 --wait 120` sends a serial BREAK+b (magic SysRq reboot) and waits for the

@@ -152,6 +152,19 @@ DC_PORT=/dev/ttyUSB1 ./vmufat-test.sh          # prompts before wiping
 confirmation unless `--force`. Use a **scratch card**. SKIPs cleanly if no VMU
 is inserted (`mtd0` absent).
 
+## fetch-test.sh — fastfetch / flashfetch output
+
+Checks both system-info tools print what they should (ANSI stripped first):
+**name** (user@host title), **logo** (custom ASCII art), and **system info**
+(OS/Kernel/CPU/Memory), with the OS line reading "Dreamcast Linux".
+`flashfetch` additionally must **list the Maple peripherals**.
+
+```sh
+DC_PORT=/dev/ttyUSB1 ./fetch-test.sh
+```
+
+Cleanly SKIPs a tool that isn't installed.
+
 ## collect-devinfo.sh — snapshot device info into the repo
 
 Pulls `dmesg -t`, `lspci -v`, and a few other stable facts off the DC and

@@ -74,6 +74,13 @@ Run each; the expected good result is noted. All exit non-zero on failure.
       Expect: 9 PASS (mkfs → mount → write → umount → remount → token persisted),
       or a clean SKIP if no VMU is inserted.
 
+- [ ] **fastfetch / flashfetch output** (name, logo, sysinfo, maple list)
+      ```sh
+      ./fetch-test.sh
+      ```
+      Expect: 9 PASS (both tools show name/logo/sysinfo/Dreamcast Linux;
+      flashfetch lists Maple devices).
+
 - [ ] **Visual sanity of the console**
       ```sh
       ./grab.sh          # then open/read the PNG in logs/
