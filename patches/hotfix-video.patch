@@ -1,3 +1,8 @@
+From 7b9c7fc14559ac322b1b94e07280be6bc5270354 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Tue, 04 Jul 2026 22:16:15 +0200
+Subject: [PATCH] video fix
+
 It looks like the output auto-detection paths were non-functional, since
 initial git commit and it was hardcoded to VGA and PAL output. Which is
 sad for composite, TV and our good NTSC friends all over the world. Let's

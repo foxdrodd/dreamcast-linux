@@ -1,3 +1,8 @@
+From 7b9c7fc14559ac322b1b94e07280be6bc5270354 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Tue, 04 Jul 2026 22:16:15 +0200
+Subject: [PATCH] BBA fix
+
 It looks like the dreamcast network adapter (BBA) rtl8139too doesn't work in
 PIO mode anymore, so the claimed memory apparently needs to be of type
 IORESOURCE_MEM.
@@ -15,7 +20,7 @@ Speed iperf between dreamcast and PC:
 [  5]   0.00-10.00  sec  21.0 MBytes  17.6 Mbits/sec  977             sender
 [  5]   0.00-10.01  sec  20.9 MBytes  17.5 Mbits/sec                  receiver
 
- -- foxdrodd (fuchsfl at gmail.com)
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 
 --- linux-6.15.1/arch/sh/drivers/pci/pci-dreamcast.c.vanilla	2025-06-04 14:46:27.000000000 +0200
 +++ linux-6.15.1/arch/sh/drivers/pci/pci-dreamcast.c	2025-06-08 23:46:42.520794933 +0200

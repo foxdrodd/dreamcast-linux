@@ -1,3 +1,12 @@
+From 7b9c7fc14559ac322b1b94e07280be6bc5270354 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Tue, 04 Jul 2026 22:16:15 +0200
+Subject: [PATCH] Adjust bootlink offset
+
+Because the kernel is too large.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+
 --- a/arch/sh/Kconfig	2025-09-06 00:31:13.485187381 +0200
 +++ b/arch/sh/Kconfig	2025-09-06 00:31:38.764403282 +0200
 @@ -682,6 +682,7 @@
