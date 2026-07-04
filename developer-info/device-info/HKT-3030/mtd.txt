@@ -1,0 +1,2 @@
+dev:    size   erasesize  name
+Count of MTD devices:           0

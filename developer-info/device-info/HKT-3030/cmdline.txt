@@ -1,0 +1,1 @@
+console=ttySC1,115200 panic=3 ip=dhcp
