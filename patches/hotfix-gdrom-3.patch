@@ -1,0 +1,40 @@
+From c620007cc620c105cfc9e5fe7f6306d87e06a756 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sun, 5 Jul 2026 01:05:20 +0200
+Subject: [PATCH] gdrom: fix more errors?
+
+---
+ drivers/cdrom/gdrom.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+index 63a1f874be79..e82c5b244c9a 100644
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -240,7 +240,7 @@ static int gdrom_test_unit_cmd(void)
+ 	gd.pending = 1;
+ 	gdrom_packetcommand(gd.cd_info, test_command);
+ 	wait_event_timeout(command_queue, gd.pending == 0,
+-					 GDROM_DEFAULT_TIMEOUT);
++			   GDROM_DEFAULT_TIMEOUT);
+ 	gd.pending = 0;
+ 	kfree(test_command);
+ 
+@@ -705,6 +705,14 @@ static blk_status_t gdrom_readdisk_dma(struct request *req)
+ 	}
+ 	gd.transfer = 0;
+ 	gd.pending = 0;
++	/* the drive may terminate the command with the error bit set, e.g. on
++	 * an unreadable sector - do not report such a request as successful */
++	if (gd.status & 0x01) {
++		pr_err("read error, sense key 0x%x, block %d\n",
++			__raw_readb(GDROM_ERROR_REG) >> 4, block);
++		err = BLK_STS_IOERR;
++		goto out_abort;
++	}
+ 
+ 	blk_mq_end_request(req, BLK_STS_OK);
+ 	kfree(read_command);
+-- 
+2.43.0
+
