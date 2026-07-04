@@ -67,6 +67,13 @@ Run each; the expected good result is noted. All exit non-zero on failure.
       (First release / new adapter: run without `--compare` to establish the
       baseline in `baselines/<tag>.iperf` and commit it.)
 
+- [ ] **VMUFAT storage round-trip** (needs a **scratch** VMU inserted — erases it)
+      ```sh
+      ./vmufat-test.sh          # or --force to skip the wipe prompt
+      ```
+      Expect: 9 PASS (mkfs → mount → write → umount → remount → token persisted),
+      or a clean SKIP if no VMU is inserted.
+
 - [ ] **Visual sanity of the console**
       ```sh
       ./grab.sh          # then open/read the PNG in logs/

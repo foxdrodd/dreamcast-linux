@@ -135,6 +135,23 @@ Two facts about this hardware baked in:
 - **Slow** — a hello world takes **~2 min** on the SH4, so the compile step
   allows 240 s by default (`--timeout` to change).
 
+## vmufat-test.sh — VMUFAT filesystem round-trip on a VMU
+
+Verifies the full VMU storage path: `mkfs.vmufat -s` → mount → write a file
+containing a fresh random token → `sync` → umount → **remount → confirm the
+token survived**. A pass proves the data really persisted across the
+mount cycle, not that a stale file was left behind.
+
+```sh
+DC_PORT=/dev/ttyUSB1 ./vmufat-test.sh          # prompts before wiping
+./vmufat-test.sh --force                        # no prompt (suites)
+./vmufat-test.sh --dev /dev/mtdblock0 --file TESTFILE
+```
+
+**DESTRUCTIVE** — `mkfs.vmufat` erases the inserted VMU, so it asks for
+confirmation unless `--force`. Use a **scratch card**. SKIPs cleanly if no VMU
+is inserted (`mtd0` absent).
+
 ## collect-devinfo.sh — snapshot device info into the repo
 
 Pulls `dmesg -t`, `lspci -v`, and a few other stable facts off the DC and
