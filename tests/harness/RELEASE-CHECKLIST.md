@@ -9,9 +9,30 @@ Copy this block per release and fill it in:
 
 ```
 Release: ____________   Date: __________   Tester: __________
+Variant:  ☐ base-busybox   ☐ uclibc   ☐ musl   ☐ muslX
 DC model / adapter: _______________________   Kernel (uname -a): ______________
 Result: ☐ PASS   ☐ PASS w/ notes   ☐ FAIL
 ```
+
+---
+
+## Variants to verify (from `../../scripts/release.sh`)
+
+Each build produces the images below. The **userland** variants get the full
+harness suite (Phases 1–2); **base-busybox** has only a minimal initramfs, so it
+gets boot + console checks only. `<ver>` = `LINUX_VERSION` from
+`dreamcast/build-dreamcast.sh`.
+
+| Variant | CDI image | Also shipped | Notes |
+|---------|-----------|--------------|-------|
+| base-busybox | `linux-<ver>-base-busybox.cdi` | `kernel-boot.bin-busybox` (dcload-serial), `1ST_READ.BIN-busybox` (GDEMU) | busybox initramfs, no full userland → boot/console only |
+| uclibc | `linux-<ver>-with-userland-uclibc.cdi` | `linux-<ver>-userland-uclibc.tar.zst` | uClibc userland |
+| musl | `linux-<ver>-with-userland-musl.cdi` | `…-userland-musl.tar.zst` | musl userland |
+| muslX | `linux-<ver>-with-userland-muslX.cdi` | `…-userland-muslX.tar.zst` | musl **+ X11** → also run the "mouse under X" check |
+
+> Run Phases 1–2 once **per userland variant** (uclibc, musl, muslX) — reboot
+> into each and re-run. A full release = all three pass **and** base-busybox
+> boots. Copy the header block once per variant.
 
 ---
 
@@ -103,7 +124,7 @@ Run each; the expected good result is noted. All exit non-zero on failure.
       - [ ] can type inside `htop`
       - [ ] can switch TTYs (Alt+Fn / `chvt`)
       - [ ] `Ctrl+C` interrupts a running command
-      - [ ] mouse works under X (start X, move pointer, click)
+      - [ ] mouse works under X (start X, move pointer, click) — **muslX variant only**
 
 ---
 
@@ -112,11 +133,14 @@ Run each; the expected good result is noted. All exit non-zero on failure.
 Physical / boot / peripheral items the harness can't drive. Tick per release;
 some only apply to specific DC/loader setups.
 
-**Booting**
-- [ ] `kernel-boot.bin` boots via dcload-serial / GDEMU
-- [ ] busybox variant boots via dcload-serial / GDEMU
-- [ ] all CDI variants boot (uclibc, musl, busybox)
-- [ ] burns to a 700 MB CD-R and boots
+**Booting** (per the variants table above)
+- [ ] base-busybox: `kernel-boot.bin-busybox` boots via dcload-serial
+- [ ] base-busybox: `1ST_READ.BIN-busybox` boots via GDEMU
+- [ ] base-busybox: `linux-<ver>-base-busybox.cdi` boots (GDEMU / CD-R)
+- [ ] uclibc: `linux-<ver>-with-userland-uclibc.cdi` boots
+- [ ] musl: `linux-<ver>-with-userland-musl.cdi` boots
+- [ ] muslX: `linux-<ver>-with-userland-muslX.cdi` boots
+- [ ] at least one CDI burns to a 700 MB CD-R and boots
 
 **Consoles / video**
 - [ ] video-mode selection works; something shows on the TV, not just serial
