@@ -5,6 +5,7 @@
 # Paths to the built userlands:
 declare -A userland=(
 	[uclibc]=/media/flo/nvme0-ssd/shuclibc-711
+	[muslX]=/media/flo/nvme0-ssd/shmusl-711-x
 	[musl]=/media/flo/nvme0-ssd/shmusl-711
 )
 
