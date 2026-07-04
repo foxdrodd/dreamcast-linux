@@ -168,3 +168,6 @@ Run /init as init process
     HOME=/
     TERM=linux
 ISO 9660 Extensions: RRIP_1991A
+maple (null): detected Visual Memory: function 0xE: at (3, 1)
+Dreamcast_visual_memory 3:01.E: VMU LCD at (3, 1) registered as vmu_lcd0
+Dreamcast_visual_memory 3:01.E: VMU device at partition 0 has 240 user blocks with a root block at 255

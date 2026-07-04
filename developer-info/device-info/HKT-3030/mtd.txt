@@ -1,2 +1,5 @@
 dev:    size   erasesize  name
-Count of MTD devices:           0
+mtd0: 00020000 00000200 "vmu3.1.0"
+Count of MTD devices:           1
+Present MTD devices:            mtd0
+Sysfs interface supported:      yes
