@@ -26,13 +26,41 @@ gets boot + console checks only. `<ver>` = `LINUX_VERSION` from
 | Variant | CDI image | Also shipped | Notes |
 |---------|-----------|--------------|-------|
 | base-busybox | `linux-<ver>-base-busybox.cdi` | `kernel-boot.bin-busybox` (dcload-serial), `1ST_READ.BIN-busybox` (GDEMU) | busybox initramfs, no full userland → boot/console only |
-| uclibc | `linux-<ver>-with-userland-uclibc.cdi` | `linux-<ver>-userland-uclibc.tar.zst` | uClibc userland |
+| uclibc | `linux-<ver>-with-userland-uclibc.cdi` | `linux-<ver>-userland-uclibc.tar.zst` | uClibc userland — **no native gcc/cc** (skip native-cc test) |
 | musl | `linux-<ver>-with-userland-musl.cdi` | `…-userland-musl.tar.zst` | musl userland |
 | muslX | `linux-<ver>-with-userland-muslX.cdi` | `…-userland-muslX.tar.zst` | musl **+ X11** → also run the "mouse under X" check |
 
 > Run Phases 1–2 once **per userland variant** (uclibc, musl, muslX) — reboot
 > into each and re-run. A full release = all three pass **and** base-busybox
 > boots. Copy the header block once per variant.
+
+### Which variant is booted? (check this first)
+
+The CDIs don't announce themselves — confirm what's actually running before you
+decide which phases apply. Quick tells over serial (`dc.py run`):
+
+- **base-busybox** — the giveaway is a *minimal initramfs, no full userland*:
+  - `ls /lib` → **`No such file or directory`** (userland variants have `/lib`
+    with a libc); `/usr/lib` is also absent.
+  - `cat /etc/os-release` → **fails** (file doesn't exist).
+  - `mount` shows `rootfs on / type rootfs (... size≈5096k)` and `/bin/sh` is a
+    symlink to `busybox`; `ls /` includes `chroot.sh` + `linuxrc`.
+  - No `fbdoom`, no native toolchain, no `/newdoom1.wad`.
+  - → **boot/console checks only** (skip the fbdoom/native-cc/vmufat/fetch tiers;
+    they need the userland and will just report "not found").
+- **uclibc vs musl** — both have a real `/lib`; tell them apart by the dynamic
+  loader: `ls /lib` shows `ld-uClibc*` (uclibc) vs `ld-musl-sh*.so.1` (musl).
+- **muslX** — musl *plus* X11: the framebuffer X server **`Xfbdev`** is present
+  (`ls /usr/bin/Xfbdev`). Note it's `Xfbdev`, **not** `/usr/bin/X` (which doesn't
+  exist). No `Xfbdev` → plain **musl**, not muslX.
+
+Decide with three *simple* `dc.py run` calls (it mangles `;`/`|`/`&&`, so keep
+each command atomic — one program, no shell operators):
+```sh
+python3 dc.py run "ls /lib"             # fails → base-busybox; else look at the loader
+python3 dc.py run "ls /lib"             #   ld-uClibc* → uclibc | ld-musl-sh* → musl/muslX
+python3 dc.py run "ls /usr/bin/Xfbdev"  # succeeds → muslX (else plain musl)
+```
 
 ---
 
@@ -79,6 +107,9 @@ Run each; the expected good result is noted. All exit non-zero on failure.
       ```
       Expect: 5 PASS ending in `HELLO_DC_42`. Takes ~2 min (SH4 is slow); uses
       `-O0` (`-O2` OOMs the 11 MB box — recover with `dc.py sysrq b --wait 120`).
+      **N/A on uclibc** — that userland ships no native `gcc`/`cc`, so the test
+      just reports "no native cc/gcc on the image". Record it as SKIP for uclibc;
+      run it on musl / muslX.
 
 - [ ] **Networking throughput — per adapter, vs baseline**
       ```sh

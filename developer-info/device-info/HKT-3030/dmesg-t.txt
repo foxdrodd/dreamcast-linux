@@ -1,4 +1,4 @@
-Linux version 7.1.2 (root@bbc3b09d538c) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #3 PREEMPT Sat Jul  4 18:39:36 UTC 2026
+Linux version 7.1.3 (root@36e03078f113) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #7 PREEMPT Sun Jul  5 08:49:31 UTC 2026
 Boot params:
 ... MOUNT_ROOT_RDONLY - 00000000
 ... RAMDISK_FLAGS     - 00000000
@@ -34,8 +34,8 @@ virtual kernel memory layout:
     lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
             : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
       .init : 0x8c4b1000 - 0x8c4d9000   ( 160 kB)
-      .data : 0x8c395d28 - 0x8c4b0bf0   (1131 kB)
-      .text : 0x8c001000 - 0x8c395d28   (3667 kB)
+      .data : 0x8c395e68 - 0x8c4b0bf0   (1131 kB)
+      .text : 0x8c001000 - 0x8c395e68   (3667 kB)
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 rcu: Preemptible hierarchical RCU implementation.
 rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
@@ -58,7 +58,7 @@ VFS: Finished mounting rootfs on nullfs
 Performance Events: sh7750 support registered
 rcu: Hierarchical SRCU implementation.
 rcu: 	Max phase no-delay instances is 1000.
-Memory: 10516K/16384K available (3663K kernel code, 207K rwdata, 920K rodata, 160K init, 102K bss, 5252K reserved, 0K cma-reserved)
+Memory: 10516K/16384K available (3663K kernel code, 206K rwdata, 920K rodata, 160K init, 102K bss, 5252K reserved, 0K cma-reserved)
 devtmpfs: initialized
 clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
 posixtimers hash table entries: 512 (order: 0, 2048 bytes, linear)
@@ -104,7 +104,6 @@ RPC: Registered tcp transport module.
 RPC: Registered tcp-with-tls transport module.
 RPC: Registered tcp NFSv4.1 backchannel transport module.
 PCI: CLS 0 bytes, default 32
-sq: Registering store queue API.
 maple (null): detected Dreamcast Mouse: function 0x200: at (0, 0)
 maple (null): no driver found
 maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
@@ -112,6 +111,9 @@ maple (null): no driver found
 maple (null): detected Keyboard: function 0x40: at (2, 0)
 maple (null): no driver found
 maple (null): detected Dreamcast Controller: function 0x1: at (3, 0)
+maple (null): no driver found
+sq: Registering store queue API.
+maple (null): detected Visual Memory: function 0xE: at (3, 1)
 maple (null): no driver found
 workingset: timestamp_bits=30 (anon: 26) max_order=12 bucket_order=0 (anon: 0)
 squashfs: version 4.0 (2009/01/31) Phillip Lougher
@@ -129,7 +131,9 @@ sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
 printk: legacy console [ttySC1] enabled
 brd: module loaded
 loop: module loaded
+Dreamcast_visual_memory 3:01.E: VMU LCD at (3, 1) registered as vmu_lcd0
 lan_adapter lan_adapter (unnamed net_device) (uninitialized): no MB86967 found (slot empty or modem fitted?)
+Dreamcast_visual_memory 3:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255
 8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99
 PPP generic driver version 2.4.2
 PPP BSD Compression module registered
@@ -168,6 +172,3 @@ Run /init as init process
     HOME=/
     TERM=linux
 ISO 9660 Extensions: RRIP_1991A
-maple (null): detected Visual Memory: function 0xE: at (3, 1)
-Dreamcast_visual_memory 3:01.E: VMU LCD at (3, 1) registered as vmu_lcd0
-Dreamcast_visual_memory 3:01.E: VMU device at partition 0 has 240 user blocks with a root block at 255

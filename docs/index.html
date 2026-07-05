@@ -50,7 +50,7 @@
     <!-- RELEASE BADGE — edit version/kernel here on each release -->
     <a class="hero__badge" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest" target="_blank" rel="noopener">
       <span class="hero__badge-dot"></span>
-      Latest release <strong>v7.1.2</strong> · 7.1.2 kernel
+      Latest release <strong>v7.1.3</strong> · 7.1.3 kernel
     </a>
     <p class="hero__kicker">// GNU/Linux on the Sega Dreamcast · SH4</p>
     <h1 class="hero__title">A <span class="accent">full</span> Linux distribution<br />for the Sega Dreamcast</h1>
@@ -75,7 +75,7 @@
       <span class="dot"></span><span class="dot"></span><span class="dot"></span>
       <span class="terminal__title">ttySC1 — Dreamcast serial console · 115200 baud</span>
     </div>
-    <pre class="terminal__body" tabindex="0" aria-label="Real boot log (dmesg) from Dreamcast Linux 7.1.2 on real hardware"><span class="c-dim">Linux version 7.1.2 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #3 PREEMPT Sat Jun 27 2026</span>
+    <pre class="terminal__body" tabindex="0" aria-label="Real boot log (dmesg) from Dreamcast Linux 7.1.3 on real hardware"><span class="c-dim">Linux version 7.1.3 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #7 PREEMPT Sun Jul 5 2026</span>
 <span class="c-ok">Booting machvec: Sega Dreamcast</span>
 Kernel command line: console=ttySC1,115200 panic=3 ip=dhcp
 Zone ranges:
@@ -85,12 +85,12 @@ I-cache : n_ways=1 n_sets=256 way_incr=8192
 D-cache : n_ways=1 n_sets=512 way_incr=16384
 virtual kernel memory layout:
     lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
-      .text : 0x8c001000 - 0x8c395408   (3665 kB)
+      .text : 0x8c001000 - 0x8c395e68   (3667 kB)
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 intc: Registered controller 'sh7750' with 20 IRQs
 Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
 <span class="c-ok">CPU: SH7750</span>
-Memory: 10524K/16384K available (3661K kernel code, 205K rwdata, 916K rodata, 160K init, 102K bss, 5244K reserved)
+Memory: 10516K/16384K available (3663K kernel code, 206K rwdata, 920K rodata, 160K init, 102K bss, 5252K reserved)
 Performance Events: sh7750 support registered
 Advanced Linux Sound Architecture Driver Initialized.
 DMA: Registering g2_dmac handler (4 channels).
@@ -115,9 +115,10 @@ SuperH (H)SCI(F) driver initialized
 sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
 printk: legacy console [ttySC1] enabled
 <span class="c-ok">Dreamcast_visual_memory 3:01.E: VMU LCD at (3, 1) registered as vmu_lcd0</span>
+lan_adapter (uninitialized): no MB86967 found (slot empty or modem fitted?)
+<span class="c-ok">Dreamcast_visual_memory 3:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255</span>
 <span class="c-ok">8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99</span>
 PPP generic driver version 2.4.2
-<span class="c-ok">Dreamcast_visual_memory 3:01.E: VMU device at partition 0 has 240 user blocks with a root block at 255</span>
 SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, max=256).
 <span class="c-ok">gdrom: CD-ROM DRIVE     from SE               with firmware 6.42</span>
 gdrom: Registered with major number 254
@@ -140,7 +141,7 @@ ISO 9660 Extensions: RRIP_1991A
 <span class="c-acc">root@dreamcast:/$</span> <span class="cursor">_</span></pre>
     <div class="terminal__fade" aria-hidden="true"></div>
   </div>
-  <p class="terminal__cap">Real boot log — Linux 7.1.2 on actual Dreamcast hardware, scroll it.
+  <p class="terminal__cap">Real boot log — Linux 7.1.3 on actual Dreamcast hardware, scroll it.
     <a href="https://asciinema.org/a/722003?t=5" target="_blank" rel="noopener">▶ Watch it boot</a> ·
     <a href="assets/dmesg.txt" target="_blank" rel="noopener">raw dmesg</a></p>
 </section>
@@ -203,7 +204,7 @@ ISO 9660 Extensions: RRIP_1991A
     </article>
     <article class="card">
       <h3>🌐 Networking &amp; NFS</h3>
-      <p>Broadband Adapter (RTL8139) support with full TCP/IP, NFS mounts and remote login over the wire.</p>
+      <p>Both the Broadband Adapter (HIT-0400, RTL8139) and the LAN Adapter (HIT-0300) are supported — full TCP/IP, NFS mounts and remote login over the wire.</p>
     </article>
     <article class="card">
       <h3>💾 VMU support</h3>
@@ -260,24 +261,14 @@ ISO 9660 Extensions: RRIP_1991A
   <!-- ===== LATEST RELEASE — hand-edited; update on each release ===== -->
   <div class="release">
     <div class="release__head">
-      <span class="release__tag">v7.1.2</span>
-      <span class="release__meta">Linux 7.1.2 kernel · released June 2026</span>
-      <a class="release__link" href="https://github.com/foxdrodd/dreamcast-linux/releases/tag/7.1.2" target="_blank" rel="noopener">Full notes</a>
+      <span class="release__tag">v7.1.3</span>
+      <span class="release__meta">Linux 7.1.3 kernel · released July 2026</span>
+      <a class="release__link" href="https://github.com/foxdrodd/dreamcast-linux/releases/tag/7.1.3" target="_blank" rel="noopener">Full notes</a>
     </div>
     <ul class="release__notes">
-      <li>Updated to the <strong>Linux 7.1.2</strong> kernel for SH4.</li>
-      <li>VMU LCD display support by adaptation of Christian Berger's original driver</li>
-      <li><code>vmufat</code> support as filesystem of VMUs with Adrian McMenamin's code</li>
-      <li><code>fbdoom</code> shipped in the userland.</li>
-      <li>Added packages: 
-	      <code>fbset</code>,
-	      <code>libsdl</code>,
-	      <code>inetutils</code> (for telnet),
-	      <code>xinetd</code> (to start telnetd),
-	      <code>cmatrix</code>,
-	      <code>text2lcd</code>,
-	      <code>vmu_lcd_text</code>
-      </li>
+      <li>New graphical <strong>X variant</strong> (<code>musl-X</code>) — TinyX (<code>Xfbdev</code>) with the JWM window manager, launched via <code>startx</code>.</li>
+      <li><strong>LAN Adapter (HIT-0300)</strong> now supported out of the box, alongside the Broadband Adapter.</li>
+      <li>New <code>flashfetch</code> system-info tool, maple-aware (as seen in the gallery).</li>
     </ul>
   </div>
 
