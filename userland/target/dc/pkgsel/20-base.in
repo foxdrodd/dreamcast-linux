@@ -190,7 +190,6 @@ X fbset
 X libsdl
 X fbdoom
 X xinetd
-X mc
 
 # Stuff for tinyx:
 X xterm
@@ -228,3 +227,30 @@ X freetype
 X xorgproto
 X xrandr
 X xtrans
+X mc
+X xli
+
+X xfig
+X xaw3d
+X xedit
+X 3dpong
+X xcalc
+X libxft
+X libjpeg
+X fontconfig
+X cairo
+X harfbuzz
+X xkeyboard-config
+X xkbcommon
+X pixman
+X libxcursor
+X libxinerama
+X libxinerama
+X libxfixes
+X mikmod
+X libmikmod
+X libpng
+
+X rxvt
+X blackbox
+X jwm
