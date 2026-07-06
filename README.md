@@ -66,6 +66,7 @@ Creates a cross-compilation environment for the SH4 architecture using Docker. T
 
 ## Links
 
+* https://github.com/foxdrodd/qemu
 * https://github.com/foxdrodd/dc-hacking
 * http://linuxdevices.org/running-linux-on-the-sega-dreamcast-a/
 * https://github.com/foxdrodd/sh-boot/
