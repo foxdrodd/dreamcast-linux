@@ -33,6 +33,7 @@ Tested Devices, feel free to add PR to add your test device:
 | CDI | lxdream 0.9.1 |  :x: No | stays at sega screen, with memset/memcpy sh4-specifics removed, boots to console, but no interaction possible see [lxdream-analyze.txt](debuggings/lxdream-analyze.txt) |
 | CDI | flycast 2.6 |  :x: No | stays at sega screen, see [flycast-analyze.txt](debuggings/flycast-analyze.txt)   |
 | CDI | redream 1.5.0 |  :x: No | [redream-analyze.txt](debuggings/redream-analyze.txt) |
+| CDI | qemu patched |  :jeavy_check_mark: Yes | My custom [https://github.com/foxdrodd/qemu](qemu) boots, [https://github.com/foxdrodd/qemu](Wiki) |
 
 
 **ATTENTION:** You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac600000.
