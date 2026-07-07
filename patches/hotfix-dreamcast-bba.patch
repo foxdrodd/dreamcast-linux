@@ -1,35 +1,88 @@
 From 7b9c7fc14559ac322b1b94e07280be6bc5270354 Mon Sep 17 00:00:00 2001
 From: Florian Fuchs <fuchsfl@gmail.com>
-Date: Tue, 04 Jul 2026 22:16:15 +0200
-Subject: [PATCH] BBA fix
+Date: Mon, 07 Jul 2026 12:00:00 +0200
+Subject: [PATCH] sh: dreamcast: make BBA (rtl8139) work in both MMIO and PIO
 
-It looks like the dreamcast network adapter (BBA) rtl8139too doesn't work in
-PIO mode anymore, so the claimed memory apparently needs to be of type
-IORESOURCE_MEM.
+The BBA is an RTL8139 behind the GAPS bridge, reachable via BAR1 (MMIO,
+8139too default) or BAR0 (PIO). Both are fixed-decoded to the same regs at
+phys 0x01001700, and __set_io_port_base(P2SEG) makes an I/O port a P2 memory
+access. The stock code exports only one IORESOURCE_IO window, so the PCI core
+can't find a matching-type parent for the BARs and probe fails with -22.
 
-If it is flagged IORESOURCE_IO, the msg at boot is and leaves ethernet defunct:
+Fix:
 
-8139too: 8139too Fast Ethernet driver 0.9.28
-8139too 0000:00:00.0: BAR 1 [mem 0x01001700-0x010018ff]: not claimed; can't enable device
-resource: Trying to free nonexistent resource <0x01001800-0x010018ff>
-resource: Trying to free nonexistent resource <0x01001700-0x010018ff>
-8139too 0000:00:00.0: probe with driver 8139too failed with error -22
+  1. Add overlapping IO + MEM host-bridge windows so both BARs get a
+     matching-type parent (they live in separate resource trees).
+  2. Pin BAR0 to 0x01001700 (like BAR1); the regs aren't 0x400-aligned, so
+     an unpinned BAR0 would be relocated and PIO would miss them.
+  3. Set io_map_base = P2SEG, required for ioport_map() under
+     CONFIG_PCI_DOMAINS and to route PIO to the regs.
 
-Speed iperf between dreamcast and PC:
-[ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-10.00  sec  21.0 MBytes  17.6 Mbits/sec  977             sender
-[  5]   0.00-10.01  sec  20.9 MBytes  17.5 Mbits/sec                  receiver
+Tested on QEMU and hardware: both MMIO and PIO bring eth0 up.
 
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ arch/sh/drivers/pci/pci-dreamcast.c    | 14 ++++++++++++++
+ arch/sh/drivers/pci/fixups-dreamcast.c |  9 +++++++++
+ 2 files changed, 23 insertions(+)
 
---- linux-6.15.1/arch/sh/drivers/pci/pci-dreamcast.c.vanilla	2025-06-04 14:46:27.000000000 +0200
-+++ linux-6.15.1/arch/sh/drivers/pci/pci-dreamcast.c	2025-06-08 23:46:42.520794933 +0200
-@@ -27,7 +27,7 @@
+diff --git a/arch/sh/drivers/pci/pci-dreamcast.c b/arch/sh/drivers/pci/pci-dreamcast.c
+--- a/arch/sh/drivers/pci/pci-dreamcast.c
++++ b/arch/sh/drivers/pci/pci-dreamcast.c
+@@ -22,6 +22,11 @@
+ #include <asm/irq.h>
+ #include <mach/pci.h>
+
++/*
++ * RTL8139 registers are reachable via both BAR0 (I/O) and BAR1 (MMIO).
++ * Overlapping IO + MEM windows so either BAR gets a matching-type parent.
++ * IO window must stay at index 0 (pcibios_align_resource() uses resources[0]).
++ */
+ static struct resource gapspci_resources[] = {
+ 	{
  		.name	= "GAPSPCI IO",
- 		.start	= GAPSPCI_BBA_CONFIG,
+@@ -29,6 +34,11 @@
  		.end	= GAPSPCI_BBA_CONFIG + GAPSPCI_BBA_CONFIG_SIZE - 1,
--		.flags	= IORESOURCE_IO,
-+		.flags	= IORESOURCE_MEM,
+ 		.flags	= IORESOURCE_IO,
  	},  {
++		.name	= "GAPSPCI regs",
++		.start	= GAPSPCI_BBA_CONFIG,
++		.end	= GAPSPCI_BBA_CONFIG + GAPSPCI_BBA_CONFIG_SIZE - 1,
++		.flags	= IORESOURCE_MEM,
++	},  {
  		.name	= "GAPSPCI mem",
  		.start	= GAPSPCI_DMA_BASE,
+ 		.end	= GAPSPCI_DMA_BASE + GAPSPCI_DMA_SIZE - 1,
+@@ -42,6 +52,9 @@
+ 	.nr_resources	= ARRAY_SIZE(gapspci_resources),
+ 	.io_offset	= 0x00000000,
+ 	.mem_offset	= 0x00000000,
++	/* PIO ports go through P2 (matches __set_io_port_base(P2SEG)); also
++	 * required or ioport_map() panics under CONFIG_PCI_DOMAINS. */
++	.io_map_base	= P2SEG,
+ };
+
+ /*
+ * gapspci init
+ */
+diff --git a/arch/sh/drivers/pci/fixups-dreamcast.c b/arch/sh/drivers/pci/fixups-dreamcast.c
+--- a/arch/sh/drivers/pci/fixups-dreamcast.c
++++ b/arch/sh/drivers/pci/fixups-dreamcast.c
+@@ -48,6 +48,15 @@
+ 		dev->resource[1].flags |= IORESOURCE_PCI_FIXED;
+
+ 		/*
++		 * Pin BAR0 (PIO) to the same fixed regs as BAR1.  Regs aren't
++		 * 0x400-aligned, so an unpinned BAR0 would be relocated and PIO
++		 * would hit the wrong address.
++		 */
++		dev->resource[0].start	= p->resources[0].start  + 0x100;
++		dev->resource[0].end	= dev->resource[0].start + 0x200 - 1;
++		dev->resource[0].flags	= IORESOURCE_IO | IORESOURCE_PCI_FIXED;
++
++		/*
+ 		 * Redirect dma memory allocations to special memory window.
+ 		 *
+ 		 * If this GAPSPCI region were mapped by a BAR, the CPU
+--
+2.43.0
