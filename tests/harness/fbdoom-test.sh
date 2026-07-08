@@ -19,6 +19,8 @@
 #   ./fbdoom-test.sh --wad /newdoom1.wad --secs 6
 set -u
 
+: "${DC_PORT:=/dev/ttyUSB1}"; export DC_PORT   # advertised default; must reach dc.py
+
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DC="python3 $HERE/dc.py"
 
