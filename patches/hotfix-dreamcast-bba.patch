@@ -18,8 +18,6 @@ Fix:
   3. Set io_map_base = P2SEG, required for ioport_map() under
      CONFIG_PCI_DOMAINS and to route PIO to the regs.
 
-Tested on QEMU and hardware: both MMIO and PIO bring eth0 up.
-
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
  arch/sh/drivers/pci/pci-dreamcast.c    | 14 ++++++++++++++

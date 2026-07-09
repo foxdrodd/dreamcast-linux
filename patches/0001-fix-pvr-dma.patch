@@ -1,0 +1,140 @@
+From 858118b4d2d20f4ec50f621fe7bc82a8facb8e28 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 8 Jul 2026 21:16:24 +0200
+Subject: [PATCH] sh: dreamcast: fix PVR2 CH2-DMA framebuffer writes (CONFIG_PVR2_DMA)
+
+The pvr2fb DMA write path was broken three ways; fbdoom via write()
+on /dev/fb0 drew a thin stripe, then hung in D-state:
+
+- dma-pvr2: the completion IRQ set xfer_complete but never woke the
+  channel's wait queue, so dma_wait_for_completion() slept forever
+  (the channel is TEI-capable). Pass the channel as dev_id and
+  wake_up() it, mirroring dma_tei() in dma-sh.c.
+
+- dma-pvr2: LMMODE0 was set to 0 (64-bit access), which interleaves
+  the two 4 MB VRAM banks per 32-bit word: frames landed at half
+  stride as two squeezed side-by-side copies. Select 32-bit linear
+  access (LMMODE0=1); verified 1:1 against the 0xa5000000 window by
+  marker scans on hardware.
+
+- pvr2fb: the pinned user pages were DMA'd without a dcache
+  writeback, leaving stale 32-byte holes in the image. Flush before
+  starting the transfer.
+
+Measured on hardware (640x480x16): DMA ~25 MB/s vs ~27 MB/s memcpy,
+but 8 ms vs 23 ms CPU per frame - the point of the DMA path.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+
+---
+ arch/sh/drivers/dma/dma-pvr2.c | 34 ++++++++++++++++++++++++++++++----
+ drivers/video/fbdev/pvr2fb.c   | 11 +++++++++++
+ 2 files changed, 41 insertions(+), 4 deletions(-)
+
+diff --git a/arch/sh/drivers/dma/dma-pvr2.c b/arch/sh/drivers/dma/dma-pvr2.c
+index 21c347543..13e112879 100644
+--- a/arch/sh/drivers/dma/dma-pvr2.c
++++ b/arch/sh/drivers/dma/dma-pvr2.c
+@@ -20,6 +20,8 @@ static int count;
+ 
+ static irqreturn_t pvr2_dma_interrupt(int irq, void *dev_id)
+ {
++	struct dma_channel *chan = dev_id;
++
+ 	if (get_dma_residue(PVR2_CASCADE_CHAN)) {
+ 		printk(KERN_WARNING "DMA: SH DMAC did not complete transfer "
+ 		       "on channel %d, waiting..\n", PVR2_CASCADE_CHAN);
+@@ -32,6 +34,14 @@ static irqreturn_t pvr2_dma_interrupt(int irq, void *dev_id)
+ 
+ 	xfer_complete = 1;
+ 
++	/*
++	 * The channel is TEI capable, so dma_wait_for_completion() sleeps on
++	 * the channel's wait queue; wake it now that the transfer is done
++	 * (mirroring dma_tei() in dma-sh.c).  Without this the first waiter
++	 * sleeps forever in D state.
++	 */
++	wake_up(&chan->wait_queue);
++
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -40,7 +50,16 @@ static int pvr2_request_dma(struct dma_channel *chan)
+ 	if (__raw_readl(PVR2_DMA_MODE) != 0)
+ 		return -EBUSY;
+ 
+-	__raw_writel(0, PVR2_DMA_LMMODE0);
++	/*
++	 * Select 32-bit (linear) texture-memory access for the CH2 DMA
++	 * destination.  With the 64-bit setting (0) the two 4 MB VRAM banks
++	 * are interleaved per 32-bit word, so a linear framebuffer transfer
++	 * lands at half the stride with every other word in the invisible
++	 * bank -- the picture shows up as two squeezed side-by-side copies.
++	 * Verified on hardware: writes through this path are 1:1 with the
++	 * 32-bit area (0xa5000000) only when LMMODE0 = 1.
++	 */
++	__raw_writel(1, PVR2_DMA_LMMODE0);
+ 
+ 	return 0;
+ }
+@@ -79,18 +98,25 @@ static struct dma_info pvr2_dma_info = {
+ 
+ static int __init pvr2_dma_init(void)
+ {
++	int ret;
++
++	/* Register first so the channel exists for the IRQ handler's wakeup. */
++	ret = register_dmac(&pvr2_dma_info);
++	if (unlikely(ret != 0))
++		return ret;
++
+ 	if (request_irq(HW_EVENT_PVR2_DMA, pvr2_dma_interrupt, 0,
+-			"pvr2 DMA handler", NULL))
++			"pvr2 DMA handler", &pvr2_dma_info.channels[0]))
+ 		pr_err("Failed to register pvr2 DMA handler interrupt\n");
+ 	request_dma(PVR2_CASCADE_CHAN, "pvr2 cascade");
+ 
+-	return register_dmac(&pvr2_dma_info);
++	return 0;
+ }
+ 
+ static void __exit pvr2_dma_exit(void)
+ {
+ 	free_dma(PVR2_CASCADE_CHAN);
+-	free_irq(HW_EVENT_PVR2_DMA, 0);
++	free_irq(HW_EVENT_PVR2_DMA, &pvr2_dma_info.channels[0]);
+ 	unregister_dmac(&pvr2_dma_info);
+ }
+ 
+diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
+index da748e377..4ea374cd9 100644
+--- a/drivers/video/fbdev/pvr2fb.c
++++ b/drivers/video/fbdev/pvr2fb.c
+@@ -67,6 +67,7 @@
+ #include <linux/pagemap.h>
+ #include <mach/dma.h>
+ #include <asm/dma.h>
++#include <asm/cacheflush.h>
+ #endif
+ 
+ #ifdef CONFIG_SH_STORE_QUEUES
+@@ -679,6 +680,16 @@ static ssize_t pvr2fb_write(struct fb_info *info, const char *buf,
+ 
+ 	dma_configure_channel(shdma, 0x12c1);
+ 
++	/*
++	 * The DMA engine reads the pinned pages straight from memory, but
++	 * the data was just written through the user's cacheable mapping.
++	 * Write back the (write-back) dcache or the transfer sees stale
++	 * lines -- on hardware this shows as 32-byte holes in the image.
++	 * A full dcache writeback is alias-safe and, at 16 KiB, cheap
++	 * compared to the transfer itself.
++	 */
++	flush_cache_all();
++
+ 	dst   = (unsigned long)fb_info->screen_base + *ppos;
+ 	start = (unsigned long)page_address(pages[0]);
+ 	end   = (unsigned long)page_address(pages[nr_pages]);
+-- 
+2.43.0
+
