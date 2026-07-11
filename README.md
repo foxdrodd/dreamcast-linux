@@ -4,10 +4,10 @@ Dreamcast Linux is a full Linux distribution for the Sega Dreamcast, with a Dock
 
 ## Screenshots
 
-| Shell | htop | Doom |
+| Shell | X | Doom |
 |:---:|:---:|:---:|
-| <img src="docs/assets/pictures/booted.jpeg" width="380"> | <img src="docs/assets/pictures/htop.png" width="380"> | <img src="docs/assets/pictures/doom.png" width="380"> |
-| Booted to the shell with flashfetch info | Running htop | Yes, it's running Doom |
+| <img src="docs/assets/pictures/booted.jpeg" width="380"> | <img src="docs/assets/pictures/jwm.png" width="380"> | <img src="docs/assets/pictures/doom.png" width="380"> |
+| Booted to the shell with flashfetch info | Running X | Yes, it's running Doom |
 
 See the [latest release](https://github.com/foxdrodd/dreamcast-linux/releases/latest) for the available bootable CDI images:
 - `base-busybox`: kernel + initrd with a minimal BusyBox shell, supporting NFS, GD-ROM mounts, and more
