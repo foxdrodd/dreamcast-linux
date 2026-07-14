@@ -1,0 +1,459 @@
+From 59de0c09c757f38ade7abc5fe8484a5bf6802b0e Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Tue, 14 Jul 2026 23:15:29 +0200
+Subject: [PATCH] PVR2 support
+
+---
+ arch/sh/include/mach-dreamcast/mach/sysasic.h |   1 +
+ drivers/gpu/Kconfig                           |   2 +
+ drivers/gpu/Makefile                          |   1 +
+ drivers/gpu/pvr2/Kconfig                      |  12 +
+ drivers/gpu/pvr2/Makefile                     |   2 +
+ drivers/gpu/pvr2/pvr2_dc.c                    | 337 ++++++++++++++++++
+ drivers/gpu/pvr2/pvr2_dc_abi.h                |  31 ++
+ 7 files changed, 386 insertions(+)
+ create mode 100644 drivers/gpu/pvr2/Kconfig
+ create mode 100644 drivers/gpu/pvr2/Makefile
+ create mode 100644 drivers/gpu/pvr2/pvr2_dc.c
+ create mode 100644 drivers/gpu/pvr2/pvr2_dc_abi.h
+
+diff --git a/arch/sh/include/mach-dreamcast/mach/sysasic.h b/arch/sh/include/mach-dreamcast/mach/sysasic.h
+index 3b27be9a5..8d5a61ea3 100644
+--- a/arch/sh/include/mach-dreamcast/mach/sysasic.h
++++ b/arch/sh/include/mach-dreamcast/mach/sysasic.h
+@@ -25,6 +25,7 @@
+ #define HW_EVENT_IRQ_BASE  (48 + 16)
+ 
+ /* IRQ 13 */
++#define HW_EVENT_PVR_RENDER (HW_EVENT_IRQ_BASE + 2) /* PVR end of render (TSP) */
+ #define HW_EVENT_VSYNC     (HW_EVENT_IRQ_BASE +  5) /* VSync */
+ #define HW_EVENT_MAPLE_DMA (HW_EVENT_IRQ_BASE + 12) /* Maple DMA complete */
+ #define HW_EVENT_GDROM_DMA (HW_EVENT_IRQ_BASE + 14) /* GD-ROM DMA complete */
+diff --git a/drivers/gpu/Kconfig b/drivers/gpu/Kconfig
+index ebb2ad4b7..11a62abd2 100644
+--- a/drivers/gpu/Kconfig
++++ b/drivers/gpu/Kconfig
+@@ -11,3 +11,5 @@ config GPU_BUDDY_KUNIT_TEST
+        default KUNIT_ALL_TESTS
+        help
+          KUnit tests for the GPU buddy allocator.
++
++source "drivers/gpu/pvr2/Kconfig"
+diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
+index b4e5e338e..36630e639 100644
+--- a/drivers/gpu/Makefile
++++ b/drivers/gpu/Makefile
+@@ -8,3 +8,4 @@ obj-y			+= host1x/ drm/ vga/ tests/
+ obj-$(CONFIG_IMX_IPUV3_CORE)	+= ipu-v3/
+ obj-$(CONFIG_TRACE_GPU_MEM)		+= trace/
+ obj-$(CONFIG_NOVA_CORE)		+= nova-core/
++obj-$(CONFIG_PVR2_DC)		+= pvr2/
+diff --git a/drivers/gpu/pvr2/Kconfig b/drivers/gpu/pvr2/Kconfig
+new file mode 100644
+index 000000000..5982277c3
+--- /dev/null
++++ b/drivers/gpu/pvr2/Kconfig
+@@ -0,0 +1,12 @@
++# SPDX-License-Identifier: GPL-2.0
++config PVR2_DC
++	bool "Sega Dreamcast PowerVR2 tile-accelerator submission device"
++	depends on SH_DREAMCAST
++	default y
++	help
++	  Char device /dev/pvr that exposes the PowerVR2 VRAM, register block and
++	  tile-accelerator input FIFO to userland, plus blocking vblank and
++	  end-of-render waits.  It provides the plumbing for a userland 3D stack
++	  (libpvr/GLdc) and coexists with the pvr2fb framebuffer driver.
++
++	  If unsure, say Y on Dreamcast.
+diff --git a/drivers/gpu/pvr2/Makefile b/drivers/gpu/pvr2/Makefile
+new file mode 100644
+index 000000000..9a5587c5a
+--- /dev/null
++++ b/drivers/gpu/pvr2/Makefile
+@@ -0,0 +1,2 @@
++# SPDX-License-Identifier: GPL-2.0
++obj-$(CONFIG_PVR2_DC) += pvr2_dc.o
+diff --git a/drivers/gpu/pvr2/pvr2_dc.c b/drivers/gpu/pvr2/pvr2_dc.c
+new file mode 100644
+index 000000000..d58a3c358
+--- /dev/null
++++ b/drivers/gpu/pvr2/pvr2_dc.c
+@@ -0,0 +1,337 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Sega Dreamcast PowerVR2 tile-accelerator submission device (/dev/pvr).
++ *
++ * A deliberately thin shim that hands a userland 3D stack (libpvr/GLdc) the
++ * privileged primitives it needs, while pvr2fb keeps owning modeset/scanout:
++ *
++ *   - mmap of the three hardware windows (VRAM, the PVR/TA register block, and
++ *     the TA input FIFO at 0x10000000), uncached, selected by the mmap offset =
++ *     physical base.  Userland programs the render/TA registers directly and
++ *     issues STARTRENDER through the mapped register block.
++ *   - write() streams a polygon-parameter buffer into the TA input FIFO.  The
++ *     FIFO only accepts 32-byte burst transactions; ordinary uncached CPU word
++ *     stores (all a userland mmap can do) are silently dropped by real Holly,
++ *     so submission goes through the PowerVR2 CH2 cascade DMA -- the same DMA
++ *     path pvr2fb uses to blit to VRAM, redirected at the TA FIFO.
++ *   - blocking waits for the vertical-blank and end-of-render interrupts, for
++ *     page flipping and scene completion.
++ *
++ * The TA/ISP/TSP themselves live in hardware (and in QEMU's dc-ta model); this
++ * driver adds no rendering logic of its own.
++ *
++ * Copyright (c) 2026 Florian Fuchs
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/io.h>
++#include <linux/slab.h>
++#include <linux/gfp.h>
++#include <linux/mutex.h>
++#include <linux/miscdevice.h>
++#include <linux/interrupt.h>
++#include <linux/wait.h>
++#include <linux/sched.h>
++#include <linux/atomic.h>
++#include <linux/err.h>
++#include <linux/uaccess.h>
++#include <linux/minmax.h>
++#include <mach/sysasic.h>
++#include <mach/dma.h>
++#include <asm/dma.h>
++#include <asm/cacheflush.h>
++
++#include "pvr2_dc_abi.h"
++
++/* Dreamcast physical windows (the P2 aliases pvr2fb uses map to these). */
++#define PVR2_VRAM_PHYS     0x05000000
++#define PVR2_VRAM_SIZE     (8 * 1024 * 1024)
++#define PVR2_REGS_PHYS     0x005f8000
++#define PVR2_REGS_SIZE     0x00002000
++#define PVR2_TAFIFO_PHYS   0x10000000
++#define PVR2_TAFIFO_SIZE   (16 * 1024 * 1024)
++
++/*
++ * TA submission via the PowerVR2 CH2 cascade DMA.
++ *
++ * The SH-4 on-chip DMAC channel 2 (PVR2_CASCADE_CHAN) supplies the data; the
++ * PVR2 DMA controller (channel CONFIG_NR_ONCHIP_DMA_CHANNELS) drives it onto
++ * the G2/PVR bus.  pvr2fb already proves this path against VRAM; we point the
++ * destination at the TA input FIFO (0x10000000) instead.  The parameters are
++ * copied into a physically-contiguous, cache-writeback bounce buffer, flushed,
++ * then DMA'd; completion is the HW_EVENT_PVR2_DMA interrupt (raised by
++ * arch/sh/drivers/dma/dma-pvr2.c, which we depend on via CONFIG_PVR2_DMA).
++ */
++#define PVR2_TA_BOUNCE     (256 * 1024)          /* max bytes per DMA burst */
++
++static const unsigned int shdma   = PVR2_CASCADE_CHAN;
++static const unsigned int pvr2dma = CONFIG_NR_ONCHIP_DMA_CHANNELS;
++
++struct pvr2_dc {
++	struct miscdevice misc;
++	wait_queue_head_t vsync_wq;
++	wait_queue_head_t render_wq;
++	atomic_t vsync_count;
++	atomic_t render_count;
++};
++
++static struct pvr2_dc *pvr2;
++
++/* ------------------------------ TA submit -------------------------------- */
++
++static u8 *ta_bounce;                  /* contiguous DMA bounce for the params */
++static DEFINE_MUTEX(ta_submit_lock);
++
++/*
++ * DMA one already-populated bounce buffer (src is a kernel-logical address,
++ * len is a 32-byte multiple) into the TA input FIFO.
++ *
++ * pvr2fb leaves LMMODE0 = 1 for its linear 32-bit VRAM window; the TA polygon
++ * FIFO wants the 64-bit area-0 view (LMMODE0 = 0, as KOS's pvr_dma sets it), so
++ * flip it for the transfer and restore what pvr2fb expects afterwards.  Called
++ * under ta_submit_lock; the DMA channels are shared with pvr2fb's console
++ * writes, which are serialised against rendering by userland in practice.
++ */
++static void pvr2_ta_dma(unsigned long src, size_t len)
++{
++	unsigned long lmmode0;
++
++	dma_configure_channel(shdma, 0x12c1);
++
++	/*
++	 * The params were just written through the cacheable kernel mapping;
++	 * write the dcache back or the DMAC reads stale lines (32-byte holes).
++	 */
++	flush_cache_all();
++
++	lmmode0 = __raw_readl(PVR2_DMA_LMMODE0);
++	__raw_writel(0, PVR2_DMA_LMMODE0);
++
++	dma_write(shdma, src, 0, len);
++	dma_write(pvr2dma, 0, PVR2_TAFIFO_PHYS, len);
++	dma_wait_for_completion(pvr2dma);
++
++	__raw_writel(lmmode0, PVR2_DMA_LMMODE0);
++}
++
++static ssize_t pvr2_write(struct file *file, const char __user *ubuf,
++			  size_t len, loff_t *off)
++{
++	size_t done = 0;
++	int ret;
++
++	if (len == 0)
++		return 0;
++	if (len % 32)
++		return -EINVAL;
++
++	mutex_lock(&ta_submit_lock);
++	while (done < len) {
++		size_t chunk = min(len - done, (size_t)PVR2_TA_BOUNCE);
++
++		if (copy_from_user(ta_bounce, ubuf + done, chunk)) {
++			ret = -EFAULT;
++			goto out;
++		}
++		pvr2_ta_dma((unsigned long)ta_bounce, chunk);
++		done += chunk;
++	}
++	ret = len;
++out:
++	mutex_unlock(&ta_submit_lock);
++	return ret;
++}
++
++/* --------------------------------- IRQs ---------------------------------- */
++
++static irqreturn_t pvr2_vsync_isr(int irq, void *dev_id)
++{
++	struct pvr2_dc *d = dev_id;
++
++	atomic_inc(&d->vsync_count);
++	wake_up_all(&d->vsync_wq);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t pvr2_render_isr(int irq, void *dev_id)
++{
++	struct pvr2_dc *d = dev_id;
++
++	atomic_inc(&d->render_count);
++	wake_up_all(&d->render_wq);
++	return IRQ_HANDLED;
++}
++
++/* --------------------------------- mmap ---------------------------------- */
++
++static bool pvr2_window_ok(unsigned long phys, unsigned long size)
++{
++	static const struct {
++		unsigned long base, len;
++	} win[] = {
++		{ PVR2_VRAM_PHYS,   PVR2_VRAM_SIZE },
++		{ PVR2_REGS_PHYS,   PVR2_REGS_SIZE },
++		{ PVR2_TAFIFO_PHYS, PVR2_TAFIFO_SIZE },
++	};
++	int i;
++
++	if (!size || (phys + size) < phys) {
++		return false;
++	}
++	for (i = 0; i < ARRAY_SIZE(win); i++) {
++		if (phys >= win[i].base &&
++		    phys + size <= win[i].base + win[i].len) {
++			return true;
++		}
++	}
++	return false;
++}
++
++static int pvr2_mmap(struct file *file, struct vm_area_struct *vma)
++{
++	unsigned long size = vma->vm_end - vma->vm_start;
++	unsigned long phys = vma->vm_pgoff << PAGE_SHIFT;
++
++	if (!pvr2_window_ok(phys, size)) {
++		return -EINVAL;
++	}
++
++	/* Registers and the TA FIFO must be uncached; VRAM too for coherence
++	 * with the display/TA hardware that also touches it. */
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	if (io_remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, size,
++			       vma->vm_page_prot)) {
++		return -EAGAIN;
++	}
++	return 0;
++}
++
++/* -------------------------------- ioctl ---------------------------------- */
++
++static long pvr2_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	struct pvr2_dc *d = pvr2;
++
++	switch (cmd) {
++	case PVR2_DC_IOC_INFO: {
++		struct pvr2_dc_info info = {
++			.vram_phys    = PVR2_VRAM_PHYS,
++			.vram_size    = PVR2_VRAM_SIZE,
++			.regs_phys    = PVR2_REGS_PHYS,
++			.regs_size    = PVR2_REGS_SIZE,
++			.ta_fifo_phys = PVR2_TAFIFO_PHYS,
++			.ta_fifo_size = PVR2_TAFIFO_SIZE,
++		};
++
++		if (copy_to_user((void __user *)arg, &info, sizeof(info))) {
++			return -EFAULT;
++		}
++		return 0;
++	}
++	case PVR2_DC_IOC_WAIT_VSYNC: {
++		int cur = atomic_read(&d->vsync_count);
++
++		return wait_event_interruptible(d->vsync_wq,
++				atomic_read(&d->vsync_count) != cur);
++	}
++	case PVR2_DC_IOC_WAIT_RENDER: {
++		int cur = atomic_read(&d->render_count);
++
++		return wait_event_interruptible(d->render_wq,
++				atomic_read(&d->render_count) != cur);
++	}
++	default:
++		return -ENOTTY;
++	}
++}
++
++static const struct file_operations pvr2_fops = {
++	.owner		= THIS_MODULE,
++	.mmap		= pvr2_mmap,
++	.write		= pvr2_write,
++	.unlocked_ioctl	= pvr2_ioctl,
++	.llseek		= noop_llseek,
++};
++
++/* ------------------------------- lifecycle ------------------------------- */
++
++static int __init pvr2_dc_init(void)
++{
++	struct pvr2_dc *d;
++	int ret;
++
++	d = kzalloc(sizeof(*d), GFP_KERNEL);
++	if (!d) {
++		return -ENOMEM;
++	}
++	init_waitqueue_head(&d->vsync_wq);
++	init_waitqueue_head(&d->render_wq);
++	atomic_set(&d->vsync_count, 0);
++	atomic_set(&d->render_count, 0);
++	d->misc.minor = MISC_DYNAMIC_MINOR;
++	d->misc.name = "pvr";
++	d->misc.fops = &pvr2_fops;
++
++	ret = misc_register(&d->misc);
++	if (ret) {
++		goto err_free;
++	}
++
++	/* VSYNC is shared with pvr2fb (which requests it IRQF_SHARED). */
++	ret = request_irq(HW_EVENT_VSYNC, pvr2_vsync_isr, IRQF_SHARED,
++			  "pvr2-vsync", d);
++	if (ret) {
++		goto err_misc;
++	}
++	ret = request_irq(HW_EVENT_PVR_RENDER, pvr2_render_isr, 0,
++			  "pvr2-render", d);
++	if (ret) {
++		goto err_vsync;
++	}
++
++	/* Physically-contiguous bounce for the CH2 cascade DMA to the TA FIFO. */
++	ta_bounce = (u8 *)__get_free_pages(GFP_KERNEL, get_order(PVR2_TA_BOUNCE));
++	if (!ta_bounce) {
++		ret = -ENOMEM;
++		goto err_render;
++	}
++
++	pvr2 = d;
++	pr_info("pvr2_dc: /dev/pvr ready (VRAM %uMB, regs, TA FIFO, CH2-DMA submit)\n",
++		PVR2_VRAM_SIZE >> 20);
++	return 0;
++
++err_render:
++	free_irq(HW_EVENT_PVR_RENDER, d);
++err_vsync:
++	free_irq(HW_EVENT_VSYNC, d);
++err_misc:
++	misc_deregister(&d->misc);
++err_free:
++	kfree(d);
++	return ret;
++}
++
++static void __exit pvr2_dc_exit(void)
++{
++	struct pvr2_dc *d = pvr2;
++
++	free_pages((unsigned long)ta_bounce, get_order(PVR2_TA_BOUNCE));
++	free_irq(HW_EVENT_PVR_RENDER, d);
++	free_irq(HW_EVENT_VSYNC, d);
++	misc_deregister(&d->misc);
++	kfree(d);
++	pvr2 = NULL;
++}
++
++module_init(pvr2_dc_init);
++module_exit(pvr2_dc_exit);
++
++MODULE_AUTHOR("Florian Fuchs");
++MODULE_DESCRIPTION("Dreamcast PowerVR2 tile-accelerator submission device");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/gpu/pvr2/pvr2_dc_abi.h b/drivers/gpu/pvr2/pvr2_dc_abi.h
+new file mode 100644
+index 000000000..ccf3deaa2
+--- /dev/null
++++ b/drivers/gpu/pvr2/pvr2_dc_abi.h
+@@ -0,0 +1,31 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * pvr2_dc_abi.h - userland ABI for the Dreamcast PowerVR2 submission device.
++ *
++ * /dev/pvr lets a userland 3D stack (libpvr/GLdc) drive the PowerVR2 directly:
++ *   - mmap(fd, .., offset = physical base): maps one of the hardware windows
++ *     reported by PVR2_DC_IOC_INFO (VRAM, the register block, or the TA input
++ *     FIFO), uncached.  The offset is the physical address of the window.
++ *   - PVR2_DC_IOC_WAIT_VSYNC / _WAIT_RENDER: block until the next vertical
++ *     blank / end-of-render interrupt, for page flipping and scene completion.
++ *
++ * This header is shared verbatim with the userland library.
++ */
++#ifndef _PVR2_DC_ABI_H
++#define _PVR2_DC_ABI_H
++
++#include <linux/types.h>
++#include <linux/ioctl.h>
++
++struct pvr2_dc_info {
++	__u32 vram_phys, vram_size;
++	__u32 regs_phys, regs_size;
++	__u32 ta_fifo_phys, ta_fifo_size;
++};
++
++#define PVR2_DC_IOC_MAGIC 'P'
++#define PVR2_DC_IOC_INFO        _IOR(PVR2_DC_IOC_MAGIC, 0, struct pvr2_dc_info)
++#define PVR2_DC_IOC_WAIT_VSYNC  _IO(PVR2_DC_IOC_MAGIC, 1)
++#define PVR2_DC_IOC_WAIT_RENDER _IO(PVR2_DC_IOC_MAGIC, 2)
++
++#endif /* _PVR2_DC_ABI_H */
+-- 
+2.43.0
+
