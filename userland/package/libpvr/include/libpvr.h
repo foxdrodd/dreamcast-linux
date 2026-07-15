@@ -166,7 +166,13 @@ void pvr_set_bg_color(float r, float g, float b);
 
 /* Simple linear VRAM heap for textures / buffers. */
 pvr_ptr_t pvr_mem_malloc(size_t size);
+size_t    pvr_mem_available(void);
+void     *pvr_vram_ptr(pvr_ptr_t off);   /* CPU pointer into the 64-bit area */
 void      pvr_txr_load(const void *src, pvr_ptr_t dst, size_t size);
+
+/* Raw PVR register access (byte offset in the 0x005f8000 block). */
+void      pvr_regw(unsigned off, uint32_t val);
+uint32_t  pvr_regr(unsigned off);
 
 /* Compile a context into a header, and helpers to fill common contexts. */
 void pvr_poly_compile(pvr_poly_hdr_t *dst, const pvr_poly_cxt_t *src);

@@ -1,0 +1,49 @@
+# Build GLdc as a static library over libpvr (Dreamcast running Linux).
+#
+#   make -f Makefile.libpvr            # build libGLdc.a
+#   make -f Makefile.libpvr samples    # build the sample demos too
+#
+# Requires libpvr (headers + libpvr.a) built alongside.
+
+CROSS   ?= sh4-linux-gnu-
+CC      := $(CROSS)gcc
+AR      := $(CROSS)ar
+
+LIBPVR  ?= /home/flo/devel/t2-hacking/dreamcast/dreamcast-linux/userland/package/libpvr
+BUILD   := build-libpvr
+
+INC     := -Iinclude -I. -I$(LIBPVR)/include
+# The SH4 Linux toolchain is -m4 (double FP ABI); keep GLdc float-only so the
+# FPU stays in single-precision mode for the XMTRX/ftrv matrix asm.
+CFLAGS  := -m4 -O2 -std=gnu11 -fsingle-precision-constant -ffast-math \
+           -Wall -DGLDC_LIBPVR -DNDEBUG $(INC)
+
+CSRC    := $(wildcard GL/*.c) GL/alloc/alloc.c $(wildcard containers/*.c) GL/platforms/libpvr.c
+ASRC    := GL/platforms/libpvr_mat.S
+OBJ     := $(patsubst %.c,$(BUILD)/%.o,$(CSRC)) $(patsubst %.S,$(BUILD)/%.o,$(ASRC))
+
+LIB     := $(BUILD)/libGLdc.a
+
+all: $(LIB)
+
+$(LIB): $(OBJ)
+	$(AR) rcs $@ $^
+	@echo "built $@"
+
+DEPFLAGS := -MMD -MP
+CFLAGS   += $(DEPFLAGS)
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+-include $(OBJ:.o=.d)
+
+$(BUILD)/%.o: %.S
+	@mkdir -p $(dir $@)
+	$(CC) -m4 -c $< -o $@
+
+clean:
+	rm -rf $(BUILD)
+
+.PHONY: all clean

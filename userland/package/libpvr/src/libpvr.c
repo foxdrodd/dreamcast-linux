@@ -183,6 +183,11 @@ static uint32_t fb_addr(void)
 
 uint32_t pvr_debug_fb_addr(void) { return fb_addr(); }
 uint32_t pvr_debug_reg(unsigned off) { return RREG(off); }
+
+/* Raw PVR register access for higher layers (e.g. GLdc: span-sort, texture
+ * modulo, punch-through alpha ref).  off = byte offset in the 0x005f8000 block. */
+void pvr_regw(unsigned off, uint32_t val) { REG(off, val); }
+uint32_t pvr_regr(unsigned off) { return RREG(off); }
 uint32_t pvr_debug_vram_u32(uint32_t off) { uint32_t v; memcpy(&v, vram + (off & (info.vram_size - 1)), 4); return v; }
 
 /* ---------------------- region array (tile matrix) ----------------------- */
@@ -263,8 +268,26 @@ int pvr_init(void)
 		    pvr_fd, info.ta_fifo_phys);
 	vram = mmap(0, info.vram_size, PROT_READ | PROT_WRITE, MAP_SHARED,
 		    pvr_fd, info.vram_phys);
-	vram64 = mmap(0, info.vram64_size, PROT_READ | PROT_WRITE, MAP_SHARED,
-		      pvr_fd, info.vram64_phys);
+	/*
+	 * Map the 64-bit texture area at a 16 MB-aligned virtual address so that
+	 * (ptr & 0x00ffffff) == the VRAM offset.  Higher layers (GLdc) hand the
+	 * texture unit an address computed as (ptr & 0x00fffff8) >> 3 and expect
+	 * that to equal offset>>3 -- KOS gets this for free because its VRAM lives
+	 * at 0xa5000000; we reproduce it by aligning our mapping.  Reserve a span,
+	 * pick an aligned start, then MAP_FIXED the device there.
+	 */
+	{
+		size_t span = info.vram64_size + 0x1000000;
+		void *probe = mmap(0, span, PROT_NONE,
+				   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		if (probe == MAP_FAILED)
+			return -3;
+		uintptr_t aligned = ((uintptr_t)probe + 0xffffff) & ~(uintptr_t)0xffffff;
+		munmap(probe, span);
+		vram64 = mmap((void *)aligned, info.vram64_size,
+			      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
+			      pvr_fd, info.vram64_phys);
+	}
 	if (regs == MAP_FAILED || fifo == MAP_FAILED || vram == MAP_FAILED ||
 	    vram64 == MAP_FAILED)
 		return -3;
@@ -468,6 +491,19 @@ pvr_ptr_t pvr_mem_malloc(size_t size)
 
 	heap_ptr += (size + 31) & ~31u;
 	return off;
+}
+
+size_t pvr_mem_available(void)
+{
+	return (info.vram64_size > heap_ptr) ? (info.vram64_size - heap_ptr) : 0;
+}
+
+/* CPU-writable pointer into the 64-bit texture area for a heap offset.  The
+ * mapping is 16 MB-aligned, so (ptr & 0x00ffffff) == off (what GLdc's texture
+ * control-word math relies on). */
+void *pvr_vram_ptr(pvr_ptr_t off)
+{
+	return (void *)(vram64 + off);
 }
 
 void pvr_txr_load(const void *src, pvr_ptr_t dst, size_t size)
