@@ -12,7 +12,7 @@ PREFIX  ?= /usr
 
 # Static examples for the dev loop (tritest = smoke test; plasma/txrdiag/fire =
 # dynamic-texture demos; fire is the classic per-pixel flame effect).
-EXAMPLES := examples/tritest examples/plasma examples/txrdiag examples/fire
+EXAMPLES := examples/tritest examples/plasma examples/txrdiag examples/fire examples/tunnel
 
 all: libpvr.a $(EXAMPLES)
 
