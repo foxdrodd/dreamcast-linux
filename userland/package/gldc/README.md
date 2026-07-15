@@ -55,24 +55,24 @@ the `FSCA`/`FTRV`/`FIPR` primitives compute correctly bare; only the trivial sta
 `shz_inv_sqrtf_fsrra` is unreliable (its non-`volatile` asm no-ops at PR=1) — use the composite
 ops (`shz_vec3_normalize`, `shz_sincosf`, `shz_vec3_dot`, `shz_xmtrx_*`).
 
-## sh4zam inside GLdc core (all `gldc_*` demos)
+## Why sh4zam is NOT wired into GLdc core (attempted, reverted)
 
-Beyond the demo-level swap above, sh4zam is now wired into the **GLdc platform layer** itself, so
-every GLdc-based app benefits (`Makefile.libpvr` adds `-I$(SHZ)/include -DSHZ_BACKEND=1`; the port
-compiles fine with the stock gcc-13 `sh4-linux-gnu` cross):
+Wiring sh4zam into the GLdc platform layer itself (so `VEC3_DOT`/`VEC3_NORMALIZE` etc. use
+`shz_vec3_dot`/`shz_vec3_normalize`) was tried and **reverted** — it broke the rotation of every
+GLdc demo that uses `glRotatef` (the NeHe cube/texcube "zoomed" instead of rotating).
 
-- `GL/platforms/libpvr.h` — the `VEC3_DOT` / `VEC3_LENGTH` / `VEC3_NORMALIZE` helpers now use
-  sh4zam's `shz_vec3_dot` (**FIPR**, previously scalar C) and `shz_vec3_normalize` / `_magnitude`
-  (**FSRRA**). These feed GLdc's per-vertex lighting.
-- `GL/platforms/libpvr.c` — the per-vertex perspective divide (`_glFastInvert`) and the clip lerp
-  (`_glClipEdge`) moved off libm `sqrtf`/`__builtin_sqrtf` onto PR-managed **FSRRA**
-  (`MATH_Fast_Invert`). This runs for **every** GLdc vertex.
+Root cause: `glRotatef` (`GL/matrix.c`) normalises its rotation axis with `VEC3_NORMALIZE`.
+sh4zam's `shz_vec3_normalize` uses **FSRRA** internally, and under our `-m4` ABI (resting
+FPSCR.PR=1) that bare FSRRA **silently no-ops** in `glRotatef`'s codegen context — so the axis
+came out un-normalised and the rotation matrix was garbage. (The demo-level `shz_sincosf`/**FSCA**
+in `torus.c`/`control.c` is unaffected — FSCA computes correctly bare at PR=1; only FSRRA is the
+problem, and it's *context-dependent*, which is why isolated tests passed but `glRotatef` failed.)
 
-Result: no regressions — the NeHe pyramid+cube, textured cube, torus, and interactive demo all
-render correctly on hardware. Note the low-poly NeHe demos are fill-bound, so the visible fps win
-is on vertex-heavy geometry (like the torus); the core change is what makes that scale.
-Because the port's `MATH_fsrra` is already PR-managed, the hot FSRRA path uses it rather than
-sh4zam's bare (PR-unsafe under `-m4`) `shz_inv_sqrtf_fsrra`.
+Lesson: sh4zam's asm assumes KOS's PR=0 resting mode and is not PR-safe for the Linux `-m4`
+toolchain. GLdc's own `MATH_fsrra` (which wraps FSRRA in a save/clear/restore-PR block) is the
+correct primitive for GLdc core; sh4zam is used only at the demo level where FSCA suffices. A
+proper GLdc-core integration would require patching sh4zam's PR-sensitive asm to self-manage the
+PR bit — not worth it for the current low-poly, fill-bound NeHe demos.
 | `port/` | **Read-only snapshot** of the Dreamcast-Linux GLdc platform port — the actual porting work. Source of truth is the GLdc clone (see below). |
 
 ### The platform port (`port/`)
@@ -91,10 +91,10 @@ clone (`$(GLDC)/GL/platforms/…`) where they compile, then refresh this copy.
 
 ## Build
 
-Needs a GLdc clone with the port files in place (default `GLDC=/home/flo/devel/GLdc`),
-`libpvr` built next door (`../libpvr/libpvr.a`), and an **sh4zam** checkout
-(default `SHZ=/home/flo/devel/sh4zam`; header-only for what the port uses). The `*_shz` demo
-variants additionally need the gcc-17 sh4 cross (see above).
+Needs a GLdc clone with the port files in place (default `GLDC=/home/flo/devel/GLdc`)
+and `libpvr` built next door (`../libpvr/libpvr.a`). The GLdc lib itself has **no** sh4zam
+dependency; only the `*_shz` demo variants use sh4zam (an **sh4zam** checkout at
+`SHZ=/home/flo/devel/sh4zam` plus the gcc-17 sh4 cross — see above).
 
 ```sh
 make -C ../libpvr libpvr.a          # once, if not built

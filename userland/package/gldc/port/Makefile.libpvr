@@ -10,16 +10,13 @@ CC      := $(CROSS)gcc
 AR      := $(CROSS)ar
 
 LIBPVR  ?= /home/flo/devel/t2-hacking/dreamcast/dreamcast-linux/userland/package/libpvr
-SHZ     ?= /home/flo/devel/sh4zam
 BUILD   := build-libpvr
 
-INC     := -Iinclude -I. -I$(LIBPVR)/include -I$(SHZ)/include
+INC     := -Iinclude -I. -I$(LIBPVR)/include
 # The SH4 Linux toolchain is -m4 (double FP ABI); keep GLdc float-only so the
 # FPU stays in single-precision mode for the XMTRX/ftrv matrix asm.
-# SHZ_BACKEND=1 (=SHZ_SH4) forces sh4zam's SH4 asm backend (it only auto-selects
-# it under __DREAMCAST__, which the Linux build doesn't define).
 CFLAGS  := -m4 -O2 -std=gnu11 -fsingle-precision-constant -ffast-math \
-           -Wall -DGLDC_LIBPVR -DNDEBUG -DSHZ_BACKEND=1 $(INC)
+           -Wall -DGLDC_LIBPVR -DNDEBUG $(INC)
 
 CSRC    := $(wildcard GL/*.c) GL/alloc/alloc.c $(wildcard containers/*.c) GL/platforms/libpvr.c
 ASRC    := GL/platforms/libpvr_mat.S

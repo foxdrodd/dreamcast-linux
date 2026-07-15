@@ -17,15 +17,6 @@
 
 #include <libpvr.h>
 
-/* sh4zam SH4 math library (github.com/gyrovorbis/sh4zam) -- FIPR dot products
- * and FSRRA reciprocal-sqrt for the vector helpers below.  Built with
- * -DSHZ_BACKEND=1 (Makefile.libpvr) to force the SH4 asm backend.  Under our
- * -m4 ABI (resting FPSCR.PR=1) the composite ops (shz_vec3_dot / _normalize)
- * compute correctly; the bare standalone shz_inv_sqrtf_fsrra does NOT (it
- * no-ops at PR=1), so 1/x-style inverses stay on the port's PR-managed
- * MATH_fsrra below.  See memory sh4zam-integration. */
-#include <sh4zam/shz_sh4zam.h>
-
 #include "../types.h"
 #include "../private.h"
 
@@ -108,21 +99,17 @@ extern void _glVramCopy(void* dst, const void* src, size_t bytes);
 #define MEMCPY4(dst, src, bytes) _glVramCopy((dst), (src), (bytes))
 #define MEMSET4(dst, v, size)    memset((dst), (v), (size))
 
-/* Vector helpers on sh4zam: FIPR dot, FSRRA-based normalize/length.
- * NB: access the result via _n.e[] not _n.x -- the macro params are named x/y/z
- * and would text-substitute into a `.x` member access. */
 #define VEC3_NORMALIZE(x, y, z) \
     do { \
-        shz_vec3_t _n = shz_vec3_normalize((shz_vec3_t){ .e = { (x), (y), (z) } }); \
-        (x) = _n.e[0]; (y) = _n.e[1]; (z) = _n.e[2]; \
+        float l = MATH_fsrra((x)*(x) + (y)*(y) + (z)*(z)); \
+        x *= l; y *= l; z *= l; \
     } while(0)
 
 #define VEC3_LENGTH(x, y, z, d) \
-    d = shz_vec3_magnitude((shz_vec3_t){ .e = { (x), (y), (z) } })
+    d = sqrtf((x)*(x) + (y)*(y) + (z)*(z))
 
 #define VEC3_DOT(x1, y1, z1, x2, y2, z2, d) \
-    d = shz_vec3_dot((shz_vec3_t){ .e = { (x1), (y1), (z1) } }, \
-                     (shz_vec3_t){ .e = { (x2), (y2), (z2) } })
+    d = ((x1)*(x2)) + ((y1)*(y2)) + ((z1)*(z2))
 
 /* ------------------------ XMTRX matrix (asm) ----------------------------- */
 
