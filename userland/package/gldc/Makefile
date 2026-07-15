@@ -24,7 +24,7 @@ LIBPVR_A := $(LIBPVR)/libpvr.a
 CFLAGS  := -m4 -O2 -fsingle-precision-constant -ffast-math \
            -I$(GLDC)/include -I$(LIBPVR)/include -Idemos
 
-DEMOS   := gldc_cube gldc_texcube gldc_torus
+DEMOS   := gldc_cube gldc_texcube gldc_torus gldc_control
 
 all: $(DEMOS)
 
@@ -39,6 +39,10 @@ gldc_texcube: demos/nehe06_texcube.c demos/loadbmp.c $(GLDC_LIB) $(LIBPVR_A)
 # Lit, texture-mapped spinning torus (procedural checker texture, CPU T&L +
 # world-fixed directional shading; shows the full textured 3D path).
 gldc_torus: demos/torus.c $(GLDC_LIB) $(LIBPVR_A)
+	$(CC) $(CFLAGS) -static -o $@ $< $(GLDC_LIB) $(LIBPVR_A) -lm
+
+# Interactive controllable object (Maple controller via evdev; Component-6 demo).
+gldc_control: demos/control.c $(GLDC_LIB) $(LIBPVR_A)
 	$(CC) $(CFLAGS) -static -o $@ $< $(GLDC_LIB) $(LIBPVR_A) -lm
 
 # Convenience: build GLdc's libpvr platform static lib in the clone.

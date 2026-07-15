@@ -16,9 +16,29 @@ This is Component 4 of the PVR2 3D plan. C1–C3 (QEMU TA, `/dev/pvr` kernel shi
 | `demos/nehe05_cube.c` | NeHe lesson 5 — spinning Gouraud pyramid + multicolour cube (no textures). |
 | `demos/nehe06_texcube.c` | NeHe lesson 6 — texture-mapped spinning cube (loads `assets/NeHe.bmp`). Proves the twiddled-texture path through `glTexImage2D`. |
 | `demos/torus.c` | Lit, texture-mapped spinning torus — procedural checker texture, CPU T&L, and world-fixed directional Gouraud shading (normals rotated in C so the light stays put as the donut spins). The full textured 3D path in one demo. |
+| `demos/control.c` | **Interactive** lit textured object you drive with the Dreamcast controller (Maple → evdev). Component-6 acceptance demo: controllable, textured, lit, double-buffered 3D. See controls below. |
 | `demos/loadbmp.[ch]` | Minimal 24-bit BMP loader (from GLdc samples) used by the texture demo. |
 | `assets/NeHe.bmp` | 256×128 texture for `gldc_texcube`. |
-| `gldc_cube`, `gldc_texcube`, `gldc_torus` | Prebuilt static sh4 binaries (run straight off NFS). |
+| `gldc_cube`, `gldc_texcube`, `gldc_torus`, `gldc_control` | Prebuilt static sh4 binaries (run straight off NFS). |
+
+### `gldc_control` — controller input
+
+Reads the controller straight from the kernel evdev node (`/dev/input/eventN`, auto-detected
+by the `"Dreamcast Controller"` name; the `maplecontrol` joystick driver exposes buttons as
+`BTN_*` and the stick/triggers as `ABS_*`). Raw `struct input_event` reads, non-blocking, one
+drain per frame — no SDL needed.
+
+| Input | Action |
+|-------|--------|
+| Analog stick | tilt / spin (deflection = angular velocity) |
+| D-pad | nudge rotation (digital) |
+| R trigger / L trigger | zoom in / out |
+| A | toggle auto-spin |
+| B | switch shape (torus ↔ cube) |
+| X | cycle texture (checker / stripes / neon grid) |
+| START | reset view |
+
+Optional startup args: `gldc_control [cube|torus] [texstyle 0..2]`.
 | `port/` | **Read-only snapshot** of the Dreamcast-Linux GLdc platform port — the actual porting work. Source of truth is the GLdc clone (see below). |
 
 ### The platform port (`port/`)
@@ -51,9 +71,10 @@ make GLDC=/home/flo/devel/GLdc           # -> ./gldc_cube (static)
 ```sh
 # on the host: files reach the DC over NFS (host uclibc dir -> DC /mnt)
 mount -t nfs -o nolock,vers=3 192.168.0.225:/home/flo/devel/t2-hacking/uclibc /mnt
-killall gldc_cube gldc_texcube gldc_torus 2>/dev/null  # avoid stacking instances that fight over the TA
+killall gldc_cube gldc_texcube gldc_torus gldc_control 2>/dev/null  # avoid stacking instances that fight over the TA
 /mnt/gldc_cube &
 /mnt/gldc_torus &    # needs no asset -- texture is generated procedurally
+/mnt/gldc_control &  # interactive: drive it with the Dreamcast controller
 # textured cube needs its BMP alongside on the DC (default /mnt/NeHe.bmp; argv[1] overrides):
 cp assets/NeHe.bmp /path/to/uclibc/      # host side, so it lands at DC /mnt/NeHe.bmp
 /mnt/gldc_texcube &
