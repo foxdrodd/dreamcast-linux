@@ -67,16 +67,7 @@ static inline void _glPushHeader(Vertex* v, size_t count) {
     pvr_prim(v, (int)(count * 32));
 }
 
-int g_mtx_dbg = 0;
-static int g_dbg_pushes = 0;
 static inline void _glPushVertex(Vertex* v, size_t count) {
-    if(g_dbg_pushes < 6) {
-        /* integer prints only -- %f would promote to double and flip PR=1 */
-        for(size_t k = 0; k < count && g_dbg_pushes < 6; ++k, ++g_dbg_pushes)
-            printf("  vtx: x=%d y=%d z1k=%d w1k=%d\n",
-                   (int)v[k].xyz[0], (int)v[k].xyz[1],
-                   (int)(v[k].xyz[2] * 1000.0f), (int)(v[k].w * 1000.0f));
-    }
     pvr_prim(v, (int)(count * 64));
 }
 

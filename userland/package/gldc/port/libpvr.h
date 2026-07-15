@@ -118,19 +118,8 @@ extern void mat_store(matrix_t *out);
 extern void mat_apply(const matrix_t *src);
 extern void mat_identity(void);
 
-extern int g_mtx_dbg;
 GL_FORCE_INLINE void UploadMatrix4x4(const Matrix4x4* mat) {
     mat_load((const matrix_t*) mat);
-    if(g_mtx_dbg < 12) {
-        const float* m = (const float*) mat;
-        printf("MTX%d: %d %d %d %d / %d %d %d %d / %d %d %d %d / %d %d %d %d\n",
-            g_mtx_dbg,
-            (int)(m[0]*100),(int)(m[1]*100),(int)(m[2]*100),(int)(m[3]*100),
-            (int)(m[4]*100),(int)(m[5]*100),(int)(m[6]*100),(int)(m[7]*100),
-            (int)(m[8]*100),(int)(m[9]*100),(int)(m[10]*100),(int)(m[11]*100),
-            (int)(m[12]*100),(int)(m[13]*100),(int)(m[14]*100),(int)(m[15]*100));
-        g_mtx_dbg++;
-    }
 }
 GL_FORCE_INLINE void DownloadMatrix4x4(Matrix4x4* mat) {
     mat_store((matrix_t*) mat);

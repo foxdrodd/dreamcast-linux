@@ -98,13 +98,9 @@ int main(int argc, char **argv)
 
     glKosInit();
     InitGL(640, 480);
-    printf("screen %dx%d\n", pvr_screen_w, pvr_screen_h);
 
-    for(int frame = 0; ; frame++) {
+    for(;;)
         DrawGLScene();
-        if(frame < 5)
-            printf("frame %d: TA_VERTBUF_POS=%08x\n", frame, pvr_debug_reg(0x138));
-    }
 
     return 0;
 }

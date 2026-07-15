@@ -13,8 +13,11 @@ This is Component 4 of the PVR2 3D plan. C1–C3 (QEMU TA, `/dev/pvr` kernel shi
 
 | Path | What |
 |------|------|
-| `demos/nehe05_cube.c` | NeHe lesson 5 — spinning Gouraud pyramid + multicolour cube (no textures). The acceptance demo. |
-| `gldc_cube` | Prebuilt static sh4 binary of the above (run it straight off NFS). |
+| `demos/nehe05_cube.c` | NeHe lesson 5 — spinning Gouraud pyramid + multicolour cube (no textures). |
+| `demos/nehe06_texcube.c` | NeHe lesson 6 — texture-mapped spinning cube (loads `assets/NeHe.bmp`). Proves the twiddled-texture path through `glTexImage2D`. |
+| `demos/loadbmp.[ch]` | Minimal 24-bit BMP loader (from GLdc samples) used by the texture demo. |
+| `assets/NeHe.bmp` | 256×128 texture for `gldc_texcube`. |
+| `gldc_cube`, `gldc_texcube` | Prebuilt static sh4 binaries (run straight off NFS). |
 | `port/` | **Read-only snapshot** of the Dreamcast-Linux GLdc platform port — the actual porting work. Source of truth is the GLdc clone (see below). |
 
 ### The platform port (`port/`)
@@ -47,8 +50,11 @@ make GLDC=/home/flo/devel/GLdc           # -> ./gldc_cube (static)
 ```sh
 # on the host: files reach the DC over NFS (host uclibc dir -> DC /mnt)
 mount -t nfs -o nolock,vers=3 192.168.0.225:/home/flo/devel/t2-hacking/uclibc /mnt
-killall gldc_cube 2>/dev/null       # avoid stacking instances that fight over the TA
+killall gldc_cube gldc_texcube 2>/dev/null   # avoid stacking instances that fight over the TA
 /mnt/gldc_cube &
+# textured cube needs its BMP alongside on the DC (default /mnt/NeHe.bmp; argv[1] overrides):
+cp assets/NeHe.bmp /path/to/uclibc/      # host side, so it lands at DC /mnt/NeHe.bmp
+/mnt/gldc_texcube &
 # grab VGA a second after launch (first frame or two are empty)
 ```
 
