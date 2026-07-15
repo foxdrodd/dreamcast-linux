@@ -33,6 +33,10 @@ gldc_cube: demos/nehe05_cube.c $(GLDC_LIB) $(LIBPVR_A)
 	$(CC) $(CFLAGS) -static -o $@ $< $(GLDC_LIB) $(LIBPVR_A) -lm
 
 # Spinning NeHe-06 texture-mapped cube (loads assets/NeHe.bmp at runtime).
+# NOTE: textures currently render with wrong colours through GLdc (a value-
+# dependent channel bug in GLdc's texture upload to the 64-bit VRAM area; the
+# geometry/animation are correct).  The per-pixel fire demo therefore lives in
+# ../libpvr/examples/fire.c, built directly on libpvr's proven texture path.
 gldc_texcube: demos/nehe06_texcube.c demos/loadbmp.c $(GLDC_LIB) $(LIBPVR_A)
 	$(CC) $(CFLAGS) -static -o $@ demos/nehe06_texcube.c demos/loadbmp.c $(GLDC_LIB) $(LIBPVR_A) -lm
 

@@ -10,7 +10,11 @@ AR      := $(CROSS)ar
 CFLAGS  ?= -O2 -Wall -Iinclude
 PREFIX  ?= /usr
 
-all: libpvr.a examples/tritest
+# Static examples for the dev loop (tritest = smoke test; plasma/txrdiag/fire =
+# dynamic-texture demos; fire is the classic per-pixel flame effect).
+EXAMPLES := examples/tritest examples/plasma examples/txrdiag examples/fire
+
+all: libpvr.a $(EXAMPLES)
 
 libpvr.a: src/libpvr.o
 	$(AR) rcs $@ $^
@@ -18,9 +22,8 @@ libpvr.a: src/libpvr.o
 src/libpvr.o: src/libpvr.c include/libpvr.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# Static example for the initramfs dev loop.
-examples/tritest: examples/tritest.c libpvr.a
-	$(CC) $(CFLAGS) -static -o $@ $< libpvr.a
+examples/%: examples/%.c libpvr.a
+	$(CC) $(CFLAGS) -static -o $@ $< libpvr.a -lm
 
 install: libpvr.a
 	install -d $(DESTDIR)$(PREFIX)/lib $(DESTDIR)$(PREFIX)/include
@@ -28,6 +31,6 @@ install: libpvr.a
 	install -m644 include/libpvr.h $(DESTDIR)$(PREFIX)/include/
 
 clean:
-	rm -f src/libpvr.o libpvr.a examples/tritest
+	rm -f src/libpvr.o libpvr.a $(EXAMPLES)
 
 .PHONY: all install clean
