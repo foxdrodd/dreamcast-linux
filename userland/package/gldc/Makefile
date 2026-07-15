@@ -41,9 +41,26 @@ gldc_texcube: demos/nehe06_texcube.c demos/loadbmp.c $(GLDC_LIB) $(LIBPVR_A)
 gldc_torus: demos/torus.c $(GLDC_LIB) $(LIBPVR_A)
 	$(CC) $(CFLAGS) -static -o $@ $< $(GLDC_LIB) $(LIBPVR_A) -lm
 
+# sh4zam-accelerated build of the same torus (FSCA sincos in the per-vertex
+# loop) for the A/B fps comparison.  Needs the gcc-17 sh4 cross (full C23),
+# SHZ_BACKEND=SHZ_SH4 forced, and NO -ffast-math (else FSCA falls back to
+# __builtin).  See memory sh4zam-integration / README.
+SHZ_DIR   ?= /home/flo/devel/sh4zam
+SHZ_CC    ?= /media/flo/nvme0-ssd/gcc/sh4-gcc17/install/bin/sh4-linux-gnu-gcc
+SHZ_SYS   ?= /usr/sh4-linux-gnu
+SHZ_FLAGS := -m4 -O2 -fsingle-precision-constant -DUSE_SH4ZAM -DSHZ_BACKEND=1 \
+             -isystem $(SHZ_SYS)/include -B$(SHZ_SYS)/lib -L$(SHZ_SYS)/lib \
+             -I$(SHZ_DIR)/include -I$(GLDC)/include -I$(LIBPVR)/include -Idemos
+gldc_torus_shz: demos/torus.c $(GLDC_LIB) $(LIBPVR_A)
+	$(SHZ_CC) $(SHZ_FLAGS) -static -o $@ $< $(GLDC_LIB) $(LIBPVR_A) -lm
+
 # Interactive controllable object (Maple controller via evdev; Component-6 demo).
 gldc_control: demos/control.c $(GLDC_LIB) $(LIBPVR_A)
 	$(CC) $(CFLAGS) -static -o $@ $< $(GLDC_LIB) $(LIBPVR_A) -lm
+
+# sh4zam-accelerated interactive demo (FSCA sincos in the per-vertex loop).
+gldc_control_shz: demos/control.c $(GLDC_LIB) $(LIBPVR_A)
+	$(SHZ_CC) $(SHZ_FLAGS) -static -o $@ $< $(GLDC_LIB) $(LIBPVR_A) -lm
 
 # Convenience: build GLdc's libpvr platform static lib in the clone.
 libgldc:

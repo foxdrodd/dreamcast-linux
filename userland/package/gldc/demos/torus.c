@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <time.h>
 #include <math.h>
 
 #include <libpvr.h>
@@ -17,6 +18,17 @@
 #include "GL/glu.h"
 #include "GL/glext.h"
 #include "GL/glkos.h"
+
+/* sin+cos: sh4zam FSCA (one instruction) when built -DUSE_SH4ZAM, else libm.
+ * The FSCA path needs -DSHZ_BACKEND=1 and NO -ffast-math (see gldc README). */
+#ifdef USE_SH4ZAM
+#include <sh4zam/shz_sh4zam.h>
+static inline void SINCOS(float a, float *s, float *c)
+{ shz_sincos_t v = shz_sincosf(a); *s = v.sin; *c = v.cos; }
+#else
+static inline void SINCOS(float a, float *s, float *c)
+{ *s = sinf(a); *c = cosf(a); }
+#endif
 
 #define RINGS 40          /* segments around the main ring */
 #define SIDES 20          /* segments around the tube */
@@ -69,7 +81,9 @@ static void InitGL(int w, int h)
 /* 3x3 rotation R = Rx(ax) * Ry(ay), row-major. */
 static void build_rot(float ax, float ay, float m[9])
 {
-    float cx = cosf(ax), sx = sinf(ax), cy = cosf(ay), sy = sinf(ay);
+    float cx, sx, cy, sy;
+    SINCOS(ax, &sx, &cx);
+    SINCOS(ay, &sy, &cy);
     m[0] = cy;       m[1] = 0.0f; m[2] = sy;
     m[3] = sx * sy;  m[4] = cx;   m[5] = -sx * cy;
     m[6] = -cx * sy; m[7] = sx;   m[8] = cx * cy;
@@ -103,7 +117,9 @@ static void DrawGLScene(void)
             for(int k = 0; k < 4; k++) {
                 float th = ii[k] * (2.0f * (float)M_PI / RINGS);
                 float ph = jj[k] * (2.0f * (float)M_PI / SIDES);
-                float ct = cosf(th), st = sinf(th), cp = cosf(ph), sp = sinf(ph);
+                float ct, st, cp, sp;
+                SINCOS(th, &st, &ct);
+                SINCOS(ph, &sp, &cp);
 
                 float px = (RMAJ + RMIN * cp) * ct;
                 float py = (RMAJ + RMIN * cp) * st;
@@ -128,6 +144,25 @@ static void DrawGLScene(void)
 
     ang += 0.02f;
     glKosSwapBuffers();
+
+    /* FPS report every 120 frames (for the sh4zam A/B comparison). */
+    static int frames = 0;
+    static double t0 = -1.0;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    double now = ts.tv_sec + ts.tv_nsec * 1e-9;
+    if(t0 < 0.0) t0 = now;
+    if(++frames >= 120) {
+        printf("torus [%s]: %.1f fps\n",
+#ifdef USE_SH4ZAM
+               "sh4zam",
+#else
+               "libm",
+#endif
+               frames / (now - t0));
+        frames = 0;
+        t0 = now;
+    }
 }
 
 int main(int argc, char **argv)

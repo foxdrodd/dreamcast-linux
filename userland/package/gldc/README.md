@@ -39,6 +39,21 @@ drain per frame — no SDL needed.
 | START | reset view |
 
 Optional startup args: `gldc_control [cube|torus] [texstyle 0..2]`.
+
+## sh4zam-accelerated builds (`gldc_torus_shz`, `gldc_control_shz`)
+
+The same `torus.c`/`control.c` sources build a second variant that replaces the per-vertex
+`cosf`/`sinf` (called 4× per vertex) with [sh4zam](https://github.com/gyrovorbis/sh4zam)'s
+`shz_sincosf` — one SH4 `FSCA` instruction for sin+cos — via a `-DUSE_SH4ZAM` `SINCOS()` macro.
+Measured on real hardware, the spinning torus goes **20.2 → 30.2 fps (+50%)**, pixel-identical.
+
+Build requirements (see `Makefile` `gldc_torus_shz`): the **gcc-17 sh4 cross** (full C23, sh4zam
+needs it) at `/media/flo/nvme0-ssd/gcc/sh4-gcc17/install/bin/`, `-DSHZ_BACKEND=1` (else sh4zam
+silently uses its software C backend on non-`__DREAMCAST__` targets), and **no `-ffast-math`**
+(else `shz_sincosf` falls back to `__builtin_sinf/cosf`). Under our `-m4` ABI (resting FPSCR.PR=1)
+the `FSCA`/`FTRV`/`FIPR` primitives compute correctly bare; only the trivial standalone
+`shz_inv_sqrtf_fsrra` is unreliable (its non-`volatile` asm no-ops at PR=1) — use the composite
+ops (`shz_vec3_normalize`, `shz_sincosf`, `shz_vec3_dot`, `shz_xmtrx_*`).
 | `port/` | **Read-only snapshot** of the Dreamcast-Linux GLdc platform port — the actual porting work. Source of truth is the GLdc clone (see below). |
 
 ### The platform port (`port/`)

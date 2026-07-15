@@ -34,6 +34,17 @@
 #include "GL/glext.h"
 #include "GL/glkos.h"
 
+/* sin+cos: sh4zam FSCA (one instruction) when built -DUSE_SH4ZAM, else libm.
+ * The FSCA path needs -DSHZ_BACKEND=1 and NO -ffast-math (see gldc README). */
+#ifdef USE_SH4ZAM
+#include <sh4zam/shz_sh4zam.h>
+static inline void SINCOS(float a, float *s, float *c)
+{ shz_sincos_t v = shz_sincosf(a); *s = v.sin; *c = v.cos; }
+#else
+static inline void SINCOS(float a, float *s, float *c)
+{ *s = sinf(a); *c = cosf(a); }
+#endif
+
 /* ------------------------------------------------------------------ input -- */
 
 static int pad_fd = -1;
@@ -146,7 +157,9 @@ static const float L[3] = { 0.40f, 0.55f, 0.73f };  /* world light dir */
 
 static void build_rot(float ax, float ay, float m[9])
 {
-    float cx = cosf(ax), sx = sinf(ax), cy = cosf(ay), sy = sinf(ay);
+    float cx, sx, cy, sy;
+    SINCOS(ax, &sx, &cx);
+    SINCOS(ay, &sy, &cy);
     m[0] = cy;      m[1] = 0.0f; m[2] = sy;
     m[3] = sx * sy; m[4] = cx;   m[5] = -sx * cy;
     m[6] = -cx * sy;m[7] = sx;   m[8] = cx * cy;
@@ -178,7 +191,9 @@ static void draw_torus(const float m[9])
             for(int k = 0; k < 4; k++) {
                 float th = ii[k] * (2.0f * (float)M_PI / RINGS);
                 float ph = jj[k] * (2.0f * (float)M_PI / SIDES);
-                float ct = cosf(th), st = sinf(th), cp = cosf(ph), sp = sinf(ph);
+                float ct, st, cp, sp;
+                SINCOS(th, &st, &ct);
+                SINCOS(ph, &sp, &cp);
                 emit(m, (RMAJ + RMIN*cp)*ct, (RMAJ + RMIN*cp)*st, RMIN*sp,
                         cp*ct, cp*st, sp,
                         ii[k] * (4.0f / RINGS), jj[k] * (2.0f / SIDES));
