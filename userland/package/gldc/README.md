@@ -79,3 +79,21 @@ single op, so:
 Matrix memory must be 8-byte (ideally 32-byte) aligned or the `fmov` pair moves take
 an unaligned FP fault the kernel can't fix up. GLdc's `Matrix4x4` globals/stack are
 already `__attribute__((aligned(32)))`.
+
+## The second gotcha: byte/16-bit CPU writes corrupt the 64-bit VRAM area
+
+Textures live in the PVR's **64-bit VRAM area** (bank-interleaved). CPU **byte or
+16-bit stores** to that area — and 32-bit stores made in scattered (twiddled) order —
+get corrupted (address bits leak into the low colour bits, so dark texels pick up a
+blue tint). Only **word-based `memcpy`-style bulk writes** (what `libpvr`'s
+`pvr_txr_load` uses) are clean. GLdc's stock `FASTCPY`/`MEMCPY` is a byte-wise
+`memcpy_fast`, so texture uploads came out blue-shifted.
+
+Fix (in `port/`): `FASTCPY`/`MEMCPY`/`MEMCPY4` are redefined to `_glVramCopy`
+(`port/libpvr.c`), an out-of-line `libc memcpy` wrapper — out-of-line so the compiler
+can't re-inline it as narrow stores. This fixes the `glTexSubImage2D` upload path
+(which stages in RAM then `FASTCPY`s to VRAM). The GLdc-clone core also carries a
+small companion patch in `GL/texture.c` (the `glTexImage2D`-with-data general-case
+loop stages into RAM then `FASTCPY`s, instead of converting straight into VRAM) — not
+reproduced under `port/` since it lives in GLdc core; re-apply if rebuilding from a
+fresh GLdc checkout. Rule: never write textures to VRAM with sub-word CPU stores.

@@ -90,11 +90,13 @@ GL_FORCE_INLINE void* memcpy_fast(void *dest, const void *src, size_t len) {
     return dest;
 }
 
-/* No store queues here -- submission goes through libpvr DMA -- so the "fast"
- * copies are just the SH4 byte copy above / plain memcpy. */
-#define FASTCPY(dst, src, bytes) memcpy_fast(dst, src, bytes)
-#define MEMCPY(dst, src, bytes)  memcpy_fast(dst, src, bytes)
-#define MEMCPY4(dst, src, bytes) memcpy_fast(dst, src, bytes)
+/* Copies may target the PVR's 64-bit VRAM area, which corrupts byte / 16-bit
+ * CPU stores -- so texture uploads must use a word-based copy, NOT the byte-wise
+ * memcpy_fast.  Route them through _glVramCopy (libc memcpy, out-of-line). */
+extern void _glVramCopy(void* dst, const void* src, size_t bytes);
+#define FASTCPY(dst, src, bytes) _glVramCopy((dst), (src), (bytes))
+#define MEMCPY(dst, src, bytes)  _glVramCopy((dst), (src), (bytes))
+#define MEMCPY4(dst, src, bytes) _glVramCopy((dst), (src), (bytes))
 #define MEMSET4(dst, v, size)    memset((dst), (v), (size))
 
 #define VEC3_NORMALIZE(x, y, z) \

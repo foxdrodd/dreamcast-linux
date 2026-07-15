@@ -1,8 +1,21 @@
 #include <float.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "../platform.h"
 #include "libpvr.h"
+
+/*
+ * Word-based copy into the PVR's 64-bit VRAM area.  That area corrupts CPU
+ * byte / 16-bit stores (and 32-bit stores made in scattered order), so GLdc's
+ * default byte-wise memcpy_fast mangles texture uploads.  Route all texture
+ * VRAM writes through libc memcpy (the same word/burst copy pvr_txr_load uses
+ * and which is proven clean).  A real out-of-line function so the compiler
+ * cannot re-inline it as narrow stores at the call sites.
+ */
+void _glVramCopy(void* dst, const void* src, size_t bytes) {
+    memcpy(dst, src, bytes);
+}
 
 /*
  * Scene submission for the libpvr platform.  The clipping / perspective-divide
