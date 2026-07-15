@@ -54,6 +54,25 @@ silently uses its software C backend on non-`__DREAMCAST__` targets), and **no `
 the `FSCA`/`FTRV`/`FIPR` primitives compute correctly bare; only the trivial standalone
 `shz_inv_sqrtf_fsrra` is unreliable (its non-`volatile` asm no-ops at PR=1) — use the composite
 ops (`shz_vec3_normalize`, `shz_sincosf`, `shz_vec3_dot`, `shz_xmtrx_*`).
+
+## sh4zam inside GLdc core (all `gldc_*` demos)
+
+Beyond the demo-level swap above, sh4zam is now wired into the **GLdc platform layer** itself, so
+every GLdc-based app benefits (`Makefile.libpvr` adds `-I$(SHZ)/include -DSHZ_BACKEND=1`; the port
+compiles fine with the stock gcc-13 `sh4-linux-gnu` cross):
+
+- `GL/platforms/libpvr.h` — the `VEC3_DOT` / `VEC3_LENGTH` / `VEC3_NORMALIZE` helpers now use
+  sh4zam's `shz_vec3_dot` (**FIPR**, previously scalar C) and `shz_vec3_normalize` / `_magnitude`
+  (**FSRRA**). These feed GLdc's per-vertex lighting.
+- `GL/platforms/libpvr.c` — the per-vertex perspective divide (`_glFastInvert`) and the clip lerp
+  (`_glClipEdge`) moved off libm `sqrtf`/`__builtin_sqrtf` onto PR-managed **FSRRA**
+  (`MATH_Fast_Invert`). This runs for **every** GLdc vertex.
+
+Result: no regressions — the NeHe pyramid+cube, textured cube, torus, and interactive demo all
+render correctly on hardware. Note the low-poly NeHe demos are fill-bound, so the visible fps win
+is on vertex-heavy geometry (like the torus); the core change is what makes that scale.
+Because the port's `MATH_fsrra` is already PR-managed, the hot FSRRA path uses it rather than
+sh4zam's bare (PR-unsafe under `-m4`) `shz_inv_sqrtf_fsrra`.
 | `port/` | **Read-only snapshot** of the Dreamcast-Linux GLdc platform port — the actual porting work. Source of truth is the GLdc clone (see below). |
 
 ### The platform port (`port/`)
@@ -72,8 +91,10 @@ clone (`$(GLDC)/GL/platforms/…`) where they compile, then refresh this copy.
 
 ## Build
 
-Needs a GLdc clone with the port files in place (default `GLDC=/home/flo/devel/GLdc`)
-and `libpvr` built next door (`../libpvr/libpvr.a`).
+Needs a GLdc clone with the port files in place (default `GLDC=/home/flo/devel/GLdc`),
+`libpvr` built next door (`../libpvr/libpvr.a`), and an **sh4zam** checkout
+(default `SHZ=/home/flo/devel/sh4zam`; header-only for what the port uses). The `*_shz` demo
+variants additionally need the gcc-17 sh4 cross (see above).
 
 ```sh
 make -C ../libpvr libpvr.a          # once, if not built

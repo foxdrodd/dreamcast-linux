@@ -58,7 +58,9 @@ void ShutdownGPU(void) {
 }
 
 GL_FORCE_INLINE float _glFastInvert(float x) {
-    return (1.0f / __builtin_sqrtf(x * x));
+    /* 1/|x| via PR-managed FSRRA (was libm __builtin_sqrtf).  Runs per vertex
+     * in the perspective divide, so this is the sh4zam-era hot-path win. */
+    return MATH_Fast_Invert(x);
 }
 
 GL_FORCE_INLINE void _glPerspectiveDivideVertex(Vertex* vertex, int count) {
@@ -87,7 +89,7 @@ static inline void _glPushVertex(Vertex* v, size_t count) {
 static inline void _glClipEdge(const Vertex* const v1, const Vertex* const v2, Vertex* vout) {
     const float d0 = v1->w + v1->xyz[2];
     const float d1 = v2->w + v2->xyz[2];
-    const float t = (fabsf(d0) * (1.0f / sqrtf((d1 - d0) * (d1 - d0))));
+    const float t = (fabsf(d0) * MATH_Fast_Invert(d1 - d0));  /* FSRRA 1/|d1-d0| */
     const float invt = 1.0f - t;
 
     vout->xyz[0] = invt * v1->xyz[0] + t * v2->xyz[0];
