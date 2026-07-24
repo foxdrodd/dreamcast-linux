@@ -251,6 +251,7 @@ X libxfixes
 X mikmod
 X libmikmod
 X libpng
+X libxkbfile
 
 X rxvt
 X blackbox
