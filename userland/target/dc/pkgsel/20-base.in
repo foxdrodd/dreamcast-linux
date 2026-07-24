@@ -225,6 +225,7 @@ X libxau
 X xcb-proto
 X freetype
 X xorgproto
+X libxrandr
 X xrandr
 X xtrans
 X mc
