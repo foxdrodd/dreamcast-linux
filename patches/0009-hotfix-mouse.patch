@@ -1,0 +1,31 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 26 Jun 2026 23:50:13 +0200
+Subject: [PATCH] Input: maplemouse: set parent of the input device
+
+Set the input device's parent to the maple device for correct sysfs
+topology.
+
+This is the remainder of the NULL pointer dereference fix for
+dc_mouse_open() / dc_mouse_close(); the switch to input_set_drvdata() /
+input_get_drvdata() is already part of 7.2.8.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ drivers/input/mouse/maplemouse.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/input/mouse/maplemouse.c b/drivers/input/mouse/maplemouse.c
+--- a/drivers/input/mouse/maplemouse.c
++++ b/drivers/input/mouse/maplemouse.c
+@@ -91,6 +91,8 @@ static int probe_maple_mouse(struct devi
+ 	maple_set_drvdata(mdev, mse);
+ 
+ 	input_set_drvdata(input_dev, mse);
++	input_dev->dev.parent = &mdev->dev;
++
+ 	input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REL);
+ 	input_dev->keybit[BIT_WORD(BTN_MOUSE)] = BIT_MASK(BTN_LEFT) |
+ 		BIT_MASK(BTN_RIGHT) | BIT_MASK(BTN_MIDDLE);
+-- 
+2.43.0
+

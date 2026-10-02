@@ -1,0 +1,49 @@
+From 0feeccbddb132fb296b2ae3b851e0b0864887ecd Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 25 Apr 2026 18:41:06 +0200
+Subject: [PATCH] mtd: maps: vmu-flash: Fix build error due to missing
+ include of linux/device.h
+
+Fix build error by adding the missing include of linux/device.h
+linux/maple.h embeds struct device via struct maple_device, which
+requires the definition. Otherwise results in build error:
+
+./include/linux/maple.h:81:16: error: field 'dev' has incomplete type
+  struct device dev;
+                ^~~
+./include/linux/maple.h:86:23: error: field 'drv' has incomplete type
+  struct device_driver drv;
+                       ^~~
+
+Fixes: 313162d0b838 ("device.h: audit and cleanup users in main include dir")
+Cc: stable@vger.kernel.org
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+v2->v3: no change, align subject capitalization to previous commits
+v1->v2: no functional change, just rebase patch
+
+v2: https://lore.kernel.org/lkml/20260427114750.2480900-2-fuchsfl@gmail.com/
+v1: https://lore.kernel.org/lkml/20251117224408.498449-2-fuchsfl@gmail.com/
+
+ include/linux/maple.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/include/linux/maple.h b/include/linux/maple.h
+index 3be4e567473c..22f2930251ed 100644
+--- a/include/linux/maple.h
++++ b/include/linux/maple.h
+@@ -2,10 +2,9 @@
+ #ifndef __LINUX_MAPLE_H
+ #define __LINUX_MAPLE_H
+ 
++#include <linux/device.h>
+ #include <mach/maple.h>
+ 
+-struct device;
+-
+ /* Maple Bus command and response codes */
+ enum maple_code {
+ 	MAPLE_RESPONSE_FILEERR =	-5,
+-- 
+2.43.0
+
