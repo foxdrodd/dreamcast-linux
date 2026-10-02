@@ -1,0 +1,41 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 2 Oct 2026 21:05:00 +0200
+Subject: [PATCH] sh: maple: do not queue a packet that is still in flight
+
+dont
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+ drivers/sh/maple/maple.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/sh/maple/maple.c b/drivers/sh/maple/maple.c
+index 8e7bb42ae..4dd9d544f 100644
+--- a/drivers/sh/maple/maple.c
++++ b/drivers/sh/maple/maple.c
+@@ -169,13 +169,22 @@ int maple_add_packet(struct maple_device *mdev, u32 function, u32 command,
+ 		((__be32 *)sendbuf)[0] = cpu_to_be32(function);
+ 	}
+
++	mutex_lock(&maple_wlist_lock);
++
++	/* One packet per device: re-queueing it while it is still on
++	*  maple_sentq would link it into both queues and corrupt them. */
++	if (!list_empty(&mdev->mq->list)) {
++		mutex_unlock(&maple_wlist_lock);
++		kfree(sendbuf);
++		return -EBUSY;
++	}
++
+ 	mdev->mq->command = command;
+ 	mdev->mq->length = length;
+ 	if (length > 1)
+ 		memcpy(sendbuf + 4, data, (length - 1) * 4);
+ 	mdev->mq->sendbuf = sendbuf;
+
+-	mutex_lock(&maple_wlist_lock);
+ 	list_add_tail(&mdev->mq->list, &maple_waitq);
+ 	mutex_unlock(&maple_wlist_lock);
+ out:
+--
+2.43.0
