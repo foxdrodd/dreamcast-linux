@@ -2,8 +2,17 @@ From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Fri, 2 Oct 2026 21:05:00 +0200
 Subject: [PATCH] sh: maple: do not queue a packet that is still in flight
 
-dont
+Each device owns a single mapleq, so queueing it again while the previous
+one is still on maple_sentq links it into both queues and corrupts them.
+maple_port_rescan() and the empty-port rescan in maple_vblank_handler()
+do exactly that, as neither checks whether the packet is free.
+Reject the add in maple_add_packet() rather than audit every caller.
 
+Previously, the less devices are connected, the more likely it gets to
+hit the panic, about 1 out of 10 boots paniced for some users.
+
+Closes: https://github.com/foxdrodd/dreamcast-linux/issues/16
+Reported-By: scrivanidc <scrivanidc@gmail.com>
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
  drivers/sh/maple/maple.c | 11 ++++++++++-

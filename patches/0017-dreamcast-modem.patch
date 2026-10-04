@@ -1,0 +1,1366 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 2 Oct 2026 23:30:00 +0200
+Subject: [PATCH] tty: add SEGA Dreamcast modem driver
+
+Add a driver for the modem of the SEGA Dreamcast, a Rockwell/Conexant
+modem data pump on the G2 expansion bus.  The data pump has no AT command
+set of its own, so the driver opens the line, dials and runs the handshake
+through the interface registers, and presents the result as a tty
+(/dev/ttyDCM0) with a small Hayes AT command interpreter.  pppd, chat and
+terminal programs can then use it like any dial-up modem.
+
+Only originating calls are supported: blind DTMF dialling followed by a
+V.8 handshake in the data pump's automode (up to V.34, 33600 bps).  The
+register sequences follow the KallistiOS modem driver by Nick Kochakian.
+
+The modem shares its G2 slot and System ASIC event with the HIT-0300 LAN
+adapter.  Both drivers claim the same I/O region; the modem driver probes
+first and identifies the modem by its self-test signature, and the LAN
+adapter driver now stays quiet when the slot is already taken.
+
+Applies on top of 0011-hotfix-hit0300-import.patch.
+---
+diff --git a/arch/sh/include/mach-dreamcast/mach/sysasic.h b/arch/sh/include/mach-dreamcast/mach/sysasic.h
+--- a/arch/sh/include/mach-dreamcast/mach/sysasic.h
++++ b/arch/sh/include/mach-dreamcast/mach/sysasic.h
+@@ -35,6 +35,7 @@
+ /* IRQ 11 */
+ #define HW_EVENT_GDROM_CMD (HW_EVENT_IRQ_BASE + 32) /* GD-ROM cmd. complete */
+ #define HW_EVENT_AICA_SYS  (HW_EVENT_IRQ_BASE + 33) /* AICA-related */
++#define HW_EVENT_G2_8BIT   (HW_EVENT_IRQ_BASE + 34) /* Modem / LAN adapter */
+ #define HW_EVENT_EXTERNAL  (HW_EVENT_IRQ_BASE + 35) /* Ext. (expansion) */
+ 
+ #define HW_EVENT_IRQ_MAX (HW_EVENT_IRQ_BASE + 95)
+diff --git a/drivers/net/ethernet/fujitsu/lan_adapter.c b/drivers/net/ethernet/fujitsu/lan_adapter.c
+--- a/drivers/net/ethernet/fujitsu/lan_adapter.c
++++ b/drivers/net/ethernet/fujitsu/lan_adapter.c
+@@ -104,7 +104,7 @@
+  * means our receive interrupt never fires.  (Per Christian Groessler's
+  * NetBSD if_mbe_g2 work, as noted in the original 2003 driver.)
+  */
+-#define HIT_HW_EVENT		(HW_EVENT_IRQ_BASE + 34)
++#define HIT_HW_EVENT		HW_EVENT_G2_8BIT
+ 
+ #define HIT_TX_TIMEOUT		(HZ / 4)
+ 
+@@ -482,11 +482,9 @@
+ 	if (irq < 0)
+ 		return irq;
+ 
+-	if (!request_region(io->start, resource_size(io), DRV_NAME)) {
+-		dev_err(&pdev->dev, "I/O region 0x%llx busy\n",
+-			(unsigned long long)io->start);
+-		return -EBUSY;
+-	}
++	/* The modem driver claims the same slot if it finds a modem there. */
++	if (!request_region(io->start, resource_size(io), DRV_NAME))
++		return -ENODEV;
+ 
+ 	dev = alloc_etherdev(sizeof(struct hit_private));
+ 	if (!dev) {
+diff --git a/drivers/tty/dcmodem.c b/drivers/tty/dcmodem.c
+--- /dev/null
++++ b/drivers/tty/dcmodem.c
+@@ -0,0 +1,1269 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * SEGA Dreamcast modem driver.
++ *
++ * The Dreamcast modem plugs into the G2 expansion bus and is built around a
++ * Rockwell/Conexant modem data pump (MDP).  The MDP is controllerless: it has
++ * no AT command set of its own, the host opens the line, dials and starts
++ * the handshake through the interface registers.  This driver does that and
++ * presents the result as a tty with a small Hayes AT command interpreter, so
++ * that pppd, chat and terminal programs can use it like any dial-up modem.
++ *
++ * Only originating calls are supported, using blind DTMF dialling and a V.8
++ * handshake with the MDP's automode (up to V.34, 33600 bps).
++ *
++ * The register sequences follow the KallistiOS modem driver,
++ *	Copyright (C) 2002, 2004 Nick Kochakian
++ *
++ * Copyright (C) 2026 Florian Fuchs <fuchsfl@gmail.com>
++ */
++
++#include <linux/ctype.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/ioport.h>
++#include <linux/kfifo.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++#include <linux/string.h>
++#include <linux/tty.h>
++#include <linux/tty_driver.h>
++#include <linux/tty_flip.h>
++#include <linux/workqueue.h>
++
++#include <mach/sysasic.h>
++
++#define DRV_NAME	"dcmodem"
++
++/*
++ * The modem lives at a fixed location on the G2 bus, in the slot it shares
++ * with the HIT-0300 LAN adapter.  This is the base address in the SH I/O port
++ * space; the Dreamcast board code maps that space onto P2, so port
++ * 0x00600400 is reached at physical 0xa0600400.  Each 8-bit register
++ * occupies one 32-bit slot.
++ */
++#define DCM_BASE	0x00600400
++#define DCM_IO_EXTENT	0x84
++#define DCM_REG(r)	(DCM_BASE + ((r) << 2))
++
++/* G2 slot reset: 0 zeroes the MDP's registers, 1 loads their defaults. */
++#define DCM_G2_RESET	0x00600480
++
++#define MDP_RBUFFER	0x00
++#define MDP_REG02	0x02
++#define MDP_REG04	0x04
++#define MDP_REG06	0x06
++#define MDP_REG07	0x07
++#define MDP_REG08	0x08
++#define MDP_REG09	0x09
++#define MDP_REG0A	0x0a
++#define MDP_REG0B	0x0b
++#define MDP_REG0C	0x0c
++#define MDP_REG0D	0x0d
++#define MDP_REG0E	0x0e
++#define MDP_REG0F	0x0f
++#define MDP_TBUFFER	0x10
++#define MDP_CONF	0x12
++#define MDP_ABCODE	0x14
++#define MDP_REG15	0x15
++#define MDP_MEDAL	0x18
++#define MDP_REG1A	0x1a
++#define MDP_MEADDL	0x1c
++#define MDP_MEADDH	0x1d
++#define MDP_REG1E	0x1e
++#define MDP_REG1F	0x1f
++
++#define MDP_02_TDE	0x80	/* tone detectors enable */
++#define MDP_04_FIFOEN	0x10	/* transmitter FIFO enable */
++#define MDP_06_WDSZ	0x03	/* 8 data bits */
++#define MDP_06_PEN_STB	0x0c	/* parity enable, two stop bits */
++#define MDP_07_RA	0x02	/* relay A: line off-hook */
++#define MDP_08_RTS	0x01
++#define MDP_08_TPDM	0x40	/* transmitter parallel data mode */
++#define MDP_08_ASYN	0x80
++#define MDP_09_DTR	0x01
++#define MDP_09_DATA	0x04
++#define MDP_09_ORG	0x10	/* originate */
++#define MDP_09_DTMF	0x20
++#define MDP_0A_OE	0x08	/* receiver overrun */
++#define MDP_0B_EQMAT	0x01
++#define MDP_0B_ATV25	0x10	/* answer tone detected */
++#define MDP_0B_TONES	0xe0	/* TONEA/B/C: all three set on a dial tone */
++#define MDP_0C_RXFNE	0x02	/* receiver FIFO not empty */
++#define MDP_0D_TXFNF	0x02	/* transmitter FIFO not full */
++#define MDP_0E_SPEED	0x1f
++#define MDP_0E_RTDET	0x80	/* retrain detected */
++#define MDP_0F_RI	0x08
++#define MDP_0F_DSR	0x10
++#define MDP_0F_CTS	0x20
++#define MDP_0F_RLSD	0x80	/* carrier: handshake complete */
++#define MDP_15_RREN	0x04	/* rate renegotiation, used for cleardown */
++#define MDP_15_AUTO	0x08	/* automode */
++#define MDP_1A_SFRES	0x80	/* soft reset on the next NEWC */
++#define MDP_1D_MEMW	0x20	/* DSP RAM access is a write */
++#define MDP_1D_MEACC	0x80	/* DSP RAM access strobe */
++#define MDP_1E_TDBE	0x08	/* transmit data buffer empty */
++#define MDP_1E_TDBIE	0x20
++#define MDP_1E_TDBIA	0x80
++#define MDP_1F_NEWC	0x01	/* new configuration */
++#define MDP_1F_NEWS	0x08	/* new status */
++#define MDP_1F_NSIE	0x10
++#define MDP_1F_NSIA	0x80
++
++#define MDP_CONF_DIAL		0x81	/* DTMF dialling */
++#define MDP_CONF_V8		0xaa	/* V.8 handshake */
++#define MDP_CONF_V34_CLEAR	0xc0	/* V.34 cleardown */
++#define MDP_CONF_V34_33600	0xce
++
++#define MDP_ABCODE_NO_PHASE	0x24	/* no phase reversal: far end gone */
++#define MDP_ABCODE_CLEARDOWN	0x96	/* rate sequence asked for cleardown */
++
++/* DSP RAM: interrupt masks for the status registers, and V.8 setup. */
++#define DSP_MEMACC_CFG	0x089	/* bit 6: no interrupt on DSP RAM access */
++#define DSP_MASK_0F	0x241
++#define DSP_MASK_0E	0x242
++#define DSP_MASK_0D	0x243
++#define DSP_MASK_0C	0x244
++#define DSP_MASK_0B	0x245
++#define DSP_MASK_0A	0x246
++#define DSP_MASK_01	0x247
++#define DSP_V8_V34	0x309	/* highest V.34 mode offered */
++#define DSP_V8_V23_FDX	0x312
++#define DSP_V8_V23_HDX	0x313
++#define DSP_MASK_SECRXB	0x370	/* handshake phase changes */
++#define DSP_V34_MASK_L	0x382	/* V.34 data rate mask */
++#define DSP_V34_MASK_H	0x383
++#define DSP_MASK_ABCODE	0x38a
++
++#define DCM_SELFTEST_MS	215
++#define DCM_POLL	msecs_to_jiffies(100)
++#define DCM_DIAL_PAUSE	(2 * HZ)	/* blind dial delay after off-hook */
++#define DCM_ANSWER_WAIT	(60 * HZ)	/* dialled until answer tone */
++#define DCM_ANSWER_HOLD	HZ		/* answer tone until handshake */
++#define DCM_TRAIN_WAIT	(25 * HZ)	/* handshake until carrier */
++#define DCM_SETTLE	(5 * HZ)	/* carrier until data is passed */
++#define DCM_RETRAIN_MAX	(30 * HZ)
++#define DCM_ESC_GUARD	HZ
++
++#define DCM_TXFIFO_SIZE	1024
++#define DCM_CMD_MAX	80
++#define DCM_DIAL_MAX	40
++
++enum dcm_state {
++	DCM_IDLE,		/* on hook */
++	DCM_DIAL_PAUSE_ST,	/* off hook, waiting to dial */
++	DCM_WAIT_ANSWER,	/* dialling, then waiting for the answer tone */
++	DCM_ANSWER_HOLD_ST,
++	DCM_TRAINING,		/* handshake running */
++	DCM_SETTLE_ST,
++	DCM_ONLINE,
++};
++
++/* Hayes result codes; the value is the numeric (ATV0) form. */
++enum dcm_result {
++	DCM_RES_OK		= 0,
++	DCM_RES_CONNECT		= 1,
++	DCM_RES_NO_CARRIER	= 3,
++	DCM_RES_ERROR		= 4,
++	DCM_RES_NO_ANSWER	= 8,
++	DCM_RES_NONE		= -1,	/* the call engine will answer */
++};
++
++#define DCM_REQ_HANGUP	BIT(0)
++#define DCM_REQ_DIAL	BIT(1)
++#define DCM_REQ_OK	BIT(2)		/* report OK once the request is done */
++#define DCM_REQ_ABORT	BIT(3)		/* report NO CARRIER instead */
++
++struct dcm {
++	struct tty_port port;
++	struct device *dev;
++	int irq;
++
++	spinlock_t lock;		/* registers and everything below */
++	struct delayed_work work;	/* call engine */
++	enum dcm_state state;
++	unsigned long deadline;
++	unsigned int req;
++	unsigned int bps;
++	unsigned long retrain_since;	/* 0: no retrain in progress */
++
++	bool data_mode;			/* writes are data, not AT commands */
++	bool echo, quiet, verbose;
++	bool rate_in_connect;		/* ATX1 and up: CONNECT <rate> */
++	char cmd[DCM_CMD_MAX];
++	unsigned int cmd_len;
++	u8 digits[DCM_DIAL_MAX];	/* DTMF codes still to be sent */
++	unsigned int ndigits, digit_pos;
++	unsigned int plus_count;	/* "+++" escape detection */
++	unsigned long last_tx;
++
++	DECLARE_KFIFO(txfifo, u8, DCM_TXFIFO_SIZE);
++};
++
++static struct tty_driver *dcm_tty_driver;
++
++/* Converts the SPEED field of register 0Eh to a rate in bits per second. */
++static const unsigned short dcm_bps[] = {
++	300, 600, 1200, 2400, 4800, 9600, 12000, 14400, 7200, 16800,
++	19200, 21600, 24000, 26400, 28800, 31200, 33600,
++};
++
++static u8 mdp_read(int reg)
++{
++	return inb(DCM_REG(reg));
++}
++
++static void mdp_write(int reg, u8 val)
++{
++	outb(val, DCM_REG(reg));
++}
++
++static void mdp_set(int reg, u8 bits)
++{
++	mdp_write(reg, mdp_read(reg) | bits);
++}
++
++static void mdp_clear(int reg, u8 bits)
++{
++	mdp_write(reg, mdp_read(reg) & ~bits);
++}
++
++/* Latch the DSP RAM address and strobe the access; the MDP clears MEACC. */
++static void dsp_access(u16 addr)
++{
++	int i;
++
++	mdp_write(MDP_MEADDH, (mdp_read(MDP_MEADDH) & ~0x4f) |
++		  ((addr >> 6) & 0x40) | ((addr >> 8) & 0x0f));
++	mdp_write(MDP_MEADDL, addr & 0xff);
++	mdp_set(MDP_MEADDH, MDP_1D_MEACC);
++
++	for (i = 0; i < 1000; i++) {
++		if (!(mdp_read(MDP_MEADDH) & MDP_1D_MEACC))
++			return;
++		udelay(10);
++	}
++}
++
++static u8 dsp_read(u16 addr)
++{
++	mdp_clear(MDP_MEADDH, MDP_1D_MEMW);
++	dsp_access(addr);
++	return mdp_read(MDP_MEDAL);
++}
++
++static void dsp_write(u16 addr, u8 val)
++{
++	mdp_set(MDP_MEADDH, MDP_1D_MEMW);
++	mdp_write(MDP_MEDAL, val);
++	dsp_access(addr);
++	mdp_clear(MDP_MEADDH, MDP_1D_MEMW);
++}
++
++static void dsp_update(u16 addr, u8 bits, bool set)
++{
++	u8 val = dsp_read(addr);
++
++	dsp_write(addr, set ? val | bits : val & ~bits);
++}
++
++static void dcm_hard_reset(void)
++{
++	outb(0, DCM_G2_RESET);
++	msleep(25);
++	outb(1, DCM_G2_RESET);
++	msleep(150);
++}
++
++/* Wait up to @ms for the masked bits of a register to read as @val. */
++static bool mdp_wait(int reg, u8 mask, u8 val, unsigned int ms)
++{
++	unsigned long end = jiffies + msecs_to_jiffies(ms) + 1;
++
++	do {
++		if ((mdp_read(reg) & mask) == val)
++			return true;
++		usleep_range(1000, 2000);
++	} while (time_before(jiffies, end));
++
++	return (mdp_read(reg) & mask) == val;
++}
++
++static u16 mdp_read16(int hi, int lo)
++{
++	return mdp_read(hi) << 8 | mdp_read(lo);
++}
++
++/* Register pairs holding the self-test words, high byte first. */
++static const u8 dcm_ctrl_regs[7][2] = {
++	{ 0x1d, 0x1c },		/* RAM1 checksum */
++	{ 0x1b, 0x1a },		/* RAM2 checksum */
++	{ 0x19, 0x18 },		/* ROM1 checksum */
++	{ 0x17, 0x16 },		/* ROM2 checksum */
++	{ 0x15, 0x14 },		/* timer/ROM/RAM */
++	{ 0x13, 0x12 },		/* part number */
++	{ 0x11, 0x00 },		/* revision level */
++};
++
++static const u8 dcm_dsp_regs[6][2] = {
++	{ 0x1b, 0x1a },		/* EC checksum */
++	{ 0x19, 0x18 },		/* multiplier checksum */
++	{ 0x17, 0x16 },		/* RAM checksum */
++	{ 0x15, 0x14 },		/* ROM checksum */
++	{ 0x13, 0x12 },		/* part number */
++	{ 0x11, 0x00 },		/* revision level */
++};
++
++/*
++ * True if the words read as an empty slot does: all zeroes, all ones, or,
++ * as seen on a real console with a Broadband Adapter fitted, each register
++ * echoing the low byte of its own address.  Such a read passes the TDBE and
++ * NEWC checks by accident (0x78 has bit 3 set, 0x7c has bit 0 clear).
++ */
++static bool dcm_words_empty(const u16 *w, const u8 (*regs)[2], int n)
++{
++	while (n--) {
++		u16 echo = (u8)(regs[n][0] << 2) << 8 | (u8)(regs[n][1] << 2);
++
++		if (w[n] != 0x0000 && w[n] != 0xffff && w[n] != echo)
++			return false;
++	}
++	return true;
++}
++
++/*
++ * Something answered in the slot, but not as a known modem.  Report what
++ * the self test read, so that an unknown modem revision can be added.
++ */
++static void dcm_self_test_report(struct device *dev, const char *why,
++				 const u16 *ctrl, const u16 *dsp)
++{
++	if (dcm_words_empty(ctrl, dcm_ctrl_regs, ARRAY_SIZE(dcm_ctrl_regs)) &&
++	    dcm_words_empty(dsp, dcm_dsp_regs, ARRAY_SIZE(dcm_dsp_regs)))
++		return;
++
++	dev_info(dev, "no modem recognised: %s\n", why);
++	dev_info(dev, "controller words: %04x %04x %04x %04x %04x %04x %04x\n",
++		 ctrl[0], ctrl[1], ctrl[2], ctrl[3], ctrl[4], ctrl[5], ctrl[6]);
++	dev_info(dev, "DSP words: %04x %04x %04x %04x %04x %04x\n",
++		 dsp[0], dsp[1], dsp[2], dsp[3], dsp[4], dsp[5]);
++}
++
++/*
++ * A soft reset runs the MDP's self test, which leaves checksums and part
++ * numbers in the interface registers.  They are the only way to tell that a
++ * modem is fitted.  Either the controller or the DSP results have to match.
++ */
++static bool dcm_self_test(struct device *dev)
++{
++	u16 ctrl[7] = {}, dsp[6] = {};
++	const char *why;
++	unsigned int j;
++	int i;
++
++	mdp_set(MDP_REG1A, MDP_1A_SFRES);
++	mdp_set(MDP_REG1F, MDP_1F_NEWC);
++
++	/* The controller words are only stable on the second read. */
++	for (i = 0; i < 2; i++) {
++		for (j = 0; j < ARRAY_SIZE(dcm_ctrl_regs); j++)
++			ctrl[j] = mdp_read16(dcm_ctrl_regs[j][0],
++					     dcm_ctrl_regs[j][1]);
++
++		/* Reading TBUFFER makes the MDP present the next block. */
++		mdp_read(MDP_TBUFFER);
++		if (!mdp_wait(MDP_REG1E, MDP_1E_TDBE, MDP_1E_TDBE,
++			      DCM_SELFTEST_MS)) {
++			why = i ? "no TDBE after the second controller read" :
++				  "no TDBE after the first controller read";
++			goto fail;
++		}
++	}
++
++	for (j = 0; j < ARRAY_SIZE(dcm_dsp_regs); j++)
++		dsp[j] = mdp_read16(dcm_dsp_regs[j][0], dcm_dsp_regs[j][1]);
++
++	if (!mdp_wait(MDP_REG1F, MDP_1F_NEWC, 0, DCM_SELFTEST_MS)) {
++		why = "NEWC did not clear after the self test";
++		goto fail;
++	}
++	msleep(10);
++
++	if ((ctrl[0] == 0xea3c || ctrl[0] == 0x0451) &&
++	    (ctrl[1] == 0x5536 || ctrl[1] == 0x49a5) &&
++	    ctrl[2] == 0x5f4c &&
++	    (ctrl[3] == 0x3835 || ctrl[3] == 0x3836) &&
++	    (ctrl[4] == 0x0801 || ctrl[4] == 0xde00) &&
++	    (ctrl[5] == 0x3730 || ctrl[5] == 0x3731) &&
++	    ctrl[6] == 0x4241)
++		return true;
++
++	if ((dsp[0] == 0xf083 || dsp[0] == 0xa577) &&
++	    dsp[1] == 0x46ee &&
++	    (dsp[2] == 0x00fa || dsp[2] == 0xb482) &&
++	    (dsp[3] == 0x0a09 || dsp[3] == 0x3836) &&
++	    (dsp[4] == 0x3730 || dsp[4] == 0x3631) &&
++	    dsp[5] == 0x2041)
++		return true;
++
++	why = "self-test words do not match a known modem";
++fail:
++	dcm_self_test_report(dev, why, ctrl, dsp);
++	return false;
++}
++
++static int dcm_soft_reset(void)
++{
++	bool done;
++
++	mdp_set(MDP_REG1A, MDP_1A_SFRES);
++	mdp_set(MDP_REG1F, MDP_1F_NEWC);
++
++	done = mdp_wait(MDP_REG1F, MDP_1F_NEWC, 0, 500);
++	msleep(10);
++
++	return done ? 0 : -ETIMEDOUT;
++}
++
++/* Select the status changes that raise an interrupt.  Call with the lock. */
++static void dcm_config_irqs(void)
++{
++	dsp_update(DSP_MEMACC_CFG, 0x40, true);
++	dsp_update(DSP_MASK_0F, MDP_0F_RLSD | MDP_0F_DSR | MDP_0F_RI, true);
++	dsp_update(DSP_MASK_0B, MDP_0B_TONES | MDP_0B_ATV25, true);
++	dsp_update(DSP_MASK_0E, MDP_0E_RTDET | MDP_0E_SPEED, true);
++	dsp_write(DSP_MASK_ABCODE, 0xff);
++	dsp_update(DSP_MASK_0D, MDP_0D_TXFNF, true);
++	mdp_set(MDP_REG1F, MDP_1F_NSIE | MDP_1F_NEWS);
++}
++
++/* Interrupts that are only wanted while data is passed. */
++static void dcm_config_data_irqs(bool on)
++{
++	if (mdp_read(MDP_REG0A) & MDP_0A_OE)
++		mdp_clear(MDP_REG0A, MDP_0A_OE);
++	dsp_update(DSP_MASK_01, 0x06, on);	/* RX/TX FIFO half full */
++	dsp_update(DSP_MASK_0C, MDP_0C_RXFNE, on);
++	dsp_update(DSP_MASK_0A, MDP_0A_OE, on);
++}
++
++static void dcm_reply(struct dcm *dcm, enum dcm_result res)
++{
++	static const char * const text[] = {
++		[DCM_RES_OK] = "OK",
++		[DCM_RES_CONNECT] = "CONNECT",
++		[DCM_RES_NO_CARRIER] = "NO CARRIER",
++		[DCM_RES_ERROR] = "ERROR",
++		[DCM_RES_NO_ANSWER] = "NO ANSWER",
++	};
++	char buf[32];
++	int len;
++
++	if (res == DCM_RES_NONE || dcm->quiet)
++		return;
++
++	if (!dcm->verbose)
++		len = scnprintf(buf, sizeof(buf), "%d\r", res);
++	else if (res == DCM_RES_CONNECT && dcm->rate_in_connect)
++		len = scnprintf(buf, sizeof(buf), "\r\nCONNECT %u\r\n", dcm->bps);
++	else
++		len = scnprintf(buf, sizeof(buf), "\r\n%s\r\n", text[res]);
++
++	tty_insert_flip_string(&dcm->port, buf, len);
++	tty_flip_buffer_push(&dcm->port);
++}
++
++static void dcm_puts(struct dcm *dcm, const char *s)
++{
++	tty_insert_flip_string(&dcm->port, s, strlen(s));
++}
++
++static void dcm_rx(struct dcm *dcm)
++{
++	int n;
++
++	if (mdp_read(MDP_REG0A) & MDP_0A_OE) {
++		mdp_clear(MDP_REG0A, MDP_0A_OE);
++		tty_insert_flip_char(&dcm->port, 0, TTY_OVERRUN);
++	}
++
++	for (n = 0; n < 256 && (mdp_read(MDP_REG0C) & MDP_0C_RXFNE); n++) {
++		u8 c = mdp_read(MDP_RBUFFER);
++
++		/* Line data is dropped while in on-line command mode. */
++		if (dcm->data_mode)
++			tty_insert_flip_char(&dcm->port, c, TTY_NORMAL);
++	}
++	if (n)
++		tty_flip_buffer_push(&dcm->port);
++}
++
++static void dcm_tx(struct dcm *dcm)
++{
++	bool sent = false;
++	u8 c;
++
++	if (!(mdp_read(MDP_REG0F) & MDP_0F_CTS))
++		return;
++
++	while ((mdp_read(MDP_REG0D) & MDP_0D_TXFNF) &&
++	       kfifo_get(&dcm->txfifo, &c)) {
++		mdp_write(MDP_TBUFFER, c);
++		sent = true;
++	}
++	if (sent)
++		tty_port_tty_wakeup(&dcm->port);
++}
++
++/* Send the next DTMF digit; TDBE interrupts ask for the following ones. */
++static void dcm_dial_next(struct dcm *dcm)
++{
++	if (dcm->digit_pos >= dcm->ndigits)
++		return;
++
++	if (dcm->digit_pos + 1 < dcm->ndigits)
++		mdp_set(MDP_REG1E, MDP_1E_TDBIE);
++	else
++		mdp_clear(MDP_REG1E, MDP_1E_TDBIE);
++	mdp_write(MDP_TBUFFER, dcm->digits[dcm->digit_pos++]);
++}
++
++static irqreturn_t dcm_interrupt(int irq, void *dev_id)
++{
++	struct dcm *dcm = dev_id;
++	irqreturn_t ret = IRQ_NONE;
++
++	spin_lock(&dcm->lock);
++
++	/*
++	 * Acknowledge first: a status change while the handler runs then
++	 * raises the interrupt again instead of being lost.
++	 */
++	if (mdp_read(MDP_REG1F) & MDP_1F_NSIA) {
++		mdp_clear(MDP_REG1F, MDP_1F_NEWS);
++		ret = IRQ_HANDLED;
++	}
++	if (mdp_read(MDP_REG1E) & MDP_1E_TDBIA) {
++		if (dcm->state == DCM_WAIT_ANSWER)
++			dcm_dial_next(dcm);
++		else
++			mdp_clear(MDP_REG1E, MDP_1E_TDBIE);
++		ret = IRQ_HANDLED;
++	}
++
++	if (ret == IRQ_HANDLED) {
++		bool kick = dcm->state != DCM_IDLE;
++
++		if (dcm->state == DCM_ONLINE) {
++			dcm_rx(dcm);
++			dcm_tx(dcm);
++			kick = !(mdp_read(MDP_REG0F) & MDP_0F_RLSD);
++		}
++		/* Line status is evaluated by the call engine. */
++		if (kick)
++			mod_delayed_work(system_percpu_wq, &dcm->work, 0);
++	}
++
++	spin_unlock(&dcm->lock);
++	return ret;
++}
++
++/* Put the line on hook.  Call with the lock held. */
++static void dcm_drop_line(struct dcm *dcm)
++{
++	mdp_clear(MDP_REG1E, MDP_1E_TDBIE);
++	if (mdp_read(MDP_REG09) & (MDP_09_DTR | MDP_09_DATA))
++		mdp_clear(MDP_REG09, MDP_09_DTR | MDP_09_DATA);
++	if (mdp_read(MDP_CONF) == MDP_CONF_V34_CLEAR)
++		mdp_set(MDP_REG1F, MDP_1F_NEWC);
++	dcm_config_data_irqs(false);
++	if (mdp_read(MDP_REG07) & MDP_07_RA)
++		mdp_clear(MDP_REG07, MDP_07_RA);
++
++	dcm->state = DCM_IDLE;
++	dcm->data_mode = false;
++	dcm->retrain_since = 0;
++	kfifo_reset(&dcm->txfifo);
++}
++
++/* The call failed or the far end went away. */
++static void dcm_call_ended(struct dcm *dcm, enum dcm_result res)
++{
++	bool was_online = dcm->state == DCM_ONLINE;
++
++	dcm_drop_line(dcm);
++	dcm_reply(dcm, res);
++	if (was_online)
++		tty_port_tty_hangup(&dcm->port, true);
++}
++
++/* Hang up from our side, with a V.34 cleardown if a call is up. */
++static void dcm_hangup(struct dcm *dcm)
++{
++	unsigned long flags;
++	int i;
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	if (dcm->state == DCM_ONLINE) {
++		dcm->state = DCM_SETTLE_ST;	/* stops the data path */
++		dcm->data_mode = false;
++		dcm->deadline = jiffies + 10 * HZ;
++		mdp_write(MDP_CONF, MDP_CONF_V34_CLEAR);
++		mdp_set(MDP_REG15, MDP_15_RREN);
++		spin_unlock_irqrestore(&dcm->lock, flags);
++
++		for (i = 0; i < 200; i++) {
++			if (!(mdp_read(MDP_REG0F) & MDP_0F_RLSD) ||
++			    mdp_read(MDP_ABCODE) == MDP_ABCODE_CLEARDOWN)
++				break;
++			msleep(10);
++		}
++		spin_lock_irqsave(&dcm->lock, flags);
++	}
++	dcm_drop_line(dcm);
++	spin_unlock_irqrestore(&dcm->lock, flags);
++}
++
++/*
++ * Go off hook in originate mode with the MDP set up for dialling, and offer
++ * every V.34 rate in the V.8 handshake that follows.
++ */
++static void dcm_start_call(struct dcm *dcm)
++{
++	unsigned long flags;
++
++	if (dcm_soft_reset())
++		dev_warn(dcm->dev, "soft reset timed out\n");
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	dcm_config_irqs();
++
++	if (mdp_read(MDP_REG07) & MDP_07_RA)
++		mdp_clear(MDP_REG07, MDP_07_RA);
++
++	/* Asynchronous 8N1 through the FIFOs. */
++	mdp_set(MDP_REG04, MDP_04_FIFOEN);
++	mdp_set(MDP_REG06, MDP_06_WDSZ);
++	mdp_clear(MDP_REG06, MDP_06_PEN_STB);
++	mdp_set(MDP_REG08, MDP_08_TPDM);
++	mdp_clear(MDP_REG08, MDP_08_RTS);
++	mdp_set(MDP_REG08, MDP_08_ASYN);
++
++	mdp_set(MDP_REG02, MDP_02_TDE);
++	mdp_set(MDP_REG07, MDP_07_RA);
++	mdp_clear(MDP_REG09, MDP_09_DATA | MDP_09_DTR);
++	mdp_write(MDP_CONF, MDP_CONF_DIAL);
++	mdp_set(MDP_REG1F, MDP_1F_NEWC);
++	spin_unlock_irqrestore(&dcm->lock, flags);
++
++	msleep(10);
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	mdp_set(MDP_REG09, MDP_09_DTMF | MDP_09_ORG);
++	mdp_set(MDP_REG1F, MDP_1F_NEWC);
++
++	dsp_write(DSP_V8_V23_FDX, 0xa1);
++	dsp_write(DSP_V8_V23_HDX, 0xa1);
++	dsp_write(DSP_V34_MASK_L, dsp_read(DSP_V34_MASK_L) | 0xff);
++	dsp_write(DSP_V34_MASK_H, dsp_read(DSP_V34_MASK_H) | 0x3f);
++	dsp_write(DSP_V8_V34, MDP_CONF_V34_33600);
++	dsp_write(DSP_MASK_SECRXB, 0xff);
++
++	dcm->digit_pos = 0;
++	dcm->state = DCM_DIAL_PAUSE_ST;
++	dcm->deadline = jiffies + DCM_DIAL_PAUSE;
++	spin_unlock_irqrestore(&dcm->lock, flags);
++}
++
++/* Advance the call.  Called with the lock held, from the engine work. */
++static void dcm_poll(struct dcm *dcm)
++{
++	bool timeout = time_after_eq(jiffies, dcm->deadline);
++	u8 abcode = 0, conf, speed;
++
++	if (dcm->state > DCM_DIAL_PAUSE_ST) {
++		abcode = mdp_read(MDP_ABCODE);
++		if (abcode)
++			mdp_write(MDP_ABCODE, 0);
++	}
++
++	switch (dcm->state) {
++	case DCM_IDLE:
++		break;
++	case DCM_DIAL_PAUSE_ST:
++		/* Dial early if there happens to be a dial tone. */
++		if (!timeout &&
++		    (mdp_read(MDP_REG0B) & MDP_0B_TONES) != MDP_0B_TONES)
++			break;
++		dcm->state = DCM_WAIT_ANSWER;
++		dcm->deadline = jiffies + DCM_ANSWER_WAIT;
++		dcm_dial_next(dcm);
++		break;
++	case DCM_WAIT_ANSWER:
++		if (mdp_read(MDP_REG0B) & MDP_0B_ATV25) {
++			mdp_clear(MDP_REG1E, MDP_1E_TDBIE);
++			dcm->state = DCM_ANSWER_HOLD_ST;
++			dcm->deadline = jiffies + DCM_ANSWER_HOLD;
++		} else if (timeout) {
++			dcm_call_ended(dcm, DCM_RES_NO_ANSWER);
++		}
++		break;
++	case DCM_ANSWER_HOLD_ST:
++		if (!timeout)
++			break;
++		mdp_write(MDP_CONF, MDP_CONF_V8);
++		mdp_set(MDP_REG1F, MDP_1F_NEWC);
++		mdp_set(MDP_REG09, MDP_09_DTR);
++		mdp_set(MDP_REG15, MDP_15_AUTO);
++		dcm->state = DCM_TRAINING;
++		dcm->deadline = jiffies + DCM_TRAIN_WAIT;
++		break;
++	case DCM_TRAINING:
++		if (abcode == MDP_ABCODE_NO_PHASE || timeout) {
++			dcm_call_ended(dcm, DCM_RES_NO_CARRIER);
++			break;
++		}
++		if (!(mdp_read(MDP_REG0F) & MDP_0F_RLSD))
++			break;
++		if (!(mdp_read(MDP_REG08) & MDP_08_RTS))
++			mdp_set(MDP_REG08, MDP_08_RTS);
++		dsp_write(DSP_MASK_SECRXB, 0);
++		/* The far end may still be probing for error correction. */
++		dcm->state = DCM_SETTLE_ST;
++		dcm->deadline = jiffies + DCM_SETTLE;
++		break;
++	case DCM_SETTLE_ST:
++		if (!(mdp_read(MDP_REG0F) & MDP_0F_RLSD)) {
++			dcm_call_ended(dcm, DCM_RES_NO_CARRIER);
++			break;
++		}
++		if (!timeout)
++			break;
++		speed = mdp_read(MDP_REG0E) & MDP_0E_SPEED;
++		dcm->bps = speed < ARRAY_SIZE(dcm_bps) ? dcm_bps[speed] : 0;
++		dcm_config_data_irqs(true);
++		dcm->state = DCM_ONLINE;
++		dcm->data_mode = true;
++		dcm->plus_count = 0;
++		dcm->last_tx = jiffies;
++		dcm_reply(dcm, DCM_RES_CONNECT);
++		wake_up_interruptible(&dcm->port.open_wait);
++		break;
++	case DCM_ONLINE:
++		conf = mdp_read(MDP_CONF);
++		if (abcode == MDP_ABCODE_CLEARDOWN ||
++		    conf == 0xe0 || conf == 0x90 || conf == 0xc0 || conf == 0x70 ||
++		    !(mdp_read(MDP_REG0F) & MDP_0F_RLSD)) {
++			dcm_call_ended(dcm, DCM_RES_NO_CARRIER);
++			break;
++		}
++
++		/* A retrain ends with a new SPEED; give up if it never does. */
++		speed = mdp_read(MDP_REG0E);
++		if ((speed & MDP_0E_RTDET) && !dcm->retrain_since) {
++			mdp_clear(MDP_REG0E, MDP_0E_SPEED);
++			dcm->retrain_since = jiffies | 1;
++		} else if (dcm->retrain_since && (speed & MDP_0E_SPEED)) {
++			speed &= MDP_0E_SPEED;
++			dcm->bps = speed < ARRAY_SIZE(dcm_bps) ?
++				   dcm_bps[speed] : 0;
++			dcm->retrain_since = 0;
++		} else if (dcm->retrain_since &&
++			   time_after(jiffies,
++				      dcm->retrain_since + DCM_RETRAIN_MAX)) {
++			dcm_call_ended(dcm, DCM_RES_NO_CARRIER);
++			break;
++		}
++
++		/* "+++" between two guard times: on-line command mode. */
++		if (dcm->data_mode && dcm->plus_count == 3 &&
++		    time_after(jiffies, dcm->last_tx + DCM_ESC_GUARD)) {
++			dcm->data_mode = false;
++			dcm->plus_count = 0;
++			dcm_reply(dcm, DCM_RES_OK);
++		}
++
++		dcm_rx(dcm);
++		dcm_tx(dcm);
++		break;
++	}
++}
++
++static void dcm_work(struct work_struct *work)
++{
++	struct dcm *dcm = container_of(to_delayed_work(work), struct dcm, work);
++	unsigned long flags;
++	unsigned int req;
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	req = dcm->req;
++	dcm->req = 0;
++	spin_unlock_irqrestore(&dcm->lock, flags);
++
++	if (req & (DCM_REQ_HANGUP | DCM_REQ_DIAL))
++		dcm_hangup(dcm);
++	if (req & DCM_REQ_DIAL)
++		dcm_start_call(dcm);
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	if (req & DCM_REQ_OK)
++		dcm_reply(dcm, DCM_RES_OK);
++	if (req & DCM_REQ_ABORT)
++		dcm_reply(dcm, DCM_RES_NO_CARRIER);
++	dcm_poll(dcm);
++	if (dcm->state != DCM_IDLE || dcm->req)
++		schedule_delayed_work(&dcm->work, dcm->req ? 0 : DCM_POLL);
++	spin_unlock_irqrestore(&dcm->lock, flags);
++}
++
++static void dcm_request(struct dcm *dcm, unsigned int req)
++{
++	dcm->req |= req;
++	mod_delayed_work(system_percpu_wq, &dcm->work, 0);
++}
++
++static int dcm_dtmf(char c)
++{
++	static const char sym[] = "0123456789*#ABCD";
++	const char *p = strchr(sym, toupper(c));
++
++	return c && p ? p - sym : -1;
++}
++
++/* Parse a number after a command letter; an omitted number is 0. */
++static unsigned int dcm_at_number(const char **p)
++{
++	unsigned int n = 0;
++
++	while (isdigit(**p))
++		n = n * 10 + *(*p)++ - '0';
++	return n;
++}
++
++/* Execute one command line, without its "AT" prefix. */
++static enum dcm_result dcm_at_exec(struct dcm *dcm, const char *p)
++{
++	unsigned int n;
++	int code;
++
++	while (*p) {
++		char c = toupper(*p++);
++
++		switch (c) {
++		case ' ':
++			break;
++		case 'E':
++			dcm->echo = dcm_at_number(&p);
++			break;
++		case 'Q':
++			dcm->quiet = dcm_at_number(&p);
++			break;
++		case 'V':
++			dcm->verbose = dcm_at_number(&p);
++			break;
++		case 'X':
++			dcm->rate_in_connect = dcm_at_number(&p);
++			break;
++		case 'L':
++		case 'M':
++			dcm_at_number(&p);
++			break;
++		case '&':		/* &F, &C1, &D2, &K3 and friends */
++			if (*p)
++				p++;
++			dcm_at_number(&p);
++			break;
++		case 'S':
++			dcm_at_number(&p);
++			if (*p == '=') {
++				p++;
++				dcm_at_number(&p);
++			} else if (*p == '?') {
++				p++;
++				dcm_puts(dcm, "\r\n000\r\n");
++			}
++			break;
++		case '+':		/* +MS=..., +FCLASS=0: accepted, ignored */
++			return DCM_RES_OK;
++		case 'I':
++			dcm_at_number(&p);
++			dcm_puts(dcm, "\r\nSEGA Dreamcast modem\r\n");
++			break;
++		case 'Z':
++			dcm->echo = true;
++			dcm->quiet = false;
++			dcm->verbose = true;
++			dcm->rate_in_connect = true;
++			fallthrough;
++		case 'H':
++			dcm_at_number(&p);
++			dcm_request(dcm, DCM_REQ_HANGUP | DCM_REQ_OK);
++			return DCM_RES_NONE;
++		case 'O':
++			if (dcm->state != DCM_ONLINE)
++				return DCM_RES_NO_CARRIER;
++			dcm->data_mode = true;
++			dcm->plus_count = 0;
++			return DCM_RES_CONNECT;
++		case 'D':
++			if (dcm->state != DCM_IDLE)
++				return DCM_RES_ERROR;
++			if (toupper(*p) == 'T' || toupper(*p) == 'P')
++				p++;
++			for (n = 0; *p && n < DCM_DIAL_MAX; p++) {
++				code = dcm_dtmf(*p);
++				if (code >= 0)
++					dcm->digits[n++] = code;
++			}
++			dcm->ndigits = n;
++			dcm_request(dcm, DCM_REQ_DIAL);
++			return DCM_RES_NONE;
++		default:		/* includes A: answering is not supported */
++			return DCM_RES_ERROR;
++		}
++	}
++	return DCM_RES_OK;
++}
++
++/* Feed one byte written in command mode to the AT interpreter. */
++static void dcm_at_input(struct dcm *dcm, u8 c)
++{
++	if (dcm->state != DCM_IDLE && dcm->state != DCM_ONLINE) {
++		/* Any key but a line end aborts a call in progress. */
++		if (c != '\r' && c != '\n')
++			dcm_request(dcm, DCM_REQ_HANGUP | DCM_REQ_ABORT);
++		return;
++	}
++
++	if (dcm->echo)
++		tty_insert_flip_char(&dcm->port, c, TTY_NORMAL);
++
++	if (c == '\b' || c == 0x7f) {
++		if (dcm->cmd_len)
++			dcm->cmd_len--;
++	} else if (c != '\r' && c != '\n') {
++		if (dcm->cmd_len < DCM_CMD_MAX - 1)
++			dcm->cmd[dcm->cmd_len++] = c;
++	} else if (dcm->cmd_len) {
++		enum dcm_result res = DCM_RES_ERROR;
++
++		dcm->cmd[dcm->cmd_len] = '\0';
++		dcm->cmd_len = 0;
++		if (toupper(dcm->cmd[0]) == 'A' && toupper(dcm->cmd[1]) == 'T')
++			res = dcm_at_exec(dcm, dcm->cmd + 2);
++		dcm_reply(dcm, res);
++	}
++}
++
++static ssize_t dcm_tty_write(struct tty_struct *tty, const u8 *buf,
++			     size_t count)
++{
++	struct dcm *dcm = tty->driver_data;
++	unsigned long flags;
++	size_t i;
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	if (dcm->data_mode) {
++		count = kfifo_in(&dcm->txfifo, buf, count);
++		for (i = 0; i < count; i++) {
++			if (buf[i] == '+' && dcm->plus_count < 3 &&
++			    (dcm->plus_count ||
++			     time_after(jiffies, dcm->last_tx + DCM_ESC_GUARD)))
++				dcm->plus_count++;
++			else
++				dcm->plus_count = 0;
++			dcm->last_tx = jiffies;
++		}
++		dcm_tx(dcm);
++	} else {
++		for (i = 0; i < count; i++)
++			dcm_at_input(dcm, buf[i]);
++		tty_flip_buffer_push(&dcm->port);
++	}
++	spin_unlock_irqrestore(&dcm->lock, flags);
++
++	return count;
++}
++
++static unsigned int dcm_tty_write_room(struct tty_struct *tty)
++{
++	struct dcm *dcm = tty->driver_data;
++
++	return dcm->data_mode ? kfifo_avail(&dcm->txfifo) : DCM_CMD_MAX;
++}
++
++static unsigned int dcm_tty_chars_in_buffer(struct tty_struct *tty)
++{
++	struct dcm *dcm = tty->driver_data;
++
++	return kfifo_len(&dcm->txfifo);
++}
++
++static int dcm_tty_tiocmget(struct tty_struct *tty)
++{
++	struct dcm *dcm = tty->driver_data;
++	unsigned long flags;
++	int ret = TIOCM_DTR | TIOCM_RTS;
++	u8 stat;
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	stat = mdp_read(MDP_REG0F);
++	if (dcm->state == DCM_ONLINE)
++		ret |= TIOCM_CAR;
++	spin_unlock_irqrestore(&dcm->lock, flags);
++
++	if (stat & MDP_0F_CTS)
++		ret |= TIOCM_CTS;
++	if (stat & MDP_0F_DSR)
++		ret |= TIOCM_DSR;
++	if (stat & MDP_0F_RI)
++		ret |= TIOCM_RNG;
++	return ret;
++}
++
++static void dcm_port_dtr_rts(struct tty_port *port, bool active)
++{
++	struct dcm *dcm = container_of(port, struct dcm, port);
++	unsigned long flags;
++
++	if (active)
++		return;
++
++	/* Dropping DTR hangs up, as with AT&D2. */
++	spin_lock_irqsave(&dcm->lock, flags);
++	if (dcm->state != DCM_IDLE)
++		dcm_request(dcm, DCM_REQ_HANGUP);
++	spin_unlock_irqrestore(&dcm->lock, flags);
++}
++
++static int dcm_tty_tiocmset(struct tty_struct *tty, unsigned int set,
++			    unsigned int clear)
++{
++	struct dcm *dcm = tty->driver_data;
++
++	if (clear & TIOCM_DTR)
++		dcm_port_dtr_rts(&dcm->port, false);
++	return 0;
++}
++
++static bool dcm_port_carrier_raised(struct tty_port *port)
++{
++	struct dcm *dcm = container_of(port, struct dcm, port);
++
++	return dcm->state == DCM_ONLINE;
++}
++
++static int dcm_port_activate(struct tty_port *port, struct tty_struct *tty)
++{
++	struct dcm *dcm = container_of(port, struct dcm, port);
++	unsigned long flags;
++
++	spin_lock_irqsave(&dcm->lock, flags);
++	dcm->cmd_len = 0;
++	dcm->echo = true;
++	dcm->quiet = false;
++	dcm->verbose = true;
++	dcm->rate_in_connect = true;
++	spin_unlock_irqrestore(&dcm->lock, flags);
++	return 0;
++}
++
++static const struct tty_port_operations dcm_port_ops = {
++	.carrier_raised	= dcm_port_carrier_raised,
++	.dtr_rts	= dcm_port_dtr_rts,
++	.activate	= dcm_port_activate,
++};
++
++static int dcm_tty_open(struct tty_struct *tty, struct file *filp)
++{
++	tty->driver_data = container_of(tty->port, struct dcm, port);
++	return tty_port_open(tty->port, tty, filp);
++}
++
++static void dcm_tty_close(struct tty_struct *tty, struct file *filp)
++{
++	tty_port_close(tty->port, tty, filp);
++}
++
++static void dcm_tty_hangup(struct tty_struct *tty)
++{
++	tty_port_hangup(tty->port);
++}
++
++static const struct tty_operations dcm_tty_ops = {
++	.open		 = dcm_tty_open,
++	.close		 = dcm_tty_close,
++	.hangup		 = dcm_tty_hangup,
++	.write		 = dcm_tty_write,
++	.write_room	 = dcm_tty_write_room,
++	.chars_in_buffer = dcm_tty_chars_in_buffer,
++	.tiocmget	 = dcm_tty_tiocmget,
++	.tiocmset	 = dcm_tty_tiocmset,
++};
++
++static int dcm_probe(struct platform_device *pdev)
++{
++	struct resource *io;
++	struct device *ttydev;
++	struct dcm *dcm;
++	int irq, ret;
++
++	io = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	if (!io)
++		return -ENODEV;
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0)
++		return irq;
++
++	/* The LAN adapter driver claims the same slot if it finds its chip. */
++	if (!request_region(io->start, resource_size(io), DRV_NAME))
++		return -EBUSY;
++
++	dcm_hard_reset();
++	if (!dcm_self_test(&pdev->dev)) {
++		ret = -ENODEV;
++		goto err_release;
++	}
++
++	dcm = devm_kzalloc(&pdev->dev, sizeof(*dcm), GFP_KERNEL);
++	if (!dcm) {
++		ret = -ENOMEM;
++		goto err_release;
++	}
++	dcm->dev = &pdev->dev;
++	dcm->irq = irq;
++	spin_lock_init(&dcm->lock);
++	INIT_DELAYED_WORK(&dcm->work, dcm_work);
++	INIT_KFIFO(dcm->txfifo);
++	platform_set_drvdata(pdev, dcm);
++
++	spin_lock_irq(&dcm->lock);
++	dcm_config_irqs();
++	spin_unlock_irq(&dcm->lock);
++
++	tty_port_init(&dcm->port);
++	dcm->port.ops = &dcm_port_ops;
++
++	ret = request_irq(irq, dcm_interrupt, 0, DRV_NAME, dcm);
++	if (ret)
++		goto err_port;
++
++	ttydev = tty_port_register_device(&dcm->port, dcm_tty_driver, 0,
++					  &pdev->dev);
++	if (IS_ERR(ttydev)) {
++		ret = PTR_ERR(ttydev);
++		goto err_irq;
++	}
++
++	dev_info(&pdev->dev, "SEGA Dreamcast modem, IRQ %d\n", irq);
++	return 0;
++
++err_irq:
++	free_irq(irq, dcm);
++err_port:
++	tty_port_destroy(&dcm->port);
++err_release:
++	release_region(io->start, resource_size(io));
++	return ret;
++}
++
++static void dcm_remove(struct platform_device *pdev)
++{
++	struct dcm *dcm = platform_get_drvdata(pdev);
++
++	tty_port_unregister_device(&dcm->port, dcm_tty_driver, 0);
++	free_irq(dcm->irq, dcm);
++	cancel_delayed_work_sync(&dcm->work);
++	dcm_hard_reset();
++	tty_port_destroy(&dcm->port);
++	release_region(DCM_BASE, DCM_IO_EXTENT);
++}
++
++static struct platform_driver dcm_driver = {
++	.probe		= dcm_probe,
++	.remove		= dcm_remove,
++	.driver		= {
++		.name	= DRV_NAME,
++	},
++};
++
++static struct resource dcm_resources[] = {
++	{
++		.start	= DCM_BASE,
++		.end	= DCM_BASE + DCM_IO_EXTENT - 1,
++		.flags	= IORESOURCE_IO,
++	},
++	{
++		.start	= HW_EVENT_G2_8BIT,
++		.end	= HW_EVENT_G2_8BIT,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device *dcm_device;
++
++static int __init dcm_init(void)
++{
++	int ret;
++
++	dcm_tty_driver = tty_alloc_driver(1, TTY_DRIVER_REAL_RAW |
++					     TTY_DRIVER_DYNAMIC_DEV);
++	if (IS_ERR(dcm_tty_driver))
++		return PTR_ERR(dcm_tty_driver);
++
++	dcm_tty_driver->driver_name = DRV_NAME;
++	dcm_tty_driver->name = "ttyDCM";
++	dcm_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
++	dcm_tty_driver->subtype = SERIAL_TYPE_NORMAL;
++	dcm_tty_driver->init_termios = tty_std_termios;
++	/* Raw, and usable before there is a carrier: commands come first. */
++	dcm_tty_driver->init_termios.c_cflag = B115200 | CS8 | CREAD | HUPCL |
++					       CLOCAL;
++	dcm_tty_driver->init_termios.c_iflag = 0;
++	dcm_tty_driver->init_termios.c_oflag = 0;
++	dcm_tty_driver->init_termios.c_lflag = 0;
++	tty_set_operations(dcm_tty_driver, &dcm_tty_ops);
++
++	ret = tty_register_driver(dcm_tty_driver);
++	if (ret)
++		goto err_put;
++
++	ret = platform_driver_register(&dcm_driver);
++	if (ret)
++		goto err_tty;
++
++	dcm_device = platform_device_register_simple(DRV_NAME, -1,
++						     dcm_resources,
++						     ARRAY_SIZE(dcm_resources));
++	if (IS_ERR(dcm_device)) {
++		ret = PTR_ERR(dcm_device);
++		goto err_driver;
++	}
++	return 0;
++
++err_driver:
++	platform_driver_unregister(&dcm_driver);
++err_tty:
++	tty_unregister_driver(dcm_tty_driver);
++err_put:
++	tty_driver_kref_put(dcm_tty_driver);
++	return ret;
++}
++
++static void __exit dcm_exit(void)
++{
++	platform_device_unregister(dcm_device);
++	platform_driver_unregister(&dcm_driver);
++	tty_unregister_driver(dcm_tty_driver);
++	tty_driver_kref_put(dcm_tty_driver);
++}
++
++module_init(dcm_init);
++module_exit(dcm_exit);
++
++MODULE_AUTHOR("Florian Fuchs <fuchsfl@gmail.com>");
++MODULE_DESCRIPTION("SEGA Dreamcast modem (Rockwell/Conexant data pump)");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -364,6 +364,18 @@
+ 	help
+ 	  FDC channel number to use for KGDB.
+ 
++config DREAMCAST_MODEM
++	tristate "SEGA Dreamcast modem support"
++	depends on SH_DREAMCAST
++	help
++	  Say Y here to support the modem of the SEGA Dreamcast.  The modem
++	  is a controllerless data pump, so the driver dials and handshakes
++	  itself and offers a Hayes AT command set on /dev/ttyDCM0 for pppd
++	  and terminal programs.  Only outgoing calls are supported.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called dcmodem.
++
+ config NULL_TTY
+ 	tristate "NULL TTY driver"
+ 	help
+diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
+--- a/drivers/tty/Makefile
++++ b/drivers/tty/Makefile
+@@ -23,6 +23,7 @@
+ obj-$(CONFIG_NULL_TTY)	        += ttynull.o
+ obj-$(CONFIG_PPC_EPAPR_HV_BYTECHAN) += ehv_bytechan.o
+ obj-$(CONFIG_GOLDFISH_TTY)	+= goldfish.o
++obj-$(CONFIG_DREAMCAST_MODEM)	+= dcmodem.o
+ obj-$(CONFIG_MIPS_EJTAG_FDC_TTY) += mips_ejtag_fdc.o
+ obj-$(CONFIG_VCC)		+= vcc.o
+ obj-$(CONFIG_RPMSG_TTY)		+= rpmsg_tty.o
