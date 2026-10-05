@@ -1,10 +1,11 @@
-Boots nearly to shell, but fails somewhere on the way.
+Boots nearly to shell, but fails to start the shell.
 ```
+ /media/flo/nvme0-ssd/Deecy/zig-out/bin/Deecy                                                                                                                                 51s
 info: Using directory '/media/flo/nvme0-ssd/Deecy/zig-out/bin'
 info(deecy): Deecy 0.6.3 Linux ReleaseFast (Commit bfb2a82)
-info(deecy): Window initialized in 116.781us
+info(deecy): Joysticks initialized in 194.466us
+info(deecy): Window initialized in 3.637ms
 info(deecy): Requested WGPU Limits max_buffer_size=256 MiB, max_storage_buffer_binding_size=128 MiB.
-info(deecy): Joysticks initialized in 103.255us
 Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
 Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
 info: [zgpu] High-performance device has been selected:
@@ -13,20 +14,20 @@ info: [zgpu]   Driver: radv: Mesa 25.2.8-0ubuntu0.24.04.4
 info: [zgpu]   Adapter type: integrated_gpu
 info: [zgpu]   Backend type: vulkan
 error(deecy): GLFW error 1000E: Wayland: Platform not initialized
-info(deecy): Graphics context initialized in 23.786ms
-info(deecy): Zaudio initialized in 8.439ms
+info(deecy): Graphics context initialized in 24.903ms
+info(deecy): Zaudio initialized in 7.491ms
 info(arm_jit): Resetting block cache.
   (...x2)
 info(modem): Hard Reset
-info(deecy): Dreamcast initialized in 20.518ms
+info(deecy): Dreamcast initialized in 21.888ms
 info(renderer): Creating Pipeline: [Translucent: false, Blend SRC: one, DST: zero, Depth Compare: always, Depth Write: false, Culling Mode: None]
 info(renderer): Creating Pipeline: [Translucent: false, Blend SRC: one, DST: zero, Depth Compare: greater_equal, Depth Write: true, Culling Mode: None]
 info(renderer): Creating Pipeline: [Translucent: false, Blend SRC: src_alpha, DST: one_minus_src_alpha, Depth Compare: greater_equal, Depth Write: true, Culling Mode: None]
-info(renderer): Renderer initialized in 39.063ms
+info(renderer): Renderer initialized in 32.72ms
 info(maple): Loading VMU from file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin'.
-info(maple):   Not found: Initializing new VMU at '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin'.
-info(deecy): Deecy initialized in 145.157ms
-info: Loading Disc: '/home/flo/devel/t2-hacking/dreamcast/dreamcast-linux/build/linux-7.2.8-with-userland-muslX.cdi'...
+info(deecy): Deecy initialized in 145.082ms
+info(arm_jit): Resetting block cache.
+info(modem): Hard Reset
 info(renderer): Updating game settings:
 info(renderer):   aspect_ratio: .4:3
 info(renderer):   scaling_filter: .Linear
@@ -37,11 +38,9 @@ info(renderer):   synchronous_render: false
 info(renderer):   delay_render: false
 info(deecy): Using settings: Region=Japan, Video Cable=Auto, Bios Emulation=Original
 info(deecy): Using block invalidation strategy: None
-error(maple): Failed to backup VMU file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin.bak': FileNotFound
-info(maple): Saved VMU to file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin'.
-info(maple): Loading VMU from file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin'.
-info(maple):   Not found: Initializing new VMU at '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin'.
-info(deecy): Loaded 'Dreamcast Linux' (T-00000   V1.000).
+info(maple): Loading VMU from file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/dcload-ip[T0000_____V1.0.1]/vmu_0.bin'.
+info(maple):   Not found: Initializing new VMU at '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/dcload-ip[T0000_____V1.0.1]/vmu_0.bin'.
+info(deecy): Loaded 'dcload-ip' (T0000     V1.0.1).
 info(x86_64_emitter): Enabled PDEP/PEXT emit (BMI2 support: true)
 warning(sh4): Note: pref @Rn not implemented outside of store queue operation.
 info(modem): Hard Reset
@@ -64,158 +63,9 @@ info(aica): ARM reset : 0
 info(arm_jit): Resetting block cache.
 info(aica): Write to AICA Register SCIEB = (MIDI_input | timer_a)
 warning(renderer): on_render_start: Empty TA lists submitted. Is the game trying to reuse the previous TA lists?
-info: [zgpu] Surface has been reconfigured with size: 1693x956.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1685x953.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1639x927.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1618x914.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1563x870.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1395x732.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1305x671.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1267x649.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1221x627.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1193x617.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1182x616.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: Scissor rect (x: 33, y: 65, width: 190, height: 555) is not contained in the render target dimensions (1182 x 616).
- - While encoding [RenderPassEncoder (unlabeled)].SetScissorRect(33, 65, 190, 555).
- - While finishing [CommandEncoder (unlabeled)].
-
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: [Invalid CommandBuffer] is invalid.
- - While calling [Queue].Submit([[CommandBuffer], [Invalid CommandBuffer]])
-
-info: [zgpu] Surface has been reconfigured with size: 1181x626.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1181x631.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1193x657.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1203x678.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1218x702.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1227x716.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1248x743.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1252x748.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1260x756.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1282x778.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1289x785.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-info: [zgpu] Surface has been reconfigured with size: 1290x785.
-error: [zgpu] Uncaptured Error:
-	Error Type: validation
-	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
-    at ValidatePresent (SwapChain.cpp:195)
-
-warning(renderer): Skipped a frame.
-error(maple): Failed to backup VMU file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin.bak': FileNotFound
-info(maple): Saved VMU to file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin'.
+error(maple): Failed to backup VMU file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/dcload-ip[T0000_____V1.0.1]/vmu_0.bin.bak': FileNotFound
+info(maple): Saved VMU to file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/dcload-ip[T0000_____V1.0.1]/vmu_0.bin'.
+info(maple): Loading VMU from file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin'.
 warning(gdrom): SPI Packet GetToC - Single Density (alloc_length: 0x0198)
 warning(gdrom): SPI Packet ReqSes - Session Number: 0 (alloc_length: 0x0006)
 warning(gdrom): SPI Packet ReqSes - Session Number: 2 (alloc_length: 0x0006)
@@ -244,7 +94,7 @@ info(aica): ARM reset : 0
 info(arm_jit): Resetting block cache.
 info(aica): ARM reset : 0
 info(arm_jit): Resetting block cache.
-Linux version 7.2.8 (root@0d22cdf19af3) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #19 PREEMPT Sun Oct  4 19:21:58 UTC 2026
+Linux version 7.1.3 (root@3397a226a06e) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #120 PREEMPT Fri Oct  2 19:39:43 UTC 2026
 Boot params:
 ... MOUNT_ROOT_RDONLY - 00000000
 ... RAMDISK_FLAGS     - 00000000
@@ -277,9 +127,9 @@ virtual kernel memory layout:
     vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
     lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
             : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
-      .init : 0x8c4bf000 - 0x8c4e8000   ( 164 kB)
-      .data : 0x8c39f5c8 - 0x8c4beddc   (1150 kB)
-      .text : 0x8c001000 - 0x8c39f5c8   (3705 kB)
+      .init : 0x8c4b1000 - 0x8c4da000   ( 164 kB)
+      .data : 0x8c396468 - 0x8c4b0c50   (1129 kB)
+      .text : 0x8c001000 - 0x8c396468   (3669 kB)
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 rcu: Preemptible hierarchical RCU implementation.
 rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
@@ -287,7 +137,6 @@ NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
 intc: Registered controller 'sh7750' with 20 IRQs
 intc: Registered controller 'sh7750_dma4' with 5 IRQs
 rcu: srcu_init: Setting srcu_struct sizes based on contention.
-clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
 Console: colour dummy device 80x25
  sh-tmu.0: ch0: used for clock events
  sh-tmu.0: ch0: used for periodic clock events
@@ -303,10 +152,11 @@ VFS: Finished mounting rootfs on nullfs
 Performance Events: sh7750 support registered
 rcu: Hierarchical SRCU implementation.
 rcu:    Max phase no-delay instances is 1000.
-Memory: 10464K/16384K available (3701K kernel code, 205K rwdata, 940K rodata, 164K init, 98K bss, 5308K reserved, 0K cma-reserved)
+Memory: 10512K/16384K available (3665K kernel code, 205K rwdata, 920K rodata, 164K init, 102K bss, 5256K reserved, 0K cma-reserved)
 devtmpfs: initialized
+clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
 posixtimers hash table entries: 512 (order: 0, 2048 bytes, linear)
-futex hash table entries: 256 (3072 bytes on 1 NUMA nodes, total 3 KiB, linear).
+futex hash table entries: 256 (4096 bytes on 1 NUMA nodes, total 4 KiB, linear).
 NET: Registered PF_NETLINK/PF_ROUTE protocol family
 DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
 HugeTLB: registered 64.0 KiB page size, pre-allocated 0 pages
@@ -322,12 +172,6 @@ clocksource: Switched to clocksource sh-tmu.0
  maple: bus core now registered
 NET: Registered PF_INET protocol family
 IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
-maple (null): detected Dreamcast Controller: function 0x1: at (0, 0)
-maple (null): no driver found
-maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
-maple (null): no driver found
-maple (null): no devices to port 2
-maple (null): no devices to port 3
 tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
 Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
 TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
@@ -342,12 +186,18 @@ RPC: Registered tcp-with-tls transport module.
 RPC: Registered tcp NFSv4.1 backchannel transport module.
 PCI: CLS 0 bytes, default 32
 sq: Registering store queue API.
-workingset: timestamp_bits=30 (anon: 25) max_order=12 bucket_order=0 (anon: 0)
-squashfs: version 4.0 (2009/01/31) Phillip Lougher
-maple (null): detected Visual Memory: function 0xE: at (0, 1)
+maple (null): detected Dreamcast Keyboard: function 0x40: at (0, 0)
 maple (null): no driver found
+maple (null): detected Dreamcast Keyboard: function 0x40: at (1, 0)
+maple (null): no driver found
+maple (null): no devices to port 2
+maple (null): no devices to port 3
+workingset: timestamp_bits=30 (anon: 26) max_order=12 bucket_order=0 (anon: 0)
+squashfs: version 4.0 (2009/01/31) Phillip Lougher
 io scheduler mq-deadline registered
 io scheduler kyber registered
+maple (null): detected Visual Memory: function 0xE: at (0, 1)
+maple (null): no driver found
 Console: switching to colour frame buffer device 80x30
 fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
 fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
@@ -358,28 +208,25 @@ SuperH (H)SCI(F) driver initialized
 sh-sci.0: ttySC0 at MMIO 0xffe00000 (irq = 39, base_baud = 0) is a sci
 sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
 printk: legacy console [ttySC1] enabled
-info(modem): Hard Reset
-info(modem): Soft Reset
-info(modem): Controller Self Test
-info(modem): DSP Self Test
-warning(dc): [8C0155FE] Write to SB_ISTEXT (ignored): 4 (Report 1/10)
-dcmodem dcmodem: SEGA Dreamcast modem, IRQ 98
 pvr2_dc: /dev/pvr ready (VRAM 8MB, regs, TA FIFO, CH2-DMA submit)
 warning(sh4_jit): JIT cache full: Resetting.
 brd: module loaded
 loop: module loaded
 Dreamcast_visual_memory 0:01.E: VMU LCD at (0, 1) registered as vmu_lcd0
+warning(maple): GetMediaInformation: Function: storage, Partition number: 0
+Dreamcast_visual_memory 0:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255
+info(modem): Hard Reset
+lan_adapter lan_adapter (unnamed net_device) (uninitialized): no MB86967 found (slot empty or modem fitted?)
 PPP generic driver version 2.4.2
 PPP BSD Compression module registered
 PPP Deflate Compression module registered
 PPP MPPE Compression module registered
 SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, max=256).
-warning(maple): GetMediaInformation: Function: storage, Partition number: 0
-Dreamcast_visual_memory 0:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255
+warning(sh4_jit): MMU enabled: Switching to 'Hash' block invalidation strategy.
 gdrom: ATA Probe for GDROM failed
 mousedev: PS/2 mouse device common for all mice
-input: Dreamcast Controller as /devices/maple/0:00.1/input/input0
-input: Dreamcast Controller as /devices/maple/1:00.1/input/input1
+input: Dreamcast Keyboard as /devices/maple/0:00.40/input/input0
+input: Dreamcast Keyboard as /devices/maple/1:00.40/input/input1
 AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
 info(aica): ARM reset : 1
 info(arm_jit): Resetting block cache.
@@ -409,6 +256,7 @@ info(arm_jit): Resetting block cache.
 info(aica): ARM reset : 0
 info(arm_jit): Resetting block cache.
 NET: Registered PF_PACKET protocol family
+random: crng init done
 ALSA device list:
   #0: Loopback 1
   #1: Yamaha AICA Super Intelligent Sound Processor for SEGA Dreamcast
@@ -416,735 +264,8 @@ Warning: unable to open an initial console.
 Freeing unused kernel image (initmem) memory: 164K
 This architecture does not have kernel memory protection.
 Run /init as init process
-warning(dc):   Unimplemented _get_memory to Area 0: 004114D8 (004114D8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114D9 (004114D9)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114DA (004114DA)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114DB (004114DB)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114DC (004114DC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114DD (004114DD)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114DE (004114DE)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114DF (004114DF)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114E0 (004114E0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114E4 (004114E4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114E8 (004114E8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114EC (004114EC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114F0 (004114F0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114F4 (004114F4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114F8 (004114F8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004114FC (004114FC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411500 (00411500)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411504 (00411504)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411508 (00411508)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041150C (0041150C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411510 (00411510)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411514 (00411514)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411518 (00411518)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041151C (0041151C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411520 (00411520)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411524 (00411524)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411528 (00411528)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041152C (0041152C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411530 (00411530)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411534 (00411534)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411538 (00411538)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041153C (0041153C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411540 (00411540)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411544 (00411544)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411548 (00411548)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041154C (0041154C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411550 (00411550)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411554 (00411554)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411558 (00411558)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041155C (0041155C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411560 (00411560)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411564 (00411564)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411568 (00411568)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041156C (0041156C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411570 (00411570)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411574 (00411574)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411578 (00411578)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041157C (0041157C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411580 (00411580)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411584 (00411584)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411588 (00411588)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041158C (0041158C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411590 (00411590)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411594 (00411594)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411598 (00411598)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041159C (0041159C)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115A0 (004115A0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115A4 (004115A4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115A8 (004115A8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115AC (004115AC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115B0 (004115B0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115B4 (004115B4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115B8 (004115B8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115BC (004115BC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115C0 (004115C0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115C4 (004115C4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115C8 (004115C8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115CC (004115CC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115D0 (004115D0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115D4 (004115D4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115D8 (004115D8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115DC (004115DC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115E0 (004115E0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115E4 (004115E4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115E8 (004115E8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115EC (004115EC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115F0 (004115F0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115F4 (004115F4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115F8 (004115F8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004115FC (004115FC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411600 (00411600)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411604 (00411604)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411608 (00411608)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041160C (0041160C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411610 (00411610)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411614 (00411614)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411618 (00411618)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041161C (0041161C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411620 (00411620)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411624 (00411624)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411628 (00411628)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041162C (0041162C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411630 (00411630)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411634 (00411634)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411638 (00411638)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041163C (0041163C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411640 (00411640)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411644 (00411644)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411648 (00411648)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041164C (0041164C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411650 (00411650)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411654 (00411654)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411658 (00411658)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041165C (0041165C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411660 (00411660)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411664 (00411664)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411668 (00411668)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041166C (0041166C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411670 (00411670)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411674 (00411674)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411678 (00411678)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041167C (0041167C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411680 (00411680)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411684 (00411684)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411688 (00411688)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041168C (0041168C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411690 (00411690)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411694 (00411694)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411698 (00411698)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041169C (0041169C)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116A0 (004116A0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116A4 (004116A4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116A8 (004116A8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116AC (004116AC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116B0 (004116B0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116B4 (004116B4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116B8 (004116B8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116BC (004116BC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116C0 (004116C0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116C4 (004116C4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116C8 (004116C8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116CC (004116CC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116D0 (004116D0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116D4 (004116D4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116D8 (004116D8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116DC (004116DC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116E0 (004116E0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116E4 (004116E4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116E8 (004116E8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116EC (004116EC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116F0 (004116F0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116F4 (004116F4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116F8 (004116F8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004116FC (004116FC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411700 (00411700)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411704 (00411704)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411708 (00411708)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041170C (0041170C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411710 (00411710)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411714 (00411714)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411718 (00411718)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041171C (0041171C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411720 (00411720)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411724 (00411724)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411728 (00411728)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041172C (0041172C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411730 (00411730)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411734 (00411734)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411738 (00411738)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041173C (0041173C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411740 (00411740)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411744 (00411744)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411748 (00411748)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041174C (0041174C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411750 (00411750)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411754 (00411754)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411758 (00411758)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041175C (0041175C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411760 (00411760)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411764 (00411764)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411768 (00411768)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041176C (0041176C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411770 (00411770)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411774 (00411774)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411778 (00411778)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041177C (0041177C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411780 (00411780)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411784 (00411784)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411788 (00411788)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041178C (0041178C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411790 (00411790)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411794 (00411794)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411798 (00411798)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041179C (0041179C)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117A0 (004117A0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117A4 (004117A4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117A8 (004117A8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117AC (004117AC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117B0 (004117B0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117B4 (004117B4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117B8 (004117B8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117BC (004117BC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117C0 (004117C0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117C4 (004117C4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117C8 (004117C8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117CC (004117CC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117D0 (004117D0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117D4 (004117D4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117D8 (004117D8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117DC (004117DC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117E0 (004117E0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117E4 (004117E4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117E8 (004117E8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117EC (004117EC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117F0 (004117F0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117F4 (004117F4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117F8 (004117F8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004117FC (004117FC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411800 (00411800)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411804 (00411804)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411808 (00411808)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041180C (0041180C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411810 (00411810)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411814 (00411814)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411818 (00411818)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041181C (0041181C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411820 (00411820)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411824 (00411824)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411828 (00411828)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041182C (0041182C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411830 (00411830)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411834 (00411834)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411838 (00411838)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041183C (0041183C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411840 (00411840)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411844 (00411844)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411848 (00411848)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041184C (0041184C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411850 (00411850)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411854 (00411854)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411858 (00411858)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041185C (0041185C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411860 (00411860)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411864 (00411864)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411868 (00411868)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041186C (0041186C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411870 (00411870)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411874 (00411874)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411878 (00411878)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041187C (0041187C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411880 (00411880)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411884 (00411884)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411888 (00411888)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041188C (0041188C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411890 (00411890)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411894 (00411894)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411898 (00411898)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041189C (0041189C)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118A0 (004118A0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118A4 (004118A4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118A8 (004118A8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118AC (004118AC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118B0 (004118B0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118B4 (004118B4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118B8 (004118B8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118BC (004118BC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118C0 (004118C0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118C4 (004118C4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118C8 (004118C8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118CC (004118CC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118D0 (004118D0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118D4 (004118D4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118D8 (004118D8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118DC (004118DC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118E0 (004118E0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118E4 (004118E4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118E8 (004118E8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118EC (004118EC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118F0 (004118F0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118F4 (004118F4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118F8 (004118F8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004118FC (004118FC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411900 (00411900)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411904 (00411904)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411908 (00411908)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041190C (0041190C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411910 (00411910)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411914 (00411914)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411918 (00411918)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041191C (0041191C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411920 (00411920)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411924 (00411924)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411928 (00411928)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041192C (0041192C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411930 (00411930)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411934 (00411934)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411938 (00411938)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041193C (0041193C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411940 (00411940)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411944 (00411944)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411948 (00411948)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041194C (0041194C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411950 (00411950)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411954 (00411954)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411958 (00411958)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041195C (0041195C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411960 (00411960)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411964 (00411964)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411968 (00411968)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041196C (0041196C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411970 (00411970)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411974 (00411974)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411978 (00411978)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041197C (0041197C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411980 (00411980)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411984 (00411984)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411988 (00411988)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041198C (0041198C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411990 (00411990)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411994 (00411994)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411998 (00411998)
-warning(dc):   Unimplemented _get_memory to Area 0: 0041199C (0041199C)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119A0 (004119A0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119A4 (004119A4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119A8 (004119A8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119AC (004119AC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119B0 (004119B0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119B4 (004119B4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119B8 (004119B8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119BC (004119BC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119C0 (004119C0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119C4 (004119C4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119C8 (004119C8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119CC (004119CC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119D0 (004119D0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119D4 (004119D4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119D8 (004119D8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119DC (004119DC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119E0 (004119E0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119E4 (004119E4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119E8 (004119E8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119EC (004119EC)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119F0 (004119F0)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119F4 (004119F4)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119F8 (004119F8)
-warning(dc):   Unimplemented _get_memory to Area 0: 004119FC (004119FC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A00 (00411A00)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A04 (00411A04)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A08 (00411A08)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A0C (00411A0C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A10 (00411A10)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A14 (00411A14)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A18 (00411A18)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A1C (00411A1C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A20 (00411A20)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A24 (00411A24)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A28 (00411A28)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A2C (00411A2C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A30 (00411A30)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A34 (00411A34)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A38 (00411A38)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A3C (00411A3C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A40 (00411A40)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A44 (00411A44)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A48 (00411A48)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A4C (00411A4C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A50 (00411A50)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A54 (00411A54)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A58 (00411A58)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A5C (00411A5C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A60 (00411A60)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A64 (00411A64)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A68 (00411A68)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A6C (00411A6C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A70 (00411A70)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A74 (00411A74)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A78 (00411A78)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A7C (00411A7C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A80 (00411A80)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A84 (00411A84)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A88 (00411A88)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A8C (00411A8C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A90 (00411A90)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A94 (00411A94)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A98 (00411A98)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411A9C (00411A9C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AA0 (00411AA0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AA4 (00411AA4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AA8 (00411AA8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AAC (00411AAC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AB0 (00411AB0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AB4 (00411AB4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AB8 (00411AB8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411ABC (00411ABC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AC0 (00411AC0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AC4 (00411AC4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AC8 (00411AC8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411ACC (00411ACC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AD0 (00411AD0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AD4 (00411AD4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AD8 (00411AD8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411ADC (00411ADC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AE0 (00411AE0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AE4 (00411AE4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AE8 (00411AE8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AEC (00411AEC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AF0 (00411AF0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AF4 (00411AF4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AF8 (00411AF8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411AFC (00411AFC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B00 (00411B00)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B04 (00411B04)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B08 (00411B08)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B0C (00411B0C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B10 (00411B10)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B14 (00411B14)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B18 (00411B18)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B1C (00411B1C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B20 (00411B20)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B24 (00411B24)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B28 (00411B28)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B2C (00411B2C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B30 (00411B30)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B34 (00411B34)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B38 (00411B38)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B3C (00411B3C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B40 (00411B40)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B44 (00411B44)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B48 (00411B48)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B4C (00411B4C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B50 (00411B50)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B54 (00411B54)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B58 (00411B58)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B5C (00411B5C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B60 (00411B60)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B64 (00411B64)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B68 (00411B68)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B6C (00411B6C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B70 (00411B70)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B74 (00411B74)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B78 (00411B78)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B7C (00411B7C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B80 (00411B80)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B84 (00411B84)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B88 (00411B88)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B8C (00411B8C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B90 (00411B90)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B94 (00411B94)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B98 (00411B98)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411B9C (00411B9C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BA0 (00411BA0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BA4 (00411BA4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BA8 (00411BA8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BAC (00411BAC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BB0 (00411BB0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BB4 (00411BB4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BB8 (00411BB8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BBC (00411BBC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BC0 (00411BC0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BC4 (00411BC4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BC8 (00411BC8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BCC (00411BCC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BD0 (00411BD0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BD4 (00411BD4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BD8 (00411BD8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BDC (00411BDC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BE0 (00411BE0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BE4 (00411BE4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BE8 (00411BE8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BEC (00411BEC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BF0 (00411BF0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BF4 (00411BF4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BF8 (00411BF8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411BFC (00411BFC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C00 (00411C00)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C04 (00411C04)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C08 (00411C08)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C0C (00411C0C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C10 (00411C10)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C14 (00411C14)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C18 (00411C18)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C1C (00411C1C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C20 (00411C20)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C24 (00411C24)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C28 (00411C28)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C2C (00411C2C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C30 (00411C30)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C34 (00411C34)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C38 (00411C38)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C3C (00411C3C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C40 (00411C40)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C44 (00411C44)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C48 (00411C48)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C4C (00411C4C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C50 (00411C50)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C54 (00411C54)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C58 (00411C58)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C5C (00411C5C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C60 (00411C60)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C64 (00411C64)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C68 (00411C68)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C6C (00411C6C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C70 (00411C70)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C74 (00411C74)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C78 (00411C78)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C7C (00411C7C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C80 (00411C80)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C84 (00411C84)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C88 (00411C88)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C8C (00411C8C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C90 (00411C90)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C94 (00411C94)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C98 (00411C98)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411C9C (00411C9C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CA0 (00411CA0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CA4 (00411CA4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CA8 (00411CA8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CAC (00411CAC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CB0 (00411CB0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CB4 (00411CB4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CB8 (00411CB8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CBC (00411CBC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CC0 (00411CC0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CC4 (00411CC4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CC8 (00411CC8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CCC (00411CCC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CD0 (00411CD0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CD4 (00411CD4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CD8 (00411CD8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CDC (00411CDC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CE0 (00411CE0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CE4 (00411CE4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CE8 (00411CE8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CEC (00411CEC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CF0 (00411CF0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CF4 (00411CF4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CF8 (00411CF8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411CFC (00411CFC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D00 (00411D00)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D04 (00411D04)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D08 (00411D08)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D0C (00411D0C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D10 (00411D10)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D14 (00411D14)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D18 (00411D18)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D1C (00411D1C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D20 (00411D20)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D24 (00411D24)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D28 (00411D28)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D2C (00411D2C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D30 (00411D30)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D34 (00411D34)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D38 (00411D38)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D3C (00411D3C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D40 (00411D40)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D44 (00411D44)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D48 (00411D48)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D4C (00411D4C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D50 (00411D50)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D54 (00411D54)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D58 (00411D58)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D5C (00411D5C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D60 (00411D60)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D64 (00411D64)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D68 (00411D68)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D6C (00411D6C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D70 (00411D70)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D74 (00411D74)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D78 (00411D78)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D7C (00411D7C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D80 (00411D80)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D84 (00411D84)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D88 (00411D88)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D8C (00411D8C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D90 (00411D90)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D94 (00411D94)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D98 (00411D98)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411D9C (00411D9C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DA0 (00411DA0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DA4 (00411DA4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DA8 (00411DA8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DAC (00411DAC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DB0 (00411DB0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DB4 (00411DB4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DB8 (00411DB8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DBC (00411DBC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DC0 (00411DC0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DC4 (00411DC4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DC8 (00411DC8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DCC (00411DCC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DD0 (00411DD0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DD4 (00411DD4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DD8 (00411DD8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DDC (00411DDC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DE0 (00411DE0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DE4 (00411DE4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DE8 (00411DE8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DEC (00411DEC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DF0 (00411DF0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DF4 (00411DF4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DF8 (00411DF8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411DFC (00411DFC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E00 (00411E00)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E04 (00411E04)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E08 (00411E08)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E0C (00411E0C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E10 (00411E10)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E14 (00411E14)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E18 (00411E18)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E1C (00411E1C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E20 (00411E20)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E24 (00411E24)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E28 (00411E28)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E2C (00411E2C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E30 (00411E30)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E34 (00411E34)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E38 (00411E38)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E3C (00411E3C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E40 (00411E40)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E44 (00411E44)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E48 (00411E48)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E4C (00411E4C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E50 (00411E50)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E54 (00411E54)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E58 (00411E58)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E5C (00411E5C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E60 (00411E60)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E64 (00411E64)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E68 (00411E68)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E6C (00411E6C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E70 (00411E70)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E74 (00411E74)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E78 (00411E78)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E7C (00411E7C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E80 (00411E80)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E84 (00411E84)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E88 (00411E88)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E8C (00411E8C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E90 (00411E90)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E94 (00411E94)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E98 (00411E98)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411E9C (00411E9C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EA0 (00411EA0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EA4 (00411EA4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EA8 (00411EA8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EAC (00411EAC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EB0 (00411EB0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EB4 (00411EB4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EB8 (00411EB8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EBC (00411EBC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EC0 (00411EC0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EC4 (00411EC4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EC8 (00411EC8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411ECC (00411ECC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411ED0 (00411ED0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411ED4 (00411ED4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411ED8 (00411ED8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EDC (00411EDC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EE0 (00411EE0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EE4 (00411EE4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EE8 (00411EE8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EEC (00411EEC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EF0 (00411EF0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EF4 (00411EF4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EF8 (00411EF8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411EFC (00411EFC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F00 (00411F00)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F04 (00411F04)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F08 (00411F08)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F0C (00411F0C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F10 (00411F10)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F14 (00411F14)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F18 (00411F18)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F1C (00411F1C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F20 (00411F20)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F24 (00411F24)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F28 (00411F28)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F2C (00411F2C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F30 (00411F30)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F34 (00411F34)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F38 (00411F38)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F3C (00411F3C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F40 (00411F40)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F44 (00411F44)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F48 (00411F48)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F4C (00411F4C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F50 (00411F50)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F54 (00411F54)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F58 (00411F58)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F5C (00411F5C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F60 (00411F60)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F64 (00411F64)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F68 (00411F68)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F6C (00411F6C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F70 (00411F70)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F74 (00411F74)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F78 (00411F78)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F7C (00411F7C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F80 (00411F80)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F84 (00411F84)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F88 (00411F88)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F8C (00411F8C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F90 (00411F90)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F94 (00411F94)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F98 (00411F98)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411F9C (00411F9C)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FA0 (00411FA0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FA4 (00411FA4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FA8 (00411FA8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FAC (00411FAC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FB0 (00411FB0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FB4 (00411FB4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FB8 (00411FB8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FBC (00411FBC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FC0 (00411FC0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FC4 (00411FC4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FC8 (00411FC8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FCC (00411FCC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FD0 (00411FD0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FD4 (00411FD4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FD8 (00411FD8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FDC (00411FDC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FE0 (00411FE0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FE4 (00411FE4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FE8 (00411FE8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FEC (00411FEC)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FF0 (00411FF0)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FF4 (00411FF4)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FF8 (00411FF8)
-warning(dc):   Unimplemented _get_memory to Area 0: 00411FFC (00411FFC)
-thread 337517 panic: Invalid _get_memory to Area 6 @1BF91FDA
-Cannot print stack trace: stack tracing is disabled
-run
-└─ run exe Deecy failure
-error: process terminated with signal ABRT
-failed command: /media/flo/nvme0-ssd/Deecy/zig-out/bin/Deecy -g /home/flo/devel/t2-hacking/dreamcast/dreamcast-linux/build/linux-7.2.8-with-userland-muslX.cdi
+/dev/gdrom: Can't lookup blockdev
 
-Build Summary: 17/19 steps succeeded (1 failed)
-run transitive failure
-└─ run exe Deecy failure
+Please press Enter to activate this console.
 
 ```
