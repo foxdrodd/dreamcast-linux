@@ -1,6 +1,386 @@
 Boots nearly to shell, but fails somewhere on the way.
+```
+info: Using directory '/media/flo/nvme0-ssd/Deecy/zig-out/bin'
+info(deecy): Deecy 0.6.3 Linux ReleaseFast (Commit bfb2a82)
+info(deecy): Window initialized in 116.781us
+info(deecy): Requested WGPU Limits max_buffer_size=256 MiB, max_storage_buffer_binding_size=128 MiB.
+info(deecy): Joysticks initialized in 103.255us
+Warning: maxDynamicUniformBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+Warning: maxDynamicStorageBuffersPerPipelineLayout artificially reduced from 500000 to 16 to fit dynamic offset allocation limit.
+info: [zgpu] High-performance device has been selected:
+info: [zgpu]   Device: AMD Ryzen 9 9900X 12-Core Processor (RADV RAPHAEL_MENDOCINO)
+info: [zgpu]   Driver: radv: Mesa 25.2.8-0ubuntu0.24.04.4
+info: [zgpu]   Adapter type: integrated_gpu
+info: [zgpu]   Backend type: vulkan
+error(deecy): GLFW error 1000E: Wayland: Platform not initialized
+info(deecy): Graphics context initialized in 23.786ms
+info(deecy): Zaudio initialized in 8.439ms
+info(arm_jit): Resetting block cache.
+  (...x2)
+info(modem): Hard Reset
+info(deecy): Dreamcast initialized in 20.518ms
+info(renderer): Creating Pipeline: [Translucent: false, Blend SRC: one, DST: zero, Depth Compare: always, Depth Write: false, Culling Mode: None]
+info(renderer): Creating Pipeline: [Translucent: false, Blend SRC: one, DST: zero, Depth Compare: greater_equal, Depth Write: true, Culling Mode: None]
+info(renderer): Creating Pipeline: [Translucent: false, Blend SRC: src_alpha, DST: one_minus_src_alpha, Depth Compare: greater_equal, Depth Write: true, Culling Mode: None]
+info(renderer): Renderer initialized in 39.063ms
+info(maple): Loading VMU from file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin'.
+info(maple):   Not found: Initializing new VMU at '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin'.
+info(deecy): Deecy initialized in 145.157ms
+info: Loading Disc: '/home/flo/devel/t2-hacking/dreamcast/dreamcast-linux/build/linux-7.2.8-with-userland-muslX.cdi'...
+info(renderer): Updating game settings:
+info(renderer):   aspect_ratio: .4:3
+info(renderer):   scaling_filter: .Linear
+info(renderer):   framebuffer_emulation: false
+info(renderer):   copy_to_vram: true
+info(renderer):   clamp_sprites_uvs: true
+info(renderer):   synchronous_render: false
+info(renderer):   delay_render: false
+info(deecy): Using settings: Region=Japan, Video Cable=Auto, Bios Emulation=Original
+info(deecy): Using block invalidation strategy: None
+error(maple): Failed to backup VMU file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin.bak': FileNotFound
+info(maple): Saved VMU to file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/vmu_0_0.bin'.
+info(maple): Loading VMU from file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin'.
+info(maple):   Not found: Initializing new VMU at '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin'.
+info(deecy): Loaded 'Dreamcast Linux' (T-00000   V1.000).
+info(x86_64_emitter): Enabled PDEP/PEXT emit (BMI2 support: true)
+warning(sh4): Note: pref @Rn not implemented outside of store queue operation.
+info(modem): Hard Reset
+info(aica): ARM reset : 0
+info(arm_jit): Resetting block cache.
+error(aica):   No code uploaded to ARM7, ignoring reset. FIXME: This is a hack.
+info(aica): Write to AICA Register SCIEB = ()
+info(aica): ARM reset : 1
+info(arm_jit): Resetting block cache.
+info(aica): ARM reset : 0
+info(arm_jit): Resetting block cache.
+warning(gdrom): SPI Packet GetToC - Single Density (alloc_length: 0x0198)
+info(aica): ARM reset : 0
+info(arm_jit): Resetting block cache.
+info(aica): ARM reset : 1
+info(arm_jit): Resetting block cache.
+info(aica): ARM reset : 1
+info(arm_jit): Resetting block cache.
+info(aica): ARM reset : 0
+info(arm_jit): Resetting block cache.
+info(aica): Write to AICA Register SCIEB = (MIDI_input | timer_a)
+warning(renderer): on_render_start: Empty TA lists submitted. Is the game trying to reuse the previous TA lists?
+info: [zgpu] Surface has been reconfigured with size: 1693x956.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
 
+info: [zgpu] Surface has been reconfigured with size: 1685x953.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
 
+info: [zgpu] Surface has been reconfigured with size: 1639x927.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1618x914.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1563x870.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1395x732.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1305x671.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1267x649.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1221x627.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1193x617.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1182x616.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: Scissor rect (x: 33, y: 65, width: 190, height: 555) is not contained in the render target dimensions (1182 x 616).
+ - While encoding [RenderPassEncoder (unlabeled)].SetScissorRect(33, 65, 190, 555).
+ - While finishing [CommandEncoder (unlabeled)].
+
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: [Invalid CommandBuffer] is invalid.
+ - While calling [Queue].Submit([[CommandBuffer], [Invalid CommandBuffer]])
+
+info: [zgpu] Surface has been reconfigured with size: 1181x626.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1181x631.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1193x657.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1203x678.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1218x702.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1227x716.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1248x743.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1252x748.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1260x756.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1282x778.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1289x785.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+info: [zgpu] Surface has been reconfigured with size: 1290x785.
+error: [zgpu] Uncaptured Error:
+	Error Type: validation
+	Message: GetCurrentTexture was not called on [Surface "X11 Window Surface"] this frame prior to calling Present.
+    at ValidatePresent (SwapChain.cpp:195)
+
+warning(renderer): Skipped a frame.
+error(maple): Failed to backup VMU file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin.bak': FileNotFound
+info(maple): Saved VMU to file '/media/flo/nvme0-ssd/Deecy/zig-out/bin/userdata/Dreamcast_Linux[T-00000___V1.000]/vmu_0.bin'.
+warning(gdrom): SPI Packet GetToC - Single Density (alloc_length: 0x0198)
+warning(gdrom): SPI Packet ReqSes - Session Number: 0 (alloc_length: 0x0006)
+warning(gdrom): SPI Packet ReqSes - Session Number: 2 (alloc_length: 0x0006)
+warning(renderer): on_render_start: Empty TA lists submitted. Is the game trying to reuse the previous TA lists?
+  (...x15)
+info(aica): ARM reset : 0
+info(arm_jit): Resetting block cache.
+warning(sh4): MMU State: Disabled => Limited
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001400 (01001400)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001401 (01001401)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001402 (01001402)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001403 (01001403)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001404 (01001404)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001405 (01001405)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001406 (01001406)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001407 (01001407)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001408 (01001408)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 01001409 (01001409)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 0100140A (0100140A)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 0100140B (0100140B)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 0100140C (0100140C)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 0100140D (0100140D)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 0100140E (0100140E)
+warning(dc):   Unimplemented _get_memory to Expansion Devices: 0100140F (0100140F)
+info(aica): ARM reset : 0
+info(arm_jit): Resetting block cache.
+info(aica): ARM reset : 0
+info(arm_jit): Resetting block cache.
+Linux version 7.2.8 (root@0d22cdf19af3) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #19 PREEMPT Sun Oct  4 19:21:58 UTC 2026
+Boot params:
+... MOUNT_ROOT_RDONLY - 00000000
+... RAMDISK_FLAGS     - 00000000
+... ORIG_ROOT_DEV     - 00000100
+... LOADER_TYPE       - 00000000
+... INITRD_START      - 00000000
+... INITRD_SIZE       - 00000000
+Booting machvec: Sega Dreamcast
+initrd disabled
+Zone ranges:
+  Normal   [mem 0x000000000c000000-0x000000000cffffff]
+Movable zone start for each node
+Early memory node ranges
+  node   0: [mem 0x000000000c000000-0x000000000cffffff]
+Initmem setup node 0 [mem 0x000000000c000000-0x000000000cffffff]
+Kernel command line: console=ttySC1,115200 panic=3 ip=dhcp
+printk: log buffer data + meta data: 16384 + 51200 = 67584 bytes
+Dentry cache hash table entries: 2048 (order: 1, 8192 bytes, linear)
+Inode-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Sorting __ex_table...
+Built 1 zonelists, mobility grouping on.  Total pages: 4096
+mem auto-init: stack:off, heap alloc:off, heap free:off
+PVR=040205c1 CVR=00000000 PRR=00000000
+I-cache : n_ways=1 n_sets=256 way_incr=8192
+I-cache : entry_mask=0x00001fe0 alias_mask=0x00001000 n_aliases=2
+D-cache : n_ways=1 n_sets=512 way_incr=16384
+D-cache : entry_mask=0x00003fe0 alias_mask=0x00003000 n_aliases=4
+virtual kernel memory layout:
+    fixmap  : 0xdfff7000 - 0xdffff000   (  32 kB)
+    vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
+    lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
+            : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
+      .init : 0x8c4bf000 - 0x8c4e8000   ( 164 kB)
+      .data : 0x8c39f5c8 - 0x8c4beddc   (1150 kB)
+      .text : 0x8c001000 - 0x8c39f5c8   (3705 kB)
+SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+rcu: Preemptible hierarchical RCU implementation.
+rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+intc: Registered controller 'sh7750' with 20 IRQs
+intc: Registered controller 'sh7750_dma4' with 5 IRQs
+rcu: srcu_init: Setting srcu_struct sizes based on contention.
+clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+Console: colour dummy device 80x25
+ sh-tmu.0: ch0: used for clock events
+ sh-tmu.0: ch0: used for periodic clock events
+ sh-tmu.0: ch1: used as clock source
+clocksource: sh-tmu.0: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 153279423644 ns
+sched_clock: 32 bits at 250 Hz, resolution 4000000ns, wraps every 8589934590000000ns
+Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
+CPU: SH7750
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+VFS: Finished mounting rootfs on nullfs
+Performance Events: sh7750 support registered
+rcu: Hierarchical SRCU implementation.
+rcu:    Max phase no-delay instances is 1000.
+Memory: 10464K/16384K available (3701K kernel code, 205K rwdata, 940K rodata, 164K init, 98K bss, 5308K reserved, 0K cma-reserved)
+devtmpfs: initialized
+posixtimers hash table entries: 512 (order: 0, 2048 bytes, linear)
+futex hash table entries: 256 (3072 bytes on 1 NUMA nodes, total 3 KiB, linear).
+NET: Registered PF_NETLINK/PF_ROUTE protocol family
+DMA: preallocated 128 KiB GFP_KERNEL pool for atomic allocations
+HugeTLB: registered 64.0 KiB page size, pre-allocated 0 pages
+HugeTLB: 0 KiB vmemmap can be freed for a 64.0 KiB page
+sh_tmu sh-tmu.0: kept as earlytimer
+Advanced Linux Sound Architecture Driver Initialized.
+DMA: Registering sh_dmac handler (4 channels).
+DMA: Registering DMA API.
+DMA: Registering pvr2_dmac handler (1 channel).
+DMA: Registering g2_dmac handler (4 channels).
+vgaarb: loaded
+clocksource: Switched to clocksource sh-tmu.0
+ maple: bus core now registered
+NET: Registered PF_INET protocol family
+IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+maple (null): detected Dreamcast Controller: function 0x1: at (0, 0)
+maple (null): no driver found
+maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
+maple (null): no driver found
+maple (null): no devices to port 2
+maple (null): no devices to port 3
+tcp_listen_portaddr_hash hash table entries: 1024 (order: 0, 4096 bytes, linear)
+Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
+TCP bind hash table entries: 1024 (order: 1, 8192 bytes, linear)
+TCP: Hash tables configured (established 1024 bind 1024)
+UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+NET: Registered PF_UNIX/PF_LOCAL protocol family
+RPC: Registered named UNIX socket transport module.
+RPC: Registered udp transport module.
+RPC: Registered tcp transport module.
+RPC: Registered tcp-with-tls transport module.
+RPC: Registered tcp NFSv4.1 backchannel transport module.
+PCI: CLS 0 bytes, default 32
+sq: Registering store queue API.
+workingset: timestamp_bits=30 (anon: 25) max_order=12 bucket_order=0 (anon: 0)
+squashfs: version 4.0 (2009/01/31) Phillip Lougher
+maple (null): detected Visual Memory: function 0xE: at (0, 1)
+maple (null): no driver found
+io scheduler mq-deadline registered
+io scheduler kyber registered
+Console: switching to colour frame buffer device 80x30
+fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
+fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
+fb0: registering with SQ API
+sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
+fb0: Mapped video memory to SQ addr 0xe0000000
+SuperH (H)SCI(F) driver initialized
+sh-sci.0: ttySC0 at MMIO 0xffe00000 (irq = 39, base_baud = 0) is a sci
+sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
+printk: legacy console [ttySC1] enabled
+info(modem): Hard Reset
+info(modem): Soft Reset
+info(modem): Controller Self Test
+info(modem): DSP Self Test
+warning(dc): [8C0155FE] Write to SB_ISTEXT (ignored): 4 (Report 1/10)
+dcmodem dcmodem: SEGA Dreamcast modem, IRQ 98
+pvr2_dc: /dev/pvr ready (VRAM 8MB, regs, TA FIFO, CH2-DMA submit)
+warning(sh4_jit): JIT cache full: Resetting.
+brd: module loaded
+loop: module loaded
+Dreamcast_visual_memory 0:01.E: VMU LCD at (0, 1) registered as vmu_lcd0
+PPP generic driver version 2.4.2
+PPP BSD Compression module registered
+PPP Deflate Compression module registered
+PPP MPPE Compression module registered
+SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, max=256).
+warning(maple): GetMediaInformation: Function: storage, Partition number: 0
+Dreamcast_visual_memory 0:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255
+gdrom: ATA Probe for GDROM failed
+mousedev: PS/2 mouse device common for all mice
+input: Dreamcast Controller as /devices/maple/0:00.1/input/input0
+input: Dreamcast Controller as /devices/maple/1:00.1/input/input1
+AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
 info(aica): ARM reset : 1
 info(arm_jit): Resetting block cache.
 info(aica): ARM reset : 0
@@ -767,3 +1147,4 @@ Build Summary: 17/19 steps succeeded (1 failed)
 run transitive failure
 └─ run exe Deecy failure
 
+```
