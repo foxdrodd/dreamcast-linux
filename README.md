@@ -33,7 +33,7 @@ Tested Devices, feel free to add PR to add your test device:
 | CDI | lxdream 0.9.1 |  :x: No | stays at sega screen, with memset/memcpy sh4-specifics removed, boots to console, but no interaction possible see [lxdream-analyze.txt](debuggings/lxdream-analyze.txt) |
 | CDI | flycast 2.6 |  :x: No | stays at sega screen, see [flycast-analyze.txt](debuggings/flycast-analyze.txt)   |
 | CDI | redream 1.5.0 |  :x: No | [redream-analyze.txt](debuggings/redream-analyze.txt) |
-| CDI | Deecy |  :x: No | [deecy-analyze.txt](debuggings/deecy-analyze.md) |
+| CDI | Deecy |  :heavy_check_mark: kinda | Boots fully with "Full MMU Emulation", but no shell [deecy-analyze.txt](debuggings/deecy-analyze.md) |
 | CDI | qemu patched |  :heavy_check_mark: Yes | My custom [qemu](https://github.com/foxdrodd/qemu) boots with framebuffer, serial, network, VMU, GDROM, keyboard, mouse, [Wiki](https://github.com/foxdrodd/dreamcast-linux/wiki/QEMU-Support-for-Dreamcast) |
 
 
