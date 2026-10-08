@@ -16,6 +16,17 @@ See the [latest release](https://github.com/foxdrodd/dreamcast-linux/releases/la
 - `kernel-boot.bin`: plain executable, that can be loaded with `dcload-serial`
 - `1ST_READ.BIN`: scrambled executable, that can be used to burn a custom CD
 
+The CDI images in comparison:
+
+| CDI image | libc | Root filesystem | Packages | X11 | Native gcc | Doom |
+| --------- | ---- | --------------- | -------- | :---: | :---: | :---: |
+| `linux-<ver>-with-userland-muslX.cdi` | musl | GD-ROM (iso9660) + writable overlayfs | ~160 | :heavy_check_mark: TinyX (`Xfbdev`), JWM, Blackbox | :heavy_check_mark: | :heavy_check_mark: |
+| `linux-<ver>-with-userland-musl.cdi` | musl | GD-ROM (iso9660) + writable overlayfs | ~155 | :x: | :heavy_check_mark: | :heavy_check_mark: |
+| `linux-<ver>-with-userland-uclibc.cdi` | uClibc | GD-ROM (iso9660) + writable overlayfs | ~150 | :x: | :x: | :heavy_check_mark: |
+| `linux-<ver>-base-busybox.cdi` | - | BusyBox 1.37.0 initramfs in RAM | BusyBox only | :x: | :x: | :x: |
+
+All images share the same kernel. The `with-userland` variants boot a tiny initramfs whose init mounts the GD-ROM, stacks an overlay on top and chroots into it, so changes are writable but lost on reboot.
+
 The image already includes a usable and up-to-date software stack, but application coverage, graphical interfaces, memory usage, and build reproducibility still need work. The patches are currently applied manually.
 
 [It is actually tested on real hardware](https://github.com/foxdrodd/dc-hacking/blob/main/linux-on-dreamcast/linux-booting-dmesg.md). 
