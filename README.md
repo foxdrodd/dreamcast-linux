@@ -73,7 +73,7 @@ Creates a cross-compilation environment for the SH4 architecture using Docker. T
 * http://linuxdevices.org/running-linux-on-the-sega-dreamcast-a/
 * https://github.com/foxdrodd/sh-boot/
 * https://linuxdc.net
-* https://asciinema.org/a/722003?t=5
+* https://linuxdc.net/assets/boot-7.2.9.mp4
 
 ## License
 
