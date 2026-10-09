@@ -20,7 +20,7 @@ The CDI images in comparison:
 
 | CDI image | libc | Root filesystem | Packages | X11 | Native gcc | Doom |
 | --------- | ---- | --------------- | -------- | :---: | :---: | :---: |
-| `linux-<ver>-with-userland-muslX.cdi` | musl | GD-ROM (iso9660) + writable overlayfs | ~160 | :heavy_check_mark: TinyX (`Xfbdev`), JWM, Blackbox | :heavy_check_mark: | :heavy_check_mark: |
+| `linux-<ver>-with-userland-muslX.cdi` | musl | GD-ROM (iso9660) + writable overlayfs | ~160 | :heavy_check_mark: TinyX (`Xfbdev`), JWM | :heavy_check_mark: | :heavy_check_mark: |
 | `linux-<ver>-with-userland-musl.cdi` | musl | GD-ROM (iso9660) + writable overlayfs | ~155 | :x: | :heavy_check_mark: | :heavy_check_mark: |
 | `linux-<ver>-with-userland-uclibc.cdi` | uClibc | GD-ROM (iso9660) + writable overlayfs | ~150 | :x: | :x: | :heavy_check_mark: |
 | `linux-<ver>-base-busybox.cdi` | - | BusyBox 1.37.0 initramfs in RAM | BusyBox only | :x: | :x: | :x: |
