@@ -3,80 +3,75 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dreamcast Linux — A full Linux distribution for the Sega Dreamcast</title>
-<meta name="description" content="Dreamcast Linux is a full, hardware-tested Linux distribution for the Sega Dreamcast (SH4) — modern 7.x kernel, BusyBox + ~140-package userland, framebuffer, VMU, GD-ROM and networking." />
+<title>Dreamcast Linux</title>
+<meta name="description" content="Dreamcast Linux is a Linux distribution for the Sega Dreamcast (SH4): 7.x kernel, BusyBox and about 140 userland packages, framebuffer, VMU, GD-ROM and networking. Tested on real hardware." />
 <meta name="author" content="Florian Fuchs" />
-<meta name="theme-color" content="#0a0a0c" />
 
-<!-- Open Graph / social -->
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Dreamcast Linux" />
-<meta property="og:description" content="A full Linux distribution for the Sega Dreamcast. Modern 7.x kernel on SH4, tested on real hardware." />
+<meta property="og:description" content="A Linux distribution for the Sega Dreamcast. 7.x kernel on SH4, tested on real hardware." />
 <meta property="og:url" content="https://foxdrodd.github.io/dreamcast-linux/" />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="Dreamcast Linux" />
-<meta name="twitter:description" content="A full Linux distribution for the Sega Dreamcast. Tested on real hardware." />
 
 <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;circle cx='50' cy='50' r='48' fill='%230a0a0c'/&gt;&lt;path d='M50 14a36 36 0 1 0 0 72 28 28 0 1 1 0-56 20 20 0 1 0 0 40 12 12 0 1 1 0-24' fill='none' stroke='%23f06d00' stroke-width='9' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
-<link rel="preload" href="assets/fonts/space-grotesk.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="assets/fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="assets/fonts/fonts.css" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="scanlines" aria-hidden="true"></div>
 
-<!-- ===== NAV ===== -->
-<header class="nav">
-  <a class="nav__brand" href="#top">
-    <span class="swirl" aria-hidden="true"></span>
-    <span>Dreamcast<span class="accent">Linux</span></span>
-  </a>
-  <nav class="nav__links">
+<header>
+  <h1>Dreamcast Linux</h1>
+  <nav>
     <a href="#features">Features</a>
-    <a href="#see-it-run">Gallery</a>
     <a href="#downloads">Downloads</a>
     <a href="#hardware">Hardware</a>
     <a href="#heritage">Heritage</a>
-    <a class="nav__gh" href="https://github.com/foxdrodd/dreamcast-linux" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/foxdrodd/dreamcast-linux/wiki">Wiki</a>
+    <a href="https://github.com/foxdrodd/dreamcast-linux">GitHub</a>
   </nav>
 </header>
 
-<!-- ===== HERO ===== -->
-<main id="top">
-<section class="hero">
-  <div class="hero__glow" aria-hidden="true"></div>
-  <div class="hero__inner">
-    <!-- RELEASE BADGE — edit version/kernel here on each release -->
-    <a class="hero__badge" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest" target="_blank" rel="noopener">
-      <span class="hero__badge-dot"></span>
-      Latest release <strong>v7.2.9</strong> · 7.2.9 kernel
-    </a>
-    <p class="hero__kicker">// GNU/Linux on the Sega Dreamcast · SH4</p>
-    <h1 class="hero__title">A <span class="accent">full</span> Linux distribution<br />for the Sega Dreamcast</h1>
-    <p class="hero__sub">
-      A modern <strong>7.x kernel</strong>, a BusyBox base and a <strong>~140-package</strong>
-      userland — booting on real Dreamcast hardware from a humble GD-ROM.
-      Kernel built in a Docker environment; userland cross-compiled with T2 SDE.
-    </p>
-    <div class="hero__cta">
-      <a class="btn btn--primary" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest" target="_blank" rel="noopener">↓ Download latest CDI</a>
-      <a class="btn" href="https://github.com/foxdrodd/dreamcast-linux" target="_blank" rel="noopener">Source on GitHub</a>
-      <a class="btn" href="https://github.com/foxdrodd/dreamcast-linux/wiki" target="_blank" rel="noopener">Documentation Wiki</a>
-    </div>
-    <p class="hero__note">✓ Tested on real hardware · MIT licensed · No emulator required</p>
-  </div>
-</section>
+<main>
 
-<!-- ===== TERMINAL ===== -->
-<section class="terminal-wrap">
-  <div class="terminal">
-    <div class="terminal__bar">
-      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      <span class="terminal__title">ttySC1 — Dreamcast serial console · 115200 baud</span>
-    </div>
-    <pre class="terminal__body" tabindex="0" aria-label="Real boot log (dmesg) from Dreamcast Linux 7.2.9 on real hardware"><span class="c-dim">Linux version 7.2.9 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #8 PREEMPT Wed Oct 7 2026</span>
-<span class="c-ok">Booting machvec: Sega Dreamcast</span>
+<p class="intro">
+  A Linux distribution for the Sega Dreamcast: a 7.x kernel, a BusyBox base and
+  about 140 userland packages, booting from a GD-ROM on the original 200&nbsp;MHz SH4
+  with 16&nbsp;MB of RAM. Tested on real hardware.
+</p>
+
+<p>
+  The kernel is built in a Docker environment, the userland is cross-compiled
+  with <a href="https://t2sde.org">T2 SDE</a>. Everything is MIT licensed.
+</p>
+
+<!-- RELEASE: edit version here on each release -->
+<p>
+  <a class="download" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest">Download v7.2.9</a>
+</p>
+
+<!-- Photos live in assets/pictures/. Copy a <figure> to add one. -->
+<div class="photos">
+  <figure>
+    <a href="assets/pictures/booted.jpeg"><img src="assets/pictures/booted.jpeg" alt="Dreamcast Linux booted to a console, showing system info" loading="lazy" width="720" height="480" /></a>
+    <figcaption>Booted to a console</figcaption>
+  </figure>
+  <figure>
+    <a href="assets/pictures/htop.png"><img src="assets/pictures/htop.png" alt="htop showing live processes on Dreamcast Linux" loading="lazy" width="720" height="480" /></a>
+    <figcaption>htop</figcaption>
+  </figure>
+  <figure>
+    <a href="assets/pictures/doom.png"><img src="assets/pictures/doom.png" alt="DOOM running via fbdoom on Dreamcast Linux" loading="lazy" width="720" height="480" /></a>
+    <figcaption>fbdoom</figcaption>
+  </figure>
+</div>
+
+<h2>Boot log</h2>
+<p>
+  Linux 7.2.9 on a real Dreamcast, captured on the serial console (ttySC1, 115200 baud).
+  There is also a <a href="assets/boot-7.2.9.mp4">video of the boot</a> and the
+  <a href="assets/dmesg.txt">raw dmesg</a>.
+</p>
+<pre class="log" tabindex="0" aria-label="Boot log (dmesg) from Dreamcast Linux 7.2.9 on real hardware">Linux version 7.2.9 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #8 PREEMPT Wed Oct 7 2026
+Booting machvec: Sega Dreamcast
 Kernel command line: console=ttySC1,115200 panic=3 ip=dhcp
 Zone ranges:
   Normal   [mem 0x000000000c000000-0x000000000cffffff]
@@ -89,7 +84,7 @@ virtual kernel memory layout:
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 intc: Registered controller 'sh7750' with 20 IRQs
 Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
-<span class="c-ok">CPU: SH7750</span>
+CPU: SH7750
 Memory: 11336K/16384K available (3365K kernel code, 205K rwdata, 424K rodata, 148K init, 93K bss, 4436K reserved)
 Performance Events: sh7750 support registered
 Advanced Linux Sound Architecture Driver Initialized.
@@ -97,333 +92,196 @@ DMA: Registering g2_dmac handler (4 channels).
 PCI host bridge to bus 0000:00
 pci 0000:00:00.0: [11db:1234] type 00 class 0x020000 conventional PCI endpoint
 PCI: Fixing up device 0000:00:00.0
-<span class="c-ok">maple: bus core now registered</span>
+maple: bus core now registered
 NET: Registered PF_INET protocol family
 TCP: Hash tables configured (established 1024 bind 1024)
 sq: Registering store queue API.
-<span class="c-ok">maple (null): detected Dreamcast Mouse: function 0x200: at (0, 0)</span>
-<span class="c-ok">maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)</span>
-<span class="c-ok">maple (null): detected Dreamcast Controller: function 0x1: at (2, 0)</span>
-<span class="c-ok">maple (null): detected Keyboard: function 0x40: at (3, 0)</span>
-<span class="c-ok">maple (null): detected Visual Memory: function 0xE: at (2, 1)</span>
+maple (null): detected Dreamcast Mouse: function 0x200: at (0, 0)
+maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
+maple (null): detected Dreamcast Controller: function 0x1: at (2, 0)
+maple (null): detected Keyboard: function 0x40: at (3, 0)
+maple (null): detected Visual Memory: function 0xE: at (2, 1)
 squashfs: version 4.0 (2009/01/31) Phillip Lougher
 Console: switching to colour frame buffer device 80x30
-<span class="c-ok">fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory</span>
-<span class="c-ok">fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA</span>
+fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
+fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
 sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
 SuperH (H)SCI(F) driver initialized
 sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
 printk: legacy console [ttySC1] enabled
-<span class="c-ok">pvr2_dc: /dev/pvr ready (VRAM 8MB, regs, TA FIFO, CH2-DMA submit)</span>
-<span class="c-ok">Dreamcast_visual_memory 2:01.E: VMU LCD at (2, 1) registered as vmu_lcd0</span>
+pvr2_dc: /dev/pvr ready (VRAM 8MB, regs, TA FIFO, CH2-DMA submit)
+Dreamcast_visual_memory 2:01.E: VMU LCD at (2, 1) registered as vmu_lcd0
 lan_adapter (uninitialized): no MB86967 found (slot empty or modem fitted?)
-<span class="c-ok">Dreamcast_visual_memory 2:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255</span>
-<span class="c-ok">8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99</span>
+Dreamcast_visual_memory 2:01.E: VMU device at partition 0 has 200 user blocks with a root block at 255
+8139too 0000:00:00.0 eth0: RealTek RTL8139 at 0x(ptrval), 00:d0:f1:03:21:ca, IRQ 99
 PPP generic driver version 2.4.2
 SLIP: version 0.8.4-NET3.019-NEWTTY (dynamic channels, max=256).
-<span class="c-ok">gdrom: CD-ROM DRIVE     from SE               with firmware 6.42</span>
+gdrom: CD-ROM DRIVE     from SE               with firmware 6.42
 gdrom: Registered with major number 254
 cdrom: Uniform CD-ROM driver Revision: 3.20
-<span class="c-ok">input: Keyboard as /devices/maple/3:00.40/input/input0</span>
-<span class="c-ok">input: Dreamcast Mouse as /devices/maple/0:00.200/input/input1</span>
-<span class="c-ok">input: Dreamcast Controller as /devices/maple/1:00.1/input/input2</span>
-<span class="c-ok">input: Dreamcast Controller as /devices/maple/2:00.1/input/input3</span>
-<span class="c-ok">AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor</span>
+input: Keyboard as /devices/maple/3:00.40/input/input0
+input: Dreamcast Mouse as /devices/maple/0:00.200/input/input1
+input: Dreamcast Controller as /devices/maple/1:00.1/input/input2
+input: Dreamcast Controller as /devices/maple/2:00.1/input/input3
+AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
 random: crng init done
-<span class="c-ok">8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1</span>
+8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1
 Sending DHCP requests ., OK
-<span class="c-ok">IP-Config: Got DHCP answer from 192.168.0.1, my address is 192.168.0.38</span>
+IP-Config: Got DHCP answer from 192.168.0.1, my address is 192.168.0.38
      device=eth0, hwaddr=00:d0:f1:03:21:ca, ipaddr=192.168.0.38, mask=255.255.255.0, gw=192.168.0.1
 ALSA device list:
   #1: Yamaha AICA Super Intelligent Sound Processor for SEGA Dreamcast
 Freeing unused kernel image (initmem) memory: 148K
-<span class="c-ok">Run /init as init process</span>
+Run /init as init process
 ISO 9660 Extensions: RRIP_1991A
 
-<span class="c-acc">root@dreamcast:/$</span> <span class="cursor">_</span></pre>
-    <div class="terminal__fade" aria-hidden="true"></div>
-  </div>
-  <p class="terminal__cap">Real boot log — Linux 7.2.9 on actual Dreamcast hardware, scroll it.
-    <a href="assets/boot-7.2.9.mp4" target="_blank" rel="noopener">▶ Watch it boot</a> ·
-    <a href="assets/dmesg.txt" target="_blank" rel="noopener">raw dmesg</a></p>
-</section>
+root@dreamcast:/$ </pre>
 
-<!-- ===== GALLERY =====
-     Photos live in docs/assets/pictures/. To add one, copy a <figure> tile and
-     set img src + data-full to the same file, plus alt + figcaption. The grid
-     reflows with any number of tiles; clicking a photo opens it in a lightbox. -->
-<section id="see-it-run" class="section">
-  <h2 class="section__title"><span class="accent">#</span> Gallery</h2>
-  <p class="section__lead">Dreamcast Linux running on real hardware. Click any shot to enlarge.</p>
+<h2 id="features">Features</h2>
+<dl>
+  <dt>Framebuffer console</dt>
+  <dd>640×480 <code>pvr2fb</code> console on the PowerVR2. Plug in a TV or monitor and a Dreamcast keyboard and you have a terminal.</dd>
 
-  <div class="gallery">
-    <figure class="shot">
-      <button class="shot__btn" type="button" data-full="assets/pictures/booted.jpeg" aria-label="Enlarge: booted to a console">
-        <img src="assets/pictures/booted.jpeg" alt="Dreamcast Linux booted to a console, showing system info" loading="lazy" width="720" height="480" />
-      </button>
-      <figcaption>Booted to a console</figcaption>
-    </figure>
-    <figure class="shot">
-      <button class="shot__btn" type="button" data-full="assets/pictures/htop.png" aria-label="Enlarge: htop">
-        <img src="assets/pictures/htop.png" alt="htop showing live processes on Dreamcast Linux" loading="lazy" width="720" height="480" />
-      </button>
-      <figcaption>Live processes — <code>htop</code></figcaption>
-    </figure>
-    <figure class="shot">
-      <button class="shot__btn" type="button" data-full="assets/pictures/doom.png" aria-label="Enlarge: DOOM via fbdoom">
-        <img src="assets/pictures/doom.png" alt="DOOM running via fbdoom on Dreamcast Linux" loading="lazy" width="720" height="480" />
-      </button>
-      <figcaption>Yes, it runs <code>DOOM</code></figcaption>
-    </figure>
-  </div>
-</section>
+  <dt>Networking and NFS</dt>
+  <dd>The Broadband Adapter (HIT-0400, RTL8139) and the LAN Adapter (HIT-0300) are both supported: TCP/IP, NFS mounts and remote login.</dd>
 
-<!-- Lightbox overlay (shared by all gallery photos) -->
-<div class="lightbox" id="lightbox" hidden>
-  <button class="lightbox__close" type="button" aria-label="Close">×</button>
-  <figure class="lightbox__fig">
-    <img class="lightbox__img" src="" alt="" />
-    <figcaption class="lightbox__cap"></figcaption>
-  </figure>
+  <dt>VMU</dt>
+  <dd>The Visual Memory Unit is readable and writable as a block device, with the <code>vmufat</code> filesystem and the VMU LCD.</dd>
+
+  <dt>GD-ROM</dt>
+  <dd>Native GD-ROM driver. Boot and mount the disc directly, or run from GDEMU or dcload.</dd>
+
+  <dt>Maple bus</dt>
+  <dd>Controllers, keyboards and mice are probed and show up as standard input devices.</dd>
+
+  <dt>Userland</dt>
+  <dd>About 140 packages on the GD-ROM, mounted writable through overlayfs, in <code>musl</code> or <code>uClibc</code> builds. <a href="http://www.mirbsd.org/mksh.htm">mksh</a> is the default shell, and <code>fbdoom</code> is included.</dd>
+
+  <dt>Kernel</dt>
+  <dd>A current 7.x SH4 kernel with a built-in initramfs, so there is no separate initrd. A custom <code>init</code> of about 5&nbsp;KB brings the system up.</dd>
+
+  <dt>Upstream first</dt>
+  <dd>Kernel changes are sent to mainline where that makes sense, instead of being kept in a private fork.</dd>
+</dl>
+
+<h2 id="downloads">Downloads</h2>
+<p>
+  Images are on the
+  <a href="https://github.com/foxdrodd/dreamcast-linux/releases/latest">releases page</a>.
+  Burn the CDI, put it on a GDEMU, or load the raw binary with dcload.
+</p>
+
+<!-- LATEST RELEASE: hand-edited, update on each release -->
+<h3>v7.2.9, October 2026</h3>
+<ul>
+  <li>Kernel update to Linux 7.2.9, with largely the same userland as 7.1.3.</li>
+  <li>Prototype modem driver, an initial adaptation of the KallistiOS driver.</li>
+  <li>Improved keypress detection and a new boot screen.</li>
+  <li>A bit more free RAM from a trimmed kernel config, and a fix for a boot race when a VMU is plugged in.</li>
+</ul>
+<p><a href="https://github.com/foxdrodd/dreamcast-linux/releases/tag/7.2.9">Full release notes</a></p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Image</th><th>Contents</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>base-busybox</code></td>
+      <td>Kernel and initrd with a minimal BusyBox shell. NFS, GD-ROM mounts and more.</td>
+      <td>Smallest bootable system, debugging</td>
+    </tr>
+    <tr>
+      <td><code>with-userland</code></td>
+      <td>Full system, about 140 packages on GD-ROM via overlayfs. <code>musl</code> or <code>uClibc</code>.</td>
+      <td>The complete distribution</td>
+    </tr>
+    <tr>
+      <td><code>userland</code></td>
+      <td>Only the userland files, no kernel.</td>
+      <td>Building your own images</td>
+    </tr>
+    <tr>
+      <td><code>kernel-boot.bin</code></td>
+      <td>Plain executable.</td>
+      <td>Loading via <code>dcload-serial</code></td>
+    </tr>
+    <tr>
+      <td><code>1ST_READ.BIN</code></td>
+      <td>Scrambled executable.</td>
+      <td>Burning a self-booting CD</td>
+    </tr>
+  </tbody>
+</table>
 </div>
 
-<!-- ===== STATS ===== -->
-<section class="stats">
-  <div class="stat"><span class="stat__num">7.x</span><span class="stat__lbl">Linux kernel</span></div>
-  <div class="stat"><span class="stat__num">~140</span><span class="stat__lbl">userland packages</span></div>
-  <div class="stat"><span class="stat__num">16<small>MB</small></span><span class="stat__lbl">system RAM</span></div>
-  <div class="stat"><span class="stat__num">SH4</span><span class="stat__lbl">200&nbsp;MHz CPU</span></div>
-</section>
+<h2 id="hardware">Tested hardware</h2>
+<p>To add your console, send a PR to the <a href="https://github.com/foxdrodd/dreamcast-linux">repository</a>.</p>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Boot medium</th><th>Revision</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>GDEMU, dcload-serial, dcload-ip</td><td>HKT-3030, PAL E, Rev. 1</td><td class="ok">Works</td></tr>
+    <tr><td>GD-ROM, dcload-serial</td><td>HKT-3000, NTSC-J (670-14071E)</td><td class="ok">Works</td></tr>
+    <tr><td>GD-ROM, dcload-serial</td><td>HKT-3020, NTSC-U, Rev. 1 (670-14081B)</td><td class="ok">Works</td></tr>
+    <tr><td>GDEMU</td><td>HKT-3020, NTSC-U, Rev. 1 (670-14081M)</td><td class="ok">Works</td></tr>
+    <tr><td>GDEMU</td><td>HKT-3020, NTSC-U, Rev. 1 (670-14081K)</td><td class="no">Stuck at SEGA screen</td></tr>
+    <tr><td>Emulators (flycast, lxdream, redream, GXemul)</td><td>various</td><td class="no">Not yet</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Per-device notes and emulator analyses are in the repository's <code>debuggings/</code> directory and the README.</p>
 
-<!-- ===== FEATURES ===== -->
-<section id="features" class="section">
-  <h2 class="section__title"><span class="accent">#</span> What's inside</h2>
-  <p class="section__lead">A real, usable Linux system on 28-year-old console hardware — not a tech demo.</p>
-  <div class="grid">
-    <article class="card">
-      <h3>🖥️ Framebuffer console</h3>
-      <p>A 640×480 <code>pvr2fb</code> console on the PowerVR2 — plug in a TV/Monitor and a Dreamcast keyboard and you have a terminal.</p>
-    </article>
-    <article class="card">
-      <h3>🌐 Networking &amp; NFS</h3>
-      <p>Both the Broadband Adapter (HIT-0400, RTL8139) and the LAN Adapter (HIT-0300) are supported — full TCP/IP, NFS mounts and remote login over the wire.</p>
-    </article>
-    <article class="card">
-      <h3>💾 VMU support</h3>
-      <p>Read and write the Visual Memory Unit as a block device, including the on-VMU LCD and <code>vmufat</code> filesystem.</p>
-    </article>
-    <article class="card">
-      <h3>💿 GD-ROM</h3>
-      <p>Native GD-ROM driver — boot and mount the giga-disc directly, or run from GDEMU / dcload.</p>
-    </article>
-    <article class="card">
-      <h3>📦 overlayfs userland</h3>
-      <p>~140 packages on the GD-ROM, mounted writable via overlayfs. Available as <code>musl</code> or <code>uClibc</code> builds.</p>
-    </article>
-    <article class="card">
-      <h3>🎮 Maple bus</h3>
-      <p>Controllers, keyboards and peripherals on the Maple bus are probed and exposed as standard input devices.</p>
-    </article>
-    <article class="card">
-      <h3>🐧 Modern kernel</h3>
-      <p>A current 7.x SH4 kernel with a kernel-integrated initramfs — no separate initrd juggling required.</p>
-    </article>
-    <article class="card">
-      <h3>⬆️ Upstream first</h3>
-      <p>Every sane kernel change is sent upstream to mainline rather than kept as a private fork — so Dreamcast support keeps improving for everyone, not just this distro.</p>
-    </article>
-    <article class="card">
-      <h3>📚 T2 SDE userland</h3>
-      <p>The ~140 userland packages are cross-compiled with <a href="https://t2sde.org" target="_blank" rel="noopener">T2 SDE</a>, the System Development Environment for fully source-based distributions.</p>
-    </article>
-    <article class="card">
-      <h3>👹 Yes, it runs DOOM</h3>
-      <p><code>fbdoom</code> ships in the userland — DOOM rendered straight to the Dreamcast framebuffer.</p>
-    </article>
-    <article class="card">
-      <h3>🪶 5&nbsp;KB init</h3>
-      <p>A tiny custom <code>init</code> — just ~5&nbsp;KB — brings the system up while using as little of the 16&nbsp;MB as possible. Every byte counts here.</p>
-    </article>
-    <article class="card">
-      <h3>🐚 mksh shell</h3>
-      <p>The lightweight <a href="http://www.mirbsd.org/mksh.htm" target="_blank" rel="noopener">mksh</a> (MirBSD Korn Shell) is the default shell — small, fast and a comfortable fit for a memory-tight system.</p>
-    </article>
-  </div>
-</section>
+<h2 id="heritage">Heritage</h2>
+<p>
+  Linux on the Dreamcast is not new. In 2000 and 2001 the GNU/Linux on SEGA
+  Dreamcast team got a full distribution with a 2.4 kernel running on this
+  console. The Linux-SH developers later carried that work into the mainline
+  kernel, which is why a 7.x kernel boots on this hardware today. This project
+  builds on the work of the people who got there first:
+</p>
+<dl>
+  <dt>Niibe Yutaka</dt>
+  <dd>Started the Linux/SuperH port in 1998, with the GNU toolchain and the sh3/sh4 architecture support that every Dreamcast kernel since has been built on.</dd>
 
-<!-- ===== DOWNLOADS ===== -->
-<section id="downloads" class="section">
-  <h2 class="section__title"><span class="accent">#</span> Downloads</h2>
-  <p class="section__lead">
-    Grab a bootable image from the
-    <a href="https://github.com/foxdrodd/dreamcast-linux/releases/latest" target="_blank" rel="noopener">latest release</a>.
-    Burn the CDI, drop it on a GDEMU, or load the raw binary with dcload.
-  </p>
+  <dt>Yaegashi Takeshi</dt>
+  <dd>Author of the original <a href="http://www.m17n.org/linux-sh/dreamcast/">GNU/Linux on SEGA Dreamcast</a>: the patched 2.4.5 kernel and a Debian-based live CD with working X11, networking and framebuffer, in 2001.</dd>
 
-  <!-- ===== LATEST RELEASE — hand-edited; update on each release ===== -->
-  <div class="release">
-    <div class="release__head">
-      <span class="release__tag">v7.2.9</span>
-      <span class="release__meta">Linux 7.2.9 kernel · released October 2026</span>
-      <a class="release__link" href="https://github.com/foxdrodd/dreamcast-linux/releases/tag/7.2.9" target="_blank" rel="noopener">Full notes</a>
-    </div>
-    <ul class="release__notes">
-      <li>Kernel update to <strong>Linux 7.2.9</strong> — largely the same userland as 7.1.3.</li>
-      <li>Prototype <strong>modem driver</strong> — an initial adaptation of the KallistiOS driver.</li>
-      <li>Improved keypress detection, and a new <strong>boot screen</strong> showing it's powered by Linux.</li>
-      <li>A bit more free RAM from a trimmed kernel config, plus a fix for a boot race when a <strong>VMU</strong> is plugged in.</li>
-    </ul>
-  </div>
+  <dt>Paul Mundt</dt>
+  <dd>Long-time upstream maintainer of the SuperH architecture (<code>arch/sh</code>), and the reason Dreamcast support is in the mainline kernel.</dd>
 
-  <div class="table-wrap">
-  <table class="table">
-    <thead><tr><th>Image</th><th>What it is</th><th>For</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><code>base-busybox</code></td>
-        <td>Kernel + initrd with a minimal BusyBox shell. NFS, GD-ROM mounts and more.</td>
-        <td>Smallest bootable system / debugging</td>
-      </tr>
-      <tr>
-        <td><code>with-userland</code></td>
-        <td>Full system, ~140 packages on GD-ROM via overlayfs. <code>musl</code> or <code>uClibc</code>.</td>
-        <td>The complete distro</td>
-      </tr>
-      <tr>
-        <td><code>userland</code></td>
-        <td>Just the userland files, no kernel.</td>
-        <td>Custom roll-your-own images</td>
-      </tr>
-      <tr>
-        <td><code>kernel-boot.bin</code></td>
-        <td>Plain executable.</td>
-        <td>Loading via <code>dcload-serial</code></td>
-      </tr>
-      <tr>
-        <td><code>1ST_READ.BIN</code></td>
-        <td>Scrambled executable.</td>
-        <td>Burning a self-booting CD</td>
-      </tr>
-    </tbody>
-  </table>
-  </div>
-  <div class="cta-row">
-    <a class="btn btn--primary" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest" target="_blank" rel="noopener">↓ Go to latest release</a>
-  </div>
-</section>
+  <dt>Adrian Glaubitz</dt>
+  <dd>The current SuperH maintainer, who stepped in to keep <code>arch/sh</code> from being removed from the kernel and still looks after it.</dd>
 
-<!-- ===== HARDWARE ===== -->
-<section id="hardware" class="section">
-  <h2 class="section__title"><span class="accent">#</span> Tested hardware</h2>
-  <p class="section__lead">It runs on metal. Add your console via a PR to the <a href="https://github.com/foxdrodd/dreamcast-linux" target="_blank" rel="noopener">repo</a>.</p>
-  <div class="table-wrap">
-  <table class="table">
-    <thead><tr><th>Boot medium</th><th>Revision</th><th>Status</th></tr></thead>
-    <tbody>
-      <tr><td>GDEMU · dcload-serial · dcload-ip</td><td>HKT-3030, PAL E, Rev. 1</td><td class="ok">✓ Works</td></tr>
-      <tr><td>GD-ROM · dcload-serial</td><td>HKT-3000, NTSC-J (670-14071E)</td><td class="ok">✓ Works</td></tr>
-      <tr><td>GD-ROM · dcload-serial</td><td>HKT-3020, NTSC-U, Rev. 1 (670-14081B)</td><td class="ok">✓ Works</td></tr>
-      <tr><td>GDEMU</td><td>HKT-3020, NTSC-U, Rev. 1 (670-14081M)</td><td class="ok">✓ Works</td></tr>
-      <tr><td>GDEMU</td><td>HKT-3020, NTSC-U, Rev. 1 (670-14081K)</td><td class="no">✗ Stuck at SEGA screen</td></tr>
-      <tr><td>Emulators (flycast, lxdream, redream, GXemul)</td><td>various</td><td class="no">✗ Not yet</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p class="section__foot">Full per-device notes and emulator analyses live in the repo's <code>debuggings/</code> directory and the README.</p>
-</section>
+  <dt>Adrian McMenamin</dt>
+  <dd>Wrote much of the Dreamcast's mainline hardware support: the VMU maple-bus driver, the <code>vmu-flash</code> MTD device and the <code>vmufat</code> filesystem.</dd>
 
-<!-- ===== HERITAGE ===== -->
-<section id="heritage" class="section section--heritage">
-  <div class="heritage">
-    <h2 class="section__title"><span class="accent">#</span> Standing on the shoulders of giants</h2>
-    <p class="heritage__intro">
-      Linux on the Dreamcast is not new. Back in <strong>2000–2001</strong>, the
-      <strong>GNU/Linux on SEGA Dreamcast</strong> team made the impossible boot — a full
-      Linux distribution on a 2.4 kernel, running on a games console with just 16&nbsp;MB of RAM.
-      In the years since, the <strong>Linux-SH</strong> developers carried that work into the
-      mainline kernel — which is why a modern 7.x kernel boots on this hardware today.
-      This project exists to carry that torch forward, and it owes everything to the people
-      who got there first.
-    </p>
-    <div class="heritage__grid">
-      <div class="tribute">
-        <h3>Niibe Yutaka</h3>
-        <p>Who started the Linux/SuperH port back in <strong>1998</strong> — building the GNU toolchain and the sh3/sh4 architecture support that every Dreamcast kernel since has been built on.</p>
-        <span class="tribute__meta">Founder of Linux/SH</span>
-      </div>
-      <div class="tribute">
-        <h3>Yaegashi Takeshi</h3>
-        <p>Author of the original <em>GNU/Linux on SEGA Dreamcast</em> — the patched 2.4.5 kernel and Debian-based live CD with working X11, networking and framebuffer, back in <strong>2001</strong>.</p>
-        <a href="http://www.m17n.org/linux-sh/dreamcast/" target="_blank" rel="noopener">m17n.org/linux-sh/dreamcast</a>
-      </div>
-      <div class="tribute">
-        <h3>Paul Mundt</h3>
-        <p>Long-time maintainer of the SuperH (<code>arch/sh</code>) architecture upstream — the reason Dreamcast support lives in the mainline kernel at all.</p>
-        <span class="tribute__meta">Linux-SH maintainer</span>
-      </div>
-      <div class="tribute">
-        <h3>Adrian Glaubitz</h3>
-        <p>The current SuperH maintainer — who stepped in to keep <code>arch/sh</code> from being removed from the kernel and still actively cares for the architecture. The direct reason a modern <strong>7.x</strong> kernel boots on this hardware today.</p>
-        <span class="tribute__meta">Keeping SH alive today</span>
-      </div>
-      <div class="tribute">
-        <h3>Adrian McMenamin</h3>
-        <p>Author of much of the Dreamcast's mainline hardware support — the VMU maple-bus driver, the <code>vmu-flash</code> MTD device and the <code>vmufat</code> filesystem this distro still builds on.</p>
-        <span class="tribute__meta">VMU · maple · VMUFAT</span>
-      </div>
-      <div class="tribute">
-        <h3>Marcus Comstedt</h3>
-	<p>Whose reverse-engineering and documentation of the Dreamcast — the boot process, the <code>IP.BIN</code> format and the <code>makeip</code> / <code>scramble</code> tools — are what let this distro build a self-booting disc at all.</p>
-        <a href="https://mc.pp.se/dc/" target="_blank" rel="noopener">mc.pp.se/dc</a>
-      </div>
-      <div class="tribute">
-        <h3>Adrian O'Grady</h3>
-        <p>Who packaged and shared the unofficial <em>DcLinux</em> DiscJuggler image (2001) so the rest of us could actually boot it.</p>
-        <span class="tribute__meta">DcLinux-010605 · fivemouse.com</span>
-      </div>
-      <div class="tribute">
-        <h3>…and everyone else</h3>
-        <p>The Linux-SH kernel hackers, the homebrew and dcemulation scene, the GCC / binutils / glibc and T2 SDE maintainers, and every contributor whose name didn't fit on a card. These few are named for what this project leans on directly — but none of it works without the many. Thank you.</p>
-        <span class="tribute__meta">The whole community</span>
-      </div>
-    </div>
-  </div>
-</section>
+  <dt>Marcus Comstedt</dt>
+  <dd>His <a href="https://mc.pp.se/dc/">reverse-engineering and documentation</a> of the boot process, the <code>IP.BIN</code> format and the <code>makeip</code> and <code>scramble</code> tools make it possible to build a self-booting disc.</dd>
+
+  <dt>Adrian O'Grady</dt>
+  <dd>Packaged and shared the unofficial DcLinux DiscJuggler image (DcLinux-010605, 2001).</dd>
+</dl>
+<p>
+  Thanks also to the Linux-SH kernel developers, the homebrew and dcemulation
+  scene, and the GCC, binutils, glibc and T2 SDE maintainers.
+</p>
+
 </main>
 
-<!-- ===== FOOTER ===== -->
-<footer class="footer">
-  <div class="footer__cols">
-    <div>
-      <span class="swirl" aria-hidden="true"></span>
-      <strong>Dreamcast<span class="accent">Linux</span></strong>
-      <p class="footer__tag">A full Linux distribution for the Sega Dreamcast.</p>
-    </div>
-    <div>
-      <h4>Project</h4>
-      <a href="https://github.com/foxdrodd/dreamcast-linux" target="_blank" rel="noopener">Source &amp; releases</a>
-      <a href="https://github.com/foxdrodd/dreamcast-linux/wiki" target="_blank" rel="noopener">Documentation wiki</a>
-      <a href="https://github.com/foxdrodd/dreamcast-linux/releases/latest" target="_blank" rel="noopener">Latest images</a>
-    </div>
-    <div>
-      <h4>Related</h4>
-      <a href="https://github.com/foxdrodd/dc-hacking" target="_blank" rel="noopener">dc-hacking</a>
-      <a href="https://github.com/foxdrodd/sh-boot/" target="_blank" rel="noopener">sh-boot</a>
-      <a href="https://t2sde.org" target="_blank" rel="noopener">T2 SDE</a>
-      <a href="assets/boot-7.2.9.mp4" target="_blank" rel="noopener">Boot recording</a>
-    </div>
-    <div>
-      <h4>Heritage</h4>
-      <a href="http://www.m17n.org/linux-sh/dreamcast/" target="_blank" rel="noopener">GNU/Linux on SEGA Dreamcast</a>
-      <a href="http://linuxdevices.org/running-linux-on-the-sega-dreamcast-a/" target="_blank" rel="noopener">LinuxDevices article</a>
-    </div>
-  </div>
-  <div class="footer__bar">
-    <span>MIT licensed · third-party libraries under their own licenses</span>
-    <span>Made with care for the SH4 · Sega Dreamcast™ is a trademark of Sega — this is an unofficial uncommercial fan project.</span>
-  </div>
+<footer>
+  <p>
+    <a href="https://github.com/foxdrodd/dreamcast-linux">Source</a>
+    <a href="https://github.com/foxdrodd/dreamcast-linux/wiki">Wiki</a>
+    <a href="https://github.com/foxdrodd/dc-hacking">dc-hacking</a>
+    <a href="https://github.com/foxdrodd/sh-boot/">sh-boot</a>
+    <a href="https://t2sde.org">T2 SDE</a>
+    <a href="http://linuxdevices.org/running-linux-on-the-sega-dreamcast-a/">LinuxDevices article</a>
+  </p>
+  <p>
+    MIT licensed; third-party libraries under their own licenses.
+    Sega Dreamcast is a trademark of Sega. This is an unofficial, non-commercial fan project.
+  </p>
 </footer>
 
-<script src="script.js"></script>
 </body>
 </html>
