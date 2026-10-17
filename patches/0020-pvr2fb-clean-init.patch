@@ -1,0 +1,70 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 17 Oct 2026 12:00:00 +0200
+Subject: [PATCH] pvr2fb: hide the VRAM clear and set the mode before fbcon
+
+On real hardware the boot shows about a second of blue/black stripes
+over the BIOS licence screen before the console appears.
+
+pvr2fb_common_init() clears all 8 MiB of VRAM with fb_memset_io() while
+the display is still scanning out with the mode the bootloader set up.
+On SH, memset_io() is a loop of writeb(), and the PowerVR2 VRAM does not
+handle byte writes, so the "clear" leaves junk on screen. It is also slow:
+8M barriered byte writes over the PVR bus take about as long as the
+glitch lasts. Only after register_framebuffer(), with fbcon already
+drawing, does pvr2_init_display() program the real mode.
+
+Blank the display with a black border before touching VRAM, clear it
+with 32-bit writes, and program the mode before registering the
+framebuffer, so nothing is scanned out in the stale mode.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
+--- a/drivers/video/fbdev/pvr2fb.c
++++ b/drivers/video/fbdev/pvr2fb.c
+@@ -797,7 +797,7 @@
+ static int __maybe_unused pvr2fb_common_init(void)
+ {
+ 	struct pvr2fb_par *par = currentpar;
+-	unsigned long modememused, rev;
++	unsigned long modememused, rev, i;
+ 
+ 	fb_info->screen_base = ioremap(pvr2_fix.smem_start,
+ 					       pvr2_fix.smem_len);
+@@ -814,7 +814,17 @@
+ 		goto out_err;
+ 	}
+ 
+-	fb_memset_io(fb_info->screen_base, 0, pvr2_fix.smem_len);
++	/*
++	 * The display still scans out whatever the bootloader left set up.
++	 * Blank it with a black border until pvr2_init_display() takes over,
++	 * so the VRAM clear below is not visible.
++	 */
++	fb_writel(0, DISP_BRDRCOLR);
++	fb_writel(fb_readl(DISP_DIWCONF) | BLANK_BIT, DISP_DIWCONF);
++
++	/* VRAM does not take byte writes, so clear it a word at a time */
++	for (i = 0; i < pvr2_fix.smem_len; i += 4)
++		fb_writel(0, fb_info->screen_base + i);
+ 
+ 	pvr2_fix.ypanstep	= nopan  ? 0 : 1;
+ 	pvr2_fix.ywrapstep	= nowrap ? 0 : 1;
+@@ -837,10 +847,15 @@
+ 
+ 	fb_alloc_cmap(&fb_info->cmap, 256, 0);
+ 
++	/*
++	 * Must write PIXDEPTH to register before anything is displayed, so
++	 * program the mode before fbcon attaches and starts drawing.
++	 */
++	pvr2fb_set_par(fb_info);
++	pvr2_init_display(fb_info);
++
+ 	if (register_framebuffer(fb_info) < 0)
+ 		goto out_err;
+-	/*Must write PIXDEPTH to register before anything is displayed - so force init */
+-	pvr2_init_display(fb_info);
+ 
+ 	modememused = get_line_length(fb_info->var.xres_virtual,
+ 				      fb_info->var.bits_per_pixel);
