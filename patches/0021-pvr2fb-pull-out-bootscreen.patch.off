@@ -1,0 +1,261 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sun, 18 Oct 2026 14:00:00 +0200
+Subject: [PATCH] pvr2fb: pull the boot screen away by its corner
+
+Alternative to 0021-pvr2fb-slide-out-bootscreen.patch and
+0021-pvr2fb-crt-off-bootscreen.patch, apply one of the three on top of
+0020-pvr2fb-clean-init.patch.
+
+When pvr2fb takes over, the BIOS licence screen ("Produced by or under
+license from Sega") is still on display and simply vanishes when the
+display is blanked for the VRAM clear.
+
+Before blanking, pull it off to the right as if someone dragged it by
+its upper right corner: every row is shifted right by an accelerating
+amount, the top row starting first and the bottom row last, so the
+image shears as it goes.
+
+The BIOS shows the licence screen in a display window narrower than the
+border window and paints the border in the grey of the screen. Once the
+image moves, that border stays behind as a bar on the left, grey or
+black. So the display window is widened over the border window and the
+border is drawn into the image as pixels, to be pulled away with it.
+
+The display has a single start address and stride per frame, so this
+cannot be done with registers alone. The image is copied to RAM once,
+and each frame the shifted rows are drawn into the other of two VRAM
+buffers behind the original one, which is flipped to on vertical
+blank. Rows that are already gone in a buffer are not redrawn. The animation is timed by the clock rather than by frames, so
+it keeps its duration if drawing a frame takes longer than a refresh.
+
+Nothing happens when the display was not enabled, the mode reads back
+as nonsense, it uses packed 24bpp, or the fields of an interlaced mode
+are not woven line by line, and the effect stops if the scanline
+counter never wraps (e.g. under emulators that do not model
+SPG_STATUS).
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
+--- a/drivers/video/fbdev/pvr2fb.c
++++ b/drivers/video/fbdev/pvr2fb.c
+@@ -53,6 +53,8 @@
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
++#include <linux/ktime.h>
++#include <linux/vmalloc.h>
+ #include <linux/interrupt.h>
+ #include <linux/fb.h>
+ #include <linux/init.h>
+@@ -94,6 +96,10 @@
+ #define DISP_DIWHSTRT (DISP_BASE + 0xec)
+ #define DISP_DIWVSTRT (DISP_BASE + 0xf0)
+ #define DISP_PIXDEPTH (DISP_BASE + 0x108)
++#define DISP_SYNCSTAT (DISP_BASE + 0x10c)
++
++/* How long pulling the bootloader's screen away takes at boot */
++#define BOOTSCREEN_PULL_MS 700
+ 
+ /* Pixel clocks, one for TV output, doubled for VGA output */
+ #define TV_CLK 74239
+@@ -776,6 +782,190 @@
+ 	return NULL;
+ }
+ 
++/* Wait for the beam to wrap back to scanline 0, false on timeout */
++static bool pvr2_wait_vbl(struct pvr2fb_par *par)
++{
++	unsigned int timeout = 50000;
++
++	while (!(fb_readl(DISP_SYNCSTAT) & 0x1ff) && --timeout)
++		udelay(1);
++	while ((fb_readl(DISP_SYNCSTAT) & 0x1ff) && --timeout)
++		udelay(1);
++	return timeout;
++}
++
++static u32 pvr2_scale_rgb(u32 c, int num, int den)
++{
++	return ((((c >> 16) & 0xff) * num / den) << 16) |
++	       ((((c >> 8) & 0xff) * num / den) << 8) |
++	       ((c & 0xff) * num / den);
++}
++
++/* A colour as a word of pixels in the given DIWMODE pixel depth */
++static u32 pvr2_rgb_word(unsigned int depth, u32 c)
++{
++	u32 r = (c >> 16) & 0xff, g = (c >> 8) & 0xff, b = c & 0xff, px;
++
++	switch (depth) {
++	case 0:		/* RGB555 */
++		px = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
++		return (px << 16) | px;
++	case 1:		/* RGB565 */
++		px = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
++		return (px << 16) | px;
++	default:	/* RGB0888 */
++		return c & 0xffffff;
++	}
++}
++
++/*
++ * Pull the screen the bootloader left on display (the BIOS licence
++ * screen) off to the right as if dragged by its upper right corner.
++ *
++ * Every row is shifted right by its own amount, the top row starting
++ * first and the bottom row last, which shears the image. The display
++ * cannot do that by itself, so the image is copied to RAM once and the
++ * shifted rows are drawn into the other of two VRAM buffers each frame,
++ * which is then flipped to on vertical blank.
++ *
++ * The BIOS shows the image in a display window narrower than the border
++ * window and paints the border in the grey of the image, which would
++ * stay behind as a grey or black bar. So the display window is widened
++ * over the border and the border is drawn as part of the image, and
++ * pulled away with it.
++ */
++static void pvr2_pull_out_bootscreen(struct pvr2fb_par *par,
++				     void __iomem *vram, unsigned long vram_len)
++{
++	u32 mode = fb_readl(DISP_DIWMODE);
++	u32 size = fb_readl(DISP_DIWSIZE);
++	u32 sof1 = fb_readl(DISP_DIWADDRL);
++	u32 sof2 = fb_readl(DISP_DIWADDRS);
++	u32 hstart = fb_readl(DISP_DIWHSTRT);
++	u32 brdr = fb_readl(DISP_BRDRHORZ);
++	u32 border = fb_readl(DISP_BRDRCOLR);
++	bool interlaced = fb_readl(DISP_SYNCCONF) & 0x10;
++	unsigned int depth = (mode >> 2) & 3;
++	/* pixel clocks per word of pixels */
++	unsigned int cpw = (depth == 3 ? 1 : 2) *
++			   ((fb_readl(DISP_DIWCONF) & 0x100) ? 2 : 1);
++	unsigned long line_words, pitch_words, rows, height, src_stride;
++	unsigned long hs, bstart, bstop, left = 0, right = 0, words;
++	unsigned long buf[2], done[2] = { 0, 0 }, y, i;
++	u32 fill, *src, *row;
++	ktime_t start;
++	int cur = 0;
++
++	/* packed 24bpp pixels straddle words, leave those alone */
++	if (!(mode & 1) || depth == 2)
++		return;
++
++	line_words = (size & 0x3ff) + 1;
++	pitch_words = line_words + ((size >> 20) & 0x3ff) - 1;
++	rows = ((size >> 10) & 0x3ff) + 1;
++	if (!pitch_words)
++		return;
++
++	/* handle interlace only with the two fields woven line by line */
++	if (interlaced) {
++		if (sof2 != sof1 + line_words * 4 ||
++		    pitch_words != 2 * line_words)
++			return;
++		height = rows * 2;
++		src_stride = line_words * 4;
++	} else {
++		sof2 = sof1;
++		height = rows;
++		src_stride = pitch_words * 4;
++	}
++
++	/* border columns left and right of the display window, in words */
++	hs = hstart & 0x3ff;
++	bstart = (brdr >> 16) & 0x3ff;
++	bstop = brdr & 0x3ff;
++	if (hs > bstart)
++		left = min3(DIV_ROUND_UP(hs - bstart, cpw), hs / cpw, 64UL);
++	if (bstop > hs + line_words * cpw)
++		right = min(DIV_ROUND_UP(bstop - hs - line_words * cpw, cpw),
++			    64UL);
++	words = left + line_words + right;
++	if (words > 0x400)
++		return;
++
++	/* two buffers of the widened image behind the BIOS one */
++	buf[0] = ALIGN((max(sof1, sof2) & (vram_len - 1)) +
++		       rows * pitch_words * 4, 32);
++	buf[1] = ALIGN(buf[0] + height * words * 4, 32);
++	if (buf[1] + height * words * 4 > vram_len)
++		return;
++
++	src = vmalloc((height + 1) * words * 4);
++	if (!src)
++		return;
++	row = src + height * words;
++
++	fill = pvr2_rgb_word(depth, border);
++	for (y = 0; y < height; y++) {
++		u32 *line = src + y * words;
++
++		for (i = 0; i < left; i++)
++			line[i] = fill;
++		for (i = 0; i < line_words; i++)
++			line[left + i] = fb_readl(vram +
++						  (sof1 & (vram_len - 1)) +
++						  y * src_stride + i * 4);
++		for (i = left + line_words; i < words; i++)
++			line[i] = fill;
++	}
++
++	start = ktime_get();
++	for (;;) {
++		long t = min_t(s64, ktime_ms_delta(ktime_get(), start),
++			       BOOTSCREEN_PULL_MS);
++		u32 base;
++
++		t = t * 1024 / BOOTSCREEN_PULL_MS;
++
++		/* rows already gone in this buffer stay black */
++		for (y = done[cur]; y < height; y++) {
++			long s = clamp(2 * t - (long)(y * 1024 / height),
++				       0L, 1024L);
++			unsigned long shift;
++
++			/* accelerate to the right */
++			shift = s == 1024 ? words :
++				words * s * s / (1024 * 1024);
++
++			memset(row, 0, shift * 4);
++			memcpy(row + shift, src + y * words,
++			       (words - shift) * 4);
++			for (i = 0; i < words; i++)
++				fb_writel(row[i],
++					  vram + buf[cur] + (y * words + i) * 4);
++
++			if (shift == words && y == done[cur])
++				done[cur]++;
++		}
++
++		if (!pvr2_wait_vbl(par))
++			break;
++		base = buf[cur] | (sof1 & ~(vram_len - 1));
++		fb_writel(base, DISP_DIWADDRL);
++		fb_writel(base + (interlaced ? words * 4 : 0), DISP_DIWADDRS);
++		fb_writel(((interlaced ? words + 1 : 1) << 20) |
++			  (size & (0x3ff << 10)) | (words - 1), DISP_DIWSIZE);
++		fb_writel((hstart & ~0x3ff) | (hs - left * cpw), DISP_DIWHSTRT);
++		/* whatever border is left uncovered goes black with the image */
++		fb_writel(pvr2_scale_rgb(border, 1024 - min(8 * t, 1024L), 1024),
++			  DISP_BRDRCOLR);
++		if (t == 1024)
++			break;
++		cur ^= 1;
++	}
++
++	vfree(src);
++}
++
+ /**
+  * pvr2fb_common_init
+  *
+@@ -814,6 +1004,8 @@
+ 		goto out_err;
+ 	}
+ 
++	pvr2_pull_out_bootscreen(par, fb_info->screen_base, pvr2_fix.smem_len);
++
+ 	/*
+ 	 * The display still scans out whatever the bootloader left set up.
+ 	 * Blank it with a black border until pvr2_init_display() takes over,

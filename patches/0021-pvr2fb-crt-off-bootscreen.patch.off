@@ -1,0 +1,197 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sun, 18 Oct 2026 12:00:00 +0200
+Subject: [PATCH] pvr2fb: switch the boot screen off like a CRT
+
+Alternative to 0021-pvr2fb-slide-out-bootscreen.patch, apply one of
+the two on top of 0020-pvr2fb-clean-init.patch.
+
+When pvr2fb takes over, the BIOS licence screen ("Produced by or under
+license from Sega") is still on display and simply vanishes when the
+display is blanked for the VRAM clear.
+
+Before blanking, read back the mode the bootloader left programmed and
+switch the screen off like an old TV:
+
+ - collapse it vertically into a two-row band around the middle. The
+   display window shrinks and moves down, and the line modulo makes it
+   show only every k-th line, so the image is squashed as far as the
+   10 bit modulo field allows and cropped for the rest.
+ - swap the band for a white strip written next to the image, and
+   shrink the display window horizontally until a dot remains.
+ - fade the dot out by rewriting its two words of VRAM.
+
+Per frame this costs a few register writes, at most two VRAM words.
+Nothing happens when the display was not enabled or the mode reads
+back as nonsense, and the effect stops if the scanline counter never
+wraps (e.g. under emulators that do not model SPG_STATUS).
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
+--- a/drivers/video/fbdev/pvr2fb.c
++++ b/drivers/video/fbdev/pvr2fb.c
+@@ -94,6 +94,12 @@
+ #define DISP_DIWHSTRT (DISP_BASE + 0xec)
+ #define DISP_DIWVSTRT (DISP_BASE + 0xf0)
+ #define DISP_PIXDEPTH (DISP_BASE + 0x108)
++#define DISP_SYNCSTAT (DISP_BASE + 0x10c)
++
++/* Frames for each step of switching off the bootloader's screen */
++#define CRT_SQUASH_FRAMES 12
++#define CRT_SHRINK_FRAMES 10
++#define CRT_FADE_FRAMES 10
+ 
+ /* Pixel clocks, one for TV output, doubled for VGA output */
+ #define TV_CLK 74239
+@@ -776,6 +782,142 @@
+ 	return NULL;
+ }
+ 
++/* Wait for the beam to wrap back to scanline 0, false on timeout */
++static bool pvr2_wait_vbl(struct pvr2fb_par *par)
++{
++	unsigned int timeout = 50000;
++
++	while (!(fb_readl(DISP_SYNCSTAT) & 0x1ff) && --timeout)
++		udelay(1);
++	while ((fb_readl(DISP_SYNCSTAT) & 0x1ff) && --timeout)
++		udelay(1);
++	return timeout;
++}
++
++/* A word of grey pixels (level 0..255) in the given DIWMODE pixel depth */
++static u32 pvr2_grey(unsigned int depth, u32 g)
++{
++	u32 px;
++
++	switch (depth) {
++	case 0:		/* RGB555 */
++		px = ((g >> 3) << 10) | ((g >> 3) << 5) | (g >> 3);
++		return (px << 16) | px;
++	case 1:		/* RGB565 */
++		px = ((g >> 3) << 11) | ((g >> 2) << 5) | (g >> 3);
++		return (px << 16) | px;
++	default:	/* RGB888 / RGB0888, every byte is a channel */
++		return g * 0x01010101;
++	}
++}
++
++static void pvr2_fill_words(void __iomem *vram, unsigned long off,
++			    unsigned long words, u32 val)
++{
++	while (words--) {
++		fb_writel(val, vram + off);
++		off += 4;
++	}
++}
++
++/*
++ * Switch off the screen the bootloader left on display (the BIOS licence
++ * screen) like an old CRT: collapse it vertically into a white line,
++ * shrink that into a dot and let the dot fade out.
++ *
++ * Only the display window is reprogrammed per frame. The squash shows
++ * every k-th line through the line modulo, which only reaches a few
++ * lines, so the rest of the collapse crops the image around its middle.
++ * The white line is a two-line strip in VRAM next to the image.
++ */
++static void pvr2_crt_off_bootscreen(struct pvr2fb_par *par,
++				    void __iomem *vram, unsigned long vram_len)
++{
++	u32 mode = fb_readl(DISP_DIWMODE);
++	u32 size = fb_readl(DISP_DIWSIZE);
++	u32 sof1 = fb_readl(DISP_DIWADDRL);
++	u32 sof2 = fb_readl(DISP_DIWADDRS);
++	u32 hstart = fb_readl(DISP_DIWHSTRT);
++	u32 vstart = fb_readl(DISP_DIWVSTRT);
++	unsigned int depth = (mode >> 2) & 3;
++	unsigned int bpp = depth < 2 ? 2 : depth + 1;
++	unsigned int cpp = (fb_readl(DISP_DIWCONF) & 0x100) ? 2 : 1;
++	unsigned long line_words, pitch_words, rows, kmax, line;
++	unsigned long h, k, top, skip, w;
++	int f;
++
++	if (!(mode & 1))
++		return;
++
++	/* second field address is only used when interlaced */
++	if (!(fb_readl(DISP_SYNCCONF) & 0x10))
++		sof2 = sof1;
++
++	line_words = (size & 0x3ff) + 1;
++	pitch_words = line_words + ((size >> 20) & 0x3ff) - 1;
++	rows = ((size >> 10) & 0x3ff) + 1;
++	if (!pitch_words || rows < 2)
++		return;
++	/* largest line step whose modulo still fits the 10 bit field */
++	kmax = (0x3ff + line_words - 1) / pitch_words;
++
++	line = ALIGN((max(sof1, sof2) & (vram_len - 1)) +
++		     pitch_words * 4 * rows, 32);
++	if (line + line_words * 8 > vram_len)
++		return;
++	pvr2_fill_words(vram, line, line_words * 2, pvr2_grey(depth, 255));
++
++	fb_writel(0, DISP_BRDRCOLR);
++
++	for (f = 1; f < CRT_SQUASH_FRAMES; f++) {
++		/* accelerate towards a two-row band */
++		h = rows - (rows - 2) * f * f /
++		    (CRT_SQUASH_FRAMES * CRT_SQUASH_FRAMES);
++		k = min(kmax, rows / h);
++		top = (rows - h) / 2;
++		skip = (rows - h * k) / 2 * pitch_words * 4;
++		if (!pvr2_wait_vbl(par))
++			return;
++		fb_writel(((k * pitch_words - line_words + 1) << 20) |
++			  ((h - 1) << 10) | (line_words - 1), DISP_DIWSIZE);
++		fb_writel(vstart + ((top << 16) | top), DISP_DIWVSTRT);
++		fb_writel(sof1 + skip, DISP_DIWADDRL);
++		fb_writel(sof2 + skip, DISP_DIWADDRS);
++	}
++
++	/* collapsed into a white line across the screen */
++	top = (rows - 2) / 2;
++	line |= sof1 & ~(vram_len - 1);
++	if (!pvr2_wait_vbl(par))
++		return;
++	fb_writel((1 << 20) | (1 << 10) | (line_words - 1), DISP_DIWSIZE);
++	fb_writel(vstart + ((top << 16) | top), DISP_DIWVSTRT);
++	fb_writel(line, DISP_DIWADDRL);
++	fb_writel(line, DISP_DIWADDRS);
++
++	for (f = 1; f <= CRT_SHRINK_FRAMES; f++) {
++		w = line_words - (line_words - 1) * f * f /
++		    (CRT_SHRINK_FRAMES * CRT_SHRINK_FRAMES);
++		if (!pvr2_wait_vbl(par))
++			return;
++		fb_writel((1 << 20) | (1 << 10) | (w - 1), DISP_DIWSIZE);
++		fb_writel(hstart + (line_words - w) * 4 / bpp * cpp / 2,
++			  DISP_DIWHSTRT);
++	}
++
++	/* the dot is the first word of both rows */
++	line &= vram_len - 1;
++	for (f = 1; f <= CRT_FADE_FRAMES; f++) {
++		u32 grey = pvr2_grey(depth, 255 * (CRT_FADE_FRAMES - f) /
++					    CRT_FADE_FRAMES);
++
++		if (!pvr2_wait_vbl(par))
++			return;
++		fb_writel(grey, vram + line);
++		fb_writel(grey, vram + line + line_words * 4);
++	}
++}
++
+ /**
+  * pvr2fb_common_init
+  *
+@@ -814,6 +956,8 @@
+ 		goto out_err;
+ 	}
+ 
++	pvr2_crt_off_bootscreen(par, fb_info->screen_base, pvr2_fix.smem_len);
++
+ 	/*
+ 	 * The display still scans out whatever the bootloader left set up.
+ 	 * Blank it with a black border until pvr2_init_display() takes over,

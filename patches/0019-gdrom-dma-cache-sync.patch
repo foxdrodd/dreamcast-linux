@@ -1,0 +1,88 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 9 Oct 2026 00:46:00 +0200
+Subject: [PATCH] gdrom: map the read buffer through the DMA API
+
+gdrom_readdisk_dma() programmed the G1 DMA engine with the raw physical
+address of the request's page and never touched the CPU cache. The SH4
+data cache is not coherent with device DMA, so dirty or stale cache lines
+of the target page could be written back over, or read instead of, the
+data the drive delivered. On real hardware this showed up as corrupted
+isofs directory data ("rock: directory entry would overflow storage",
+"grow_buffers: requested out-of-range block") and SIGBUS in userspace,
+most readily with CONFIG_SLUB_TINY, which recycles pages sooner.
+
+Map the buffer with dma_map_page(DMA_FROM_DEVICE) before starting the
+transfer and unmap it when the transfer completes or is aborted, so the
+cache lines are invalidated at the right time.
+
+---
+ drivers/cdrom/gdrom.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/cdrom/gdrom.c b/drivers/cdrom/gdrom.c
+--- a/drivers/cdrom/gdrom.c
++++ b/drivers/cdrom/gdrom.c
+@@ -94,6 +94,7 @@
+ 
+ static struct gdrom_unit {
+ 	struct gendisk *disk;
++	struct device *dev;
+ 	struct cdrom_device_info *cd_info;
+ 	int status;
+ 	int pending;
+@@ -645,6 +646,8 @@
+ 	blk_status_t err;
+ 	struct packet_command *read_command;
+ 	unsigned long timeout;
++	dma_addr_t dma_addr;
++	size_t dma_len;
+ 
+ 	read_command = kzalloc_obj(struct packet_command);
+ 	if (!read_command)
+@@ -654,9 +657,19 @@
+ 	read_command->cmd[1] = 0x20;
+ 	block = blk_rq_pos(req)/GD_TO_BLK + GD_SESSION_OFFSET;
+ 	block_cnt = blk_rq_sectors(req)/GD_TO_BLK;
+-	__raw_writel(page_to_phys(bio_page(req->bio)) + bio_offset(req->bio),
+-			GDROM_DMA_STARTADDR_REG);
+-	__raw_writel(block_cnt * GDROM_HARD_SECTOR, GDROM_DMA_LENGTH_REG);
++	dma_len = block_cnt * GDROM_HARD_SECTOR;
++	/* The G1 DMA engine writes to RAM behind the CPU's back and the SH4
++	 * data cache is not coherent with it. Map the buffer so stale or
++	 * dirty cache lines of the target are invalidated before the
++	 * transfer, else they can be written back over the data just read. */
++	dma_addr = dma_map_page(gd.dev, bio_page(req->bio),
++				bio_offset(req->bio), dma_len, DMA_FROM_DEVICE);
++	if (dma_mapping_error(gd.dev, dma_addr)) {
++		kfree(read_command);
++		return BLK_STS_RESOURCE;
++	}
++	__raw_writel(dma_addr, GDROM_DMA_STARTADDR_REG);
++	__raw_writel(dma_len, GDROM_DMA_LENGTH_REG);
+ 	__raw_writel(1, GDROM_DMA_DIRECTION_REG);
+ 	__raw_writel(1, GDROM_DMA_ENABLE_REG);
+ 	read_command->cmd[2] = (block >> 16) & 0xFF;
+@@ -714,6 +727,7 @@
+ 		goto out_abort;
+ 	}
+ 
++	dma_unmap_page(gd.dev, dma_addr, dma_len, DMA_FROM_DEVICE);
+ 	blk_mq_end_request(req, BLK_STS_OK);
+ 	kfree(read_command);
+ 	return BLK_STS_OK;
+@@ -722,6 +736,7 @@
+ 	gd.transfer = 0;
+ 	gd.pending = 0;
+ 	gdrom_dma_abort();
++	dma_unmap_page(gd.dev, dma_addr, dma_len, DMA_FROM_DEVICE);
+ 	blk_mq_end_request(req, err);
+ 	kfree(read_command);
+ 	return BLK_STS_OK;
+@@ -849,6 +864,7 @@
+ 	 * usages of it
+ 	 */
+ 	memset(&gd, 0, sizeof(gd));
++	gd.dev = &devptr->dev;
+ 
+ 	/* Start the device */
+ 	if (gdrom_execute_diagnostic() != 1) {

@@ -1,0 +1,37 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 17 Oct 2026 12:00:00 +0200
+Subject: [PATCH] serial: sh-sci: hold TxD at mark level while TE is off
+
+Every termios change on the Dreamcast serial console (kernel console
+open before "Run /init", mksh, top, ...) prints one garbage byte on the
+host terminal.
+
+sci_set_termios() calls sci_reset(), which writes SCSCR = 0 and so
+clears TE.  On the SH7750 SCIF the TxD pin is then only driven when
+SCSPTR.SPB2IO is set, with SPB2DT as the level.  The driver leaves
+SPB2IO clear, so TxD floats for the duration of the reconfiguration and
+the receiver sees a start bit followed by noise.
+
+Set SPB2IO and SPB2DT before disabling TE so the line stays idle.  The
+bits are ignored while TE=1, so normal transmission is unaffected.
+
+diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+--- a/drivers/tty/serial/sh-sci.c
++++ b/drivers/tty/serial/sh-sci.c
+@@ -2647,6 +2647,16 @@
+ 	unsigned int status;
+ 	struct sci_port *s = to_sci_port(port);
+ 
++	/*
++	 * With TE=0 the TxD pin is only driven if SPB2IO is set, otherwise
++	 * it floats and the receiver on the other end sees a garbage byte
++	 * on every termios change.  Hold it at mark (idle) level instead.
++	 */
++	if (sci_getreg(port, SCSPTR)->size && s->regtype != SCIx_RZV2H_SCIF_REGTYPE) {
++		status = sci_serial_in(port, SCSPTR);
++		sci_serial_out(port, SCSPTR, status | SCSPTR_SPB2IO | SCSPTR_SPB2DT);
++	}
++
+ 	sci_serial_out(port, SCSCR, s->hscif_tot);	/* TE=0, RE=0, CKE1=0 */
+ 
+ 	reg = sci_getreg(port, SCFCR);
