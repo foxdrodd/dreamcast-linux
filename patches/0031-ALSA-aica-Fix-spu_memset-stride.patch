@@ -1,0 +1,58 @@
+From b7c4193373926ae1ab5f208307ab4ffeb85ef39e Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Thu, 22 Oct 2026 12:00:00 +0200
+Subject: [PATCH] ALSA: sh: aica: Fix spu_memset() stride
+
+spu_memset() writes one 32-bit word per iteration, but advances the
+destination offset by only one byte. spu_reset() calls it with
+0x200000 / 4 words to clear the 2 MiB of sound RAM, so:
+
+ - three out of four writel() calls target an unaligned address. The
+   SH4 can't do that. Each one traps and is emulated by the unaligned
+   access fixup. This call to spu_memset() causes 393216 unaligned
+   accesses, visible in /proc/cpu/alignment.
+ - the clear covered only about 512 KiB of sound RAM, not 2 MiB.
+
+Advance the offset by the size of the written word, to clear the full
+sound RAM using aligned writes.
+
+Fixes: 198de43d758c ("[ALSA] Add ALSA support for the SEGA Dreamcast PCM device")
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+The patch has been tested on the hardware and sound is also still
+working well, the boot is faster by about 4s due to less unaligned
+fixups.
+
+Previously: 7.9s to boot:
+[    2.900000] AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
+..
+[    7.872000] ALSA device list:
+[    7.876000]   #1: Yamaha AICA Super Intelligent Sound Processor for SEGA Dreamcast
+
+After: 3.8s to boot:
+[    2.892000] AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
+..
+[    3.796000] ALSA device list:
+[    3.800000]   #1: Yamaha AICA Super Intelligent Sound Processor for SEGA Dreamcast
+
+ sound/sh/aica.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/sh/aica.c b/sound/sh/aica.c
+index 078fc7fc08f9..04f80c8c89c0 100644
+--- a/sound/sh/aica.c
++++ b/sound/sh/aica.c
+@@ -94,7 +94,7 @@ static void spu_memset(u32 toi, u32 what, int length)
+ 		local_irq_save(flags);
+ 		writel(what, toi + SPU_MEMORY_BASE);
+ 		local_irq_restore(flags);
+-		toi++;
++		toi += sizeof(what);
+ 	}
+ }
+ 
+
+base-commit: c1b1c25de0d6008c3fcabc942fba635ea3693c3f
+-- 
+2.43.0
+
