@@ -1,0 +1,48 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Wed, 21 Oct 2026 23:00:00 +0200
+Subject: [PATCH net] net: slhc: Use unaligned accessors for the TCP checksum
+
+The TCP checksum can land on an odd offset, slhc_compress() and
+slhc_uncompress() access it through a plain __sum16 pointer, which is an
+unaligned access.
+
+On architectures without hardware unaligned access support, this can
+cause alignment exceptions when accessing the checksum.
+
+Use put_unaligned()/get_unaligned(), as slhc_uncompress() already does
+for the IP header checksum.
+
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+The issue occurred using ssh over serial PPP with VJ header compression
+on an SH system, where it paniced, due to another issue of the unaligned
+access handler in a delay slot of sh. (separate fix for the platform)
+
+ drivers/net/slip/slhc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/slip/slhc.c b/drivers/net/slip/slhc.c
+index 1a9b27d..a259b6d 100644
+--- a/drivers/net/slip/slhc.c
++++ b/drivers/net/slip/slhc.c
+@@ -463,7 +463,7 @@ found:
+ 		*cpp = ocp;
+ 		*cp++ = changes;
+ 	}
+-	*(__sum16 *)cp = csum;
++	put_unaligned(csum, (__sum16 *)cp);
+ 	cp += 2;
+ /* deltaS is now the size of the change section of the compressed header */
+ 	memcpy(cp,new_seq,deltaS);	/* Write list of deltas */
+@@ -543,7 +543,7 @@ slhc_uncompress(struct slcompress *comp, unsigned char *icp, int isize)
+ 
+ 	if (cp + 2 > end)
+ 		goto bad;
+-	thp->check = *(__sum16 *)cp;
++	thp->check = get_unaligned((__sum16 *)cp);
+ 	cp += 2;
+ 
+ 	thp->psh = (changes & TCP_PUSH_BIT) ? 1 : 0;
+-- 
+2.43.0

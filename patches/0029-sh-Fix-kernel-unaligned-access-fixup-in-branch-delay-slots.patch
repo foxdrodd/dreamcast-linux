@@ -1,0 +1,56 @@
+From 3eb2091f78ddc833ce0064d3ae21894e3f83a4d1 Mon Sep 17 00:00:00 2001
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Thu, 22 Oct 2026 16:26:23 +0200
+Subject: [PATCH] sh: Fix kernel unaligned access fixup in branch delay slots
+
+An unaligned access by an instruction in a branch delay slot is fixed
+up by handle_delayslot(). It fetched the delay slot instruction with
+copy_from_user(), even when the fault happened in kernel mode. Since
+the removal of set_fs() access_ok() rejects kernel addresses, so the
+fetch always fails for kernel code and the kernel dies with:
+
+  delay-slot-insn faulting in handle_unaligned_delayslot: 0000 [#1]
+
+The non-delay-slot path in do_address_error() already uses
+copy_from_kernel_nofault() for kernel mode. So choose the matching
+instruction-fetch accessor from user_mode(regs) and fetch the
+instruction.
+
+Fixes: 75d4d29549e5 ("sh: remove CONFIG_SET_FS support")
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+The issue was hit while using PPP with VJ header compression, where gcc
+placed an unaligned checksum store in slhc_compress() [0] into the delay
+slot, which paniced the system e.g. using ssh over this line.
+
+I'm preparing another patch for slhc to use the unaligned helpers to
+access the TCP checksum. But this fix is still useful to prevent the
+die in unaligned fixups, in delay slots that happen in kernel mode or
+from trapped io.
+
+[0] https://github.com/torvalds/linux/blob/4c1367a2d7aad643a6f87c6931b13cc1a25e8ca7/drivers/net/slip/slhc.c#L466
+
+ arch/sh/kernel/traps_32.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
+index 1271b839a107..a7f20fead5f4 100644
+--- a/arch/sh/kernel/traps_32.c
++++ b/arch/sh/kernel/traps_32.c
+@@ -287,8 +287,10 @@ static inline int handle_delayslot(struct pt_regs *regs,
+ 	insn_size_t instruction;
+ 	void __user *addr = (void __user *)(regs->pc +
+ 		instruction_size(old_instruction));
++	struct mem_access *insn_ma = user_mode(regs) ?
++		&user_mem_access : &kernel_mem_access;
+ 
+-	if (copy_from_user(&instruction, addr, sizeof(instruction))) {
++	if (insn_ma->from(&instruction, addr, sizeof(instruction))) {
+ 		/* the instruction-fetch faulted */
+ 		if (user_mode(regs))
+ 			return -EFAULT;
+
+base-commit: cee9395acd8043be0644b25c34bfa86623f2b935
+-- 
+2.43.0
+
