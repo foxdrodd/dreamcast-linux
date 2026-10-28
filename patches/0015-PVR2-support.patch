@@ -33,21 +33,24 @@ diff --git a/drivers/gpu/Kconfig b/drivers/gpu/Kconfig
 index ebb2ad4b7..11a62abd2 100644
 --- a/drivers/gpu/Kconfig
 +++ b/drivers/gpu/Kconfig
-@@ -11,3 +11,5 @@ config GPU_BUDDY_KUNIT_TEST
+@@ -12,3 +12,5 @@ config GPU_BUDDY_KUNIT_TEST
         default KUNIT_ALL_TESTS
         help
           KUnit tests for the GPU buddy allocator.
 +
 +source "drivers/gpu/pvr2/Kconfig"
 diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
-index b4e5e338e..36630e639 100644
+index e372fc021..98499b67d 100644
 --- a/drivers/gpu/Makefile
 +++ b/drivers/gpu/Makefile
-@@ -8,3 +8,4 @@ obj-y			+= host1x/ drm/ vga/ tests/
+@@ -7,6 +7,7 @@ obj-$(CONFIG_GPU_BUDDY)	+= buddy.o
+ obj-y			+= host1x/ drm/ vga/ tests/
  obj-$(CONFIG_IMX_IPUV3_CORE)	+= ipu-v3/
  obj-$(CONFIG_TRACE_GPU_MEM)		+= trace/
- obj-$(CONFIG_NOVA_CORE)		+= nova-core/
 +obj-$(CONFIG_PVR2_DC)		+= pvr2/
+
+ # nova-core and nova-drm are built from this Makefile so nova-drm's dependency
+ # on nova-core can be expressed as a plain Make prerequisite rather than a
 diff --git a/drivers/gpu/pvr2/Kconfig b/drivers/gpu/pvr2/Kconfig
 new file mode 100644
 index 000000000..5982277c3

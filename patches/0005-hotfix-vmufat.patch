@@ -579,7 +579,7 @@ index 00000000000000..88903c1678a740
 +}
 +
 +static int vmufat_inode_create(struct mnt_idmap *idmap, struct inode *dir,
-+	struct dentry *de, umode_t imode, bool excl)
++	struct dentry *de, umode_t imode)
 +{
 +	int i, j, entry, found = 0, error = 0, freeblock;
 +	struct inode *inode;
@@ -2938,7 +2938,7 @@ index 87c2165180aa44..e6111d75945b70 100644
 +++ b/fs/vmufat/inode.c
 @@ -347,7 +347,7 @@ static void vmu_write_name(int recno, struct buffer_head *bh, char *name,
  static int vmufat_inode_create(struct mnt_idmap *idmap, struct inode *dir,
- 	struct dentry *de, umode_t imode, bool excl)
+ 	struct dentry *de, umode_t imode)
  {
 -	int i, j, entry, found = 0, error = 0, freeblock;
 +	int i, j, entry, error = 0, freeblock;
