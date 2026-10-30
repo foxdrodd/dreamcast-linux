@@ -1,0 +1,214 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 30 Oct 2026 19:00:00 +0100
+Subject: [PATCH] fs: vmufat: Bound FAT walks, fix lookup and timestamps
+
+vmufat_list_blocks() and vmufat_clean_fat() follow the FAT chain
+without any bound. A FAT block that reads back as zeros points block 0
+at itself, so a lookup allocated block list entries until the box was
+deadlocked on memory. Stop after as many blocks as the volume has, and
+fail with -EIO on out of range entries.
+
+vmufat_inode_lookup() compared only the length of the looked up name,
+so "T" found "T.TXT". Also compare the length of the stored name.
+
+vmufat_save_bcd_no_rtc() decremented the year in its own leap year
+math when called within the first day of a year, underflowing it, so
+files created at the 1970 epoch were dated in year 6069. Use
+time64_to_tm() instead, and also store the day of week. The RTC variant
+applied the modulo to the BCD value of the day of week.
+
+---
+diff --git a/fs/vmufat/inode.c b/fs/vmufat/inode.c
+--- a/fs/vmufat/inode.c
++++ b/fs/vmufat/inode.c
+@@ -38,8 +38,6 @@
+ const struct address_space_operations vmufat_address_space_operations;
+ const struct file_operations vmufat_file_dir_operations;
+ extern struct kmem_cache *vmufat_blist_cachep;
+-/* Linear day numbers of the respective 1sts in non-leap years. */
+-int day_n[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+ 
+ static struct dentry *vmufat_inode_lookup(struct inode *in, struct dentry *dent,
+ 	unsigned int ignored)
+@@ -68,7 +66,10 @@
+ 			int record_offset = j * VMU_DIR_RECORD_LEN;
+ 			if (bh->b_data[record_offset] == 0)
+ 				goto insert_negative;
+-			if (memcmp(dent->d_name.name,
++			if (strnlen(bh->b_data + record_offset +
++				VMUFAT_NAME_OFFSET, VMUFAT_NAMELEN) ==
++				dent->d_name.len &&
++				memcmp(dent->d_name.name,
+ 				bh->b_data + record_offset +
+ 				VMUFAT_NAME_OFFSET, dent->d_name.len) == 0) {
+ 				ino = vmufat_get_inode(sb,
+@@ -223,59 +224,22 @@
+ /* No real time clock or real time clock read fails */
+ static void vmufat_save_bcd_no_rtc(struct inode *in, char *bh, int index_to_dir)
+ {
+-	u32 years, days, seconds;
+-	unsigned char bcd_century, nl_day, bcd_month;
+-	unsigned char u8year;
+-	time64_t unix_date, substitute_date;
+-	unix_date = in->i_mtime_sec;
+-	substitute_date = unix_date;
+-	do_div(substitute_date, SECONDS_PER_DAY);
+-	days = (u32)substitute_date; /* cast not an issue for next 5 million years+ */
+-	years = days / DAYS_PER_YEAR;
+-	/* 1 Jan gets 1 day later after every leap year */
+-	if ((years + 3) / 4 + DAYS_PER_YEAR * years >= days)
+-		years--;
+-	/* rebase days to account for leap years */
+-	days -= (years + 3) / 4 + DAYS_PER_YEAR * years;
+-	// 2100 is not a leap year
+-	if (years >= CENTURY22 + 1) {
+-		days--;
+-	}
+-	/* 1 Jan is Day 1 */
+-	days++;
+-	if (days == (FEB28 + 1) && !(years % 4) && (years != CENTURY22)) {
+-		nl_day = days;
+-		bcd_month = 2;
+-	} else {
+-		nl_day = (years % 4) || days <= FEB28 ? days : days - 1;
+-		for (bcd_month = 0; bcd_month < 12; bcd_month++) {
+-			if (day_n[bcd_month] > nl_day)
+-				break;
+-		}
+-	}
++	struct tm tm;
++	long year;
+ 
+-	bcd_century = 19;
+-	if (years > 29)
+-		bcd_century += 1 + (years - CENTURY21)/100;
+-
+-	bh[index_to_dir + VMUFAT_DIR_CENT] = bin2bcd(bcd_century);
+-	u8year = years + START_OF_EPOCH; /* account for epoch */
+-	if (u8year > 99)
+-		u8year = u8year - 100;
+-
+-	bh[index_to_dir + VMUFAT_DIR_YEAR] = bin2bcd(u8year);
+-	bh[index_to_dir + VMUFAT_DIR_MONTH] = bin2bcd(bcd_month);
+-	bh[index_to_dir + VMUFAT_DIR_DAY] =
+-	    bin2bcd(days - day_n[bcd_month - 1]);
+-	substitute_date = unix_date;
+-	do_div(substitute_date, SECONDS_PER_HOUR);
+-	bh[index_to_dir + VMUFAT_DIR_HOUR] =
+-	    bin2bcd(do_div(substitute_date, HOURS_PER_DAY));
+-	seconds = do_div(unix_date, SIXTY_MINS_OR_SECS);
+-	bh[index_to_dir + VMUFAT_DIR_MIN] =
+-		bin2bcd(unix_date);
+-	bh[index_to_dir + VMUFAT_DIR_SEC] =
+-		bin2bcd(seconds);
++	time64_to_tm(in->i_mtime_sec, 0, &tm);
++	year = tm.tm_year + 1900;
++
++	bh[index_to_dir + VMUFAT_DIR_CENT] = bin2bcd(year / 100);
++	bh[index_to_dir + VMUFAT_DIR_YEAR] = bin2bcd(year % 100);
++	bh[index_to_dir + VMUFAT_DIR_MONTH] = bin2bcd(tm.tm_mon + 1);
++	bh[index_to_dir + VMUFAT_DIR_DAY] = bin2bcd(tm.tm_mday);
++	bh[index_to_dir + VMUFAT_DIR_HOUR] = bin2bcd(tm.tm_hour);
++	bh[index_to_dir + VMUFAT_DIR_MIN] = bin2bcd(tm.tm_min);
++	bh[index_to_dir + VMUFAT_DIR_SEC] = bin2bcd(tm.tm_sec);
++	/* VMU weeks start on Monday */
++	bh[index_to_dir + VMUFAT_DIR_DOW] =
++		bin2bcd((tm.tm_wday + 6) % DAYS_PER_WEEK);
+ }
+ 
+ #ifdef CONFIG_RTC_CLASS
+@@ -295,8 +259,8 @@
+ 		bh[index_to_dir + VMUFAT_DIR_HOUR] = bin2bcd((char)(now.tm_hour));
+ 		bh[index_to_dir + VMUFAT_DIR_MIN] = bin2bcd((char)(now.tm_min));
+ 		bh[index_to_dir + VMUFAT_DIR_SEC] = bin2bcd((char)(now.tm_sec));
+-		bh[index_to_dir + VMUFAT_DIR_DOW] = bin2bcd((char)((now.tm_wday + 6))
+-			% DAYS_PER_WEEK);
++		bh[index_to_dir + VMUFAT_DIR_DOW] =
++			bin2bcd((char)((now.tm_wday + 6) % DAYS_PER_WEEK));
+ 	}
+ }
+ #endif
+@@ -598,6 +562,13 @@
+ 	}
+ 	vi->nblcks = 0;
+ 	do {
++		/* A chain can't be longer than the volume: the FAT is bad */
++		if (vi->nblcks > vmudetails->sb_bnum) {
++			printk(KERN_ERR "VMUFAT: FAT chain of block %ld loops\n",
++				ino);
++			error = -EIO;
++			goto unwind_out;
++		}
+ 		vbl = kmem_cache_alloc(vmufat_blist_cachep,
+ 			GFP_KERNEL);
+ 		if (!vbl) {
+@@ -619,11 +590,18 @@
+ 		}
+ 		if (fatdata == VMUFAT_FILE_END)
+ 			break;
++		if (fatdata > vmudetails->sb_bnum) {
++			printk(KERN_ERR "VMUFAT: FAT entry 0x%X of block %ld"
++				" is out of range\n", fatdata, nextblock);
++			error = -EIO;
++			goto unwind_out;
++		}
+ 		nextblock = fatdata;
+ 	} while (1);
+ 	return error;
+ 
+ unwind_out:
++	vi->nblcks = 0;
+ 	list_for_each_entry_safe(iter, iter2, &vi->blocks, b_list) {
+ 		list_del(&iter->b_list);
+ 		kmem_cache_free(vmufat_blist_cachep, iter);
+@@ -635,11 +613,16 @@
+ {
+ 	int error = 0;
+ 	u16 fatword, nextword;
++	struct memcard *vmudetails = sb->s_fs_info;
++	unsigned int count = 0;
+ 
+ 	nextword = inum;
+ 	do {
+ 		fatword = vmufat_get_fat(sb, nextword);
+-		if (fatword == VMUFAT_ERROR) {
++		if (fatword == VMUFAT_ERROR || fatword == VMUFAT_UNALLOCATED ||
++			(fatword != VMUFAT_FILE_END &&
++			fatword > vmudetails->sb_bnum) ||
++			++count > vmudetails->sb_bnum + 1) {
+ 			error = -EIO;
+ 			printk(KERN_ERR
+ 				"VMUFAT: Failure while cleaning FAT.\n");
+diff --git a/fs/vmufat/super.c b/fs/vmufat/super.c
+--- a/fs/vmufat/super.c
++++ b/fs/vmufat/super.c
+@@ -36,7 +36,6 @@
+ static struct kmem_cache *vmufat_inode_cachep;
+ struct kmem_cache *vmufat_blist_cachep;
+ static const struct super_operations vmufat_super_operations;
+-extern int *day_n;
+ extern const struct inode_operations vmufat_inode_operations;
+ extern const struct file_operations vmufat_file_operations;
+ extern const struct address_space_operations vmufat_address_space_operations;
+diff --git a/fs/vmufat/vmufat.h b/fs/vmufat/vmufat.h
+--- a/fs/vmufat/vmufat.h
++++ b/fs/vmufat/vmufat.h
+@@ -67,16 +67,7 @@
+ };
+ 
+ /* constants for BCD conversion */
+-#define SECONDS_PER_DAY			86400
+-#define DAYS_PER_YEAR			365
+-#define SECONDS_PER_HOUR		3600
+-#define HOURS_PER_DAY			24
+-#define SIXTY_MINS_OR_SECS		60
+-#define FEB28				59
+ #define DAYS_PER_WEEK			7
+-#define START_OF_EPOCH			70
+-#define CENTURY21			30
+-#define CENTURY22			130
+ 
+ struct memcard {
+ 	unsigned int sb_bnum;
+--
+2.43.0

@@ -1,0 +1,147 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 30 Oct 2026 19:00:00 +0100
+Subject: [PATCH] mtd: maps: vmu-flash: Don't hand out stale data on failed reads
+
+maple_vmu_read_block() copies its read buffer as soon as the device
+goes idle, whether or not vmu_blockread() filled it. It is called for
+every DATATRF response and blindly copies it, also when the response
+isn't the one for the requested block. Any other way the device gets
+idle, like an error response, hands out the uninitialized kmalloc()
+buffer as block data. Check the function and block/phase location
+echoed in the response, and fail the read with -EIO, if the requested
+block did not arrive.
+
+Also check the maple_add_packet() result before waiting for a response
+of a packet that was never queued, and don't clear the busy flag on
+-EBUSY, as it belongs to the packet that is already queued for this
+device, e.g. a VMU LCD update. The same applies to block writes, which
+also only waited HZ/10 for the response, which is not enough on a busy
+box: use the same timeout as for reads.
+
+vmu_flash_read() returned the truncated error code of
+vmu_flash_read_char() as positive value, which is not an error to the
+MTD core. Return -EIO instead.
+
+---
+diff --git a/drivers/mtd/maps/vmu-flash.c b/drivers/mtd/maps/vmu-flash.c
+--- a/drivers/mtd/maps/vmu-flash.c
++++ b/drivers/mtd/maps/vmu-flash.c
+@@ -44,6 +44,7 @@
+ 	u32 removable;
+ 	int partition;
+ 	int read;
++	__be32 readloc;
+ 	unsigned char *blockread;
+ 	struct vmupart *parts;
+ 	struct mtd_info *mtd;
+@@ -91,16 +92,24 @@
+ {
+ 	struct maple_device *mdev;
+ 	struct memcard *card;
++	__be32 *res;
+ 
+ 	mdev = mq->dev;
+ 	card = maple_get_drvdata(mdev);
++	res = (__be32 *) mq->recvbuf->buf;
+ 	/* copy the read in data */
+ 
+ 	if (unlikely(!card->blockread))
+ 		return;
+ 
++	/* Only accept the memcard reply for the block and phase we asked for */
++	if (be32_to_cpu(res[1]) != MAPLE_FUNC_MEMCARD ||
++		res[2] != card->readloc)
++		return;
++
+ 	memcpy(card->blockread, mq->recvbuf->buf + 12,
+ 		card->blocklen/card->readcnt);
++	card->read = 1;
+ 
+ }
+ 
+@@ -164,11 +173,23 @@
+ 			goto outB;
+ 		}
+ 		card->blockread = blockread;
++		card->readloc = sendbuf;
++		card->read = 0;
+ 
+ 		maple_getcond_callback(mdev, vmu_blockread, 0,
+ 			MAPLE_FUNC_MEMCARD);
+ 		error = maple_add_packet(mdev, MAPLE_FUNC_MEMCARD,
+ 				MAPLE_COMMAND_BREAD, 2, &sendbuf);
++		if (error) {
++			/*
++			* -EBUSY: another packet is queued for this device and
++			* owns the busy flag, so leave it alone
++			*/
++			if (error != -EBUSY)
++				atomic_set(&mdev->busy, 0);
++			card->blockread = NULL;
++			goto outA;
++		}
+ 		/* Very long timeouts seem to be needed when box is stressed */
+ 		wait = wait_event_interruptible_timeout(mdev->maple_wait,
+ 			(atomic_read(&mdev->busy) == 0 ||
+@@ -178,9 +199,8 @@
+ 		* so have to return errors when VMU is unplugged
+ 		* in the middle of a read (busy == 2)
+ 		*/
+-		if (error || atomic_read(&mdev->busy) == 2) {
+-			if (atomic_read(&mdev->busy) == 2)
+-				error = -ENXIO;
++		if (atomic_read(&mdev->busy) == 2) {
++			error = -ENXIO;
+ 			atomic_set(&mdev->busy, 0);
+ 			card->blockread = NULL;
+ 			goto outA;
+@@ -202,6 +222,17 @@
+ 					mdev->port, mdev->unit, num);
+ 			goto outA;
+ 		}
++		/*
++		* The device went idle without delivering our block, e.g. it
++		* answered with an error code: don't hand out stale data
++		*/
++		if (!card->read) {
++			card->blockread = NULL;
++			error = -EIO;
++			dev_notice(&mdev->dev, "VMU read on (%d, %d) got no data"
++				" for block 0x%X\n", mdev->port, mdev->unit, num);
++			goto outA;
++		}
+ 
+ 		memcpy(buf + (card->blocklen/card->readcnt) * x, blockread,
+ 			card->blocklen/card->readcnt);
+@@ -265,13 +296,17 @@
+ 
+ 		locking = maple_add_packet(mdev, MAPLE_FUNC_MEMCARD,
+ 			MAPLE_COMMAND_BWRITE, phaselen / 4 + 2, sendbuf);
+-		wait = wait_event_interruptible_timeout(mdev->maple_wait,
+-			atomic_read(&mdev->busy) == 0, HZ/10);
+ 		if (locking) {
+ 			error = -EIO;
+-			atomic_set(&mdev->busy, 0);
++			/* -EBUSY: the queued packet owns the busy flag */
++			if (locking != -EBUSY)
++				atomic_set(&mdev->busy, 0);
+ 			goto fail_nolock;
+ 		}
++		/* Like reads, writes need long timeouts when box is stressed */
++		wait = wait_event_interruptible_timeout(mdev->maple_wait,
++			atomic_read(&mdev->busy) == 0 ||
++			atomic_read(&mdev->busy) == 2, HZ * 3);
+ 		if (atomic_read(&mdev->busy) == 2) {
+ 			atomic_set(&mdev->busy, 0);
+ 		} else if (wait == 0 || wait == -ERESTARTSYS) {
+@@ -402,7 +437,7 @@
+ 			if (retval) {
+ 				*retlen = index;
+ 				kfree(vblock);
+-				return cx;
++				return -EIO;
+ 			}
+ 			memset(buf + index, cx, 1);
+ 			index++;
+--
+2.43.0

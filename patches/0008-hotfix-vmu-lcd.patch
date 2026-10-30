@@ -21,11 +21,11 @@ Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
  drivers/auxdisplay/Kconfig   |  18 ++
  drivers/auxdisplay/Makefile  |   1 +
- drivers/auxdisplay/vmu-lcd.c | 411 +++++++++++++++++++++++++++++++++++
+ drivers/auxdisplay/vmu-lcd.c | 413 +++++++++++++++++++++++++++++++++++
  drivers/mtd/maps/Kconfig     |   5 +
  drivers/mtd/maps/vmu-flash.c |  17 +-
  include/linux/vmu-lcd.h      |  23 ++
- 6 files changed, 474 insertions(+), 1 deletion(-)
+ 6 files changed, 476 insertions(+), 1 deletion(-)
  create mode 100644 drivers/auxdisplay/vmu-lcd.c
  create mode 100644 include/linux/vmu-lcd.h
 
@@ -69,10 +69,10 @@ index f5c13ed1cd4f..66310759a17f 100644
 +obj-$(CONFIG_VMU_LCD)		+= vmu-lcd.o
 diff --git a/drivers/auxdisplay/vmu-lcd.c b/drivers/auxdisplay/vmu-lcd.c
 new file mode 100644
-index 000000000000..94fbba662466
+index 000000000000..5474837cb5dc
 --- /dev/null
 +++ b/drivers/auxdisplay/vmu-lcd.c
-@@ -0,0 +1,411 @@
+@@ -0,0 +1,413 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * vmu-lcd.c - Character device for the SEGA Dreamcast VMU LCD display
@@ -221,7 +221,9 @@ index 000000000000..94fbba662466
 +	error = maple_add_packet(mdev, MAPLE_FUNC_LCD, MAPLE_COMMAND_BWRITE,
 +				 VMU_LCD_PKT_WORDS, sendbuf);
 +	if (error) {
-+		atomic_set(&mdev->busy, 0);
++		/* -EBUSY: the queued packet (e.g. a flash read) owns busy */
++		if (error != -EBUSY)
++			atomic_set(&mdev->busy, 0);
 +		goto out;
 +	}
 +

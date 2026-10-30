@@ -11,8 +11,7 @@ Reject the add in maple_add_packet() rather than audit every caller.
 Previously, the less devices are connected, the more likely it gets to
 hit the panic, about 1 out of 10 boots paniced for some users.
 
-Closes: https://github.com/foxdrodd/dreamcast-linux/issues/16
-Reported-By: scrivanidc <scrivanidc@gmail.com>
+Reported-by: scrivanidc <scrivanidc@gmail.com>
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 ---
  drivers/sh/maple/maple.c | 11 ++++++++++-

@@ -1,0 +1,73 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 30 Oct 2026 19:00:00 +0100
+Subject: [PATCH] sh: maple: Don't process the sent queue before its DMA ran
+
+maple_dma_handler() treats an idle DMA engine as "the sent queue was
+transferred". But the queue is armed for the VBLANK trigger, so the
+engine also reads idle while the queue still waits for its transfer.
+When a DMA end interrupt arrives while the handler is still running,
+the work is queued again. The rerun then picks up the queue that the
+first run just built with maple_send() and processes it before the
+hardware sent it. The receive buffers still hold the responses of the
+previous command of each device, which then get delivered as the answer
+to the new one.
+
+For input devices that is mostly harmless, but a VMU block read gets
+the previous block, or the RESPONSE_OK of the previous block write,
+which vmu-flash hands out as data. In QEMU this happened thousands of
+times per boot and made vmufat lose directory entries, or loop on a
+garbage FAT until the box ran out of memory.
+
+Count the DMA end interrupts and remember the count when maple_send()
+builds the sent queue. Leave the queue armed in maple_dma_handler()
+until an interrupt arrived after it was built.
+
+---
+diff --git a/drivers/sh/maple/maple.c b/drivers/sh/maple/maple.c
+--- a/drivers/sh/maple/maple.c
++++ b/drivers/sh/maple/maple.c
+@@ -35,6 +35,9 @@
+ static void maple_vblank_handler(struct work_struct *work);
+ 
+ static DECLARE_WORK(maple_dma_process, maple_dma_handler);
++/* DMA end interrupts seen, and their count when the sent queue was built */
++static atomic_t maple_dma_irqs = ATOMIC_INIT(0);
++static int maple_dma_armed;
+ static DECLARE_WORK(maple_vblank_process, maple_vblank_handler);
+ 
+ static LIST_HEAD(maple_waitq);
+@@ -308,6 +311,7 @@
+ 	}
+ 	mutex_unlock(&maple_wlist_lock);
+ 	if (maple_packets > 0) {
++		maple_dma_armed = atomic_read(&maple_dma_irqs);
+ 		for (i = 0; i < (1 << MAPLE_DMA_PAGES); i++)
+ 			__flush_purge_region(maple_sendbuf + i * PAGE_SIZE,
+ 					PAGE_SIZE);
+@@ -644,6 +648,16 @@
+ 
+ 	if (!maple_dma_done())
+ 		return;
++	/*
++	* An idle DMA engine doesn't mean the sent queue was transferred: it
++	* may still wait for its VBLANK trigger, when this work was queued
++	* again by the interrupt of the previous transfer. Its receive
++	* buffers then still hold the previous responses, so leave it armed
++	* until the next DMA end interrupt.
++	*/
++	if (!list_empty(&maple_sentq) &&
++		atomic_read(&maple_dma_irqs) == maple_dma_armed)
++		return;
+ 	__raw_writel(0, MAPLE_ENABLE);
+ 	if (!list_empty(&maple_sentq)) {
+ 		list_for_each_entry_safe(mq, nmq, &maple_sentq, list) {
+@@ -721,6 +735,7 @@
+ static irqreturn_t maple_dma_interrupt(int irq, void *dev_id)
+ {
+ 	/* Load everything into the bottom half */
++	atomic_inc(&maple_dma_irqs);
+ 	schedule_work(&maple_dma_process);
+ 	return IRQ_HANDLED;
+ }
+--
+2.43.0
