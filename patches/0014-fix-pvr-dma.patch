@@ -3,7 +3,7 @@ From: Florian Fuchs <fuchsfl@gmail.com>
 Date: Wed, 8 Jul 2026 21:16:24 +0200
 Subject: [PATCH] sh: dreamcast: fix PVR2 CH2-DMA framebuffer writes (CONFIG_PVR2_DMA)
 
-The pvr2fb DMA write path was broken three ways; fbdoom via write()
+The pvr2fb DMA write path was broken four ways; fbdoom via write()
 on /dev/fb0 drew a thin stripe, then hung in D-state:
 
 - dma-pvr2: the completion IRQ set xfer_complete but never woke the
@@ -21,18 +21,29 @@ on /dev/fb0 drew a thin stripe, then hung in D-state:
   writeback, leaving stale 32-byte holes in the image. Flush before
   starting the transfer.
 
+- pvr2fb: the transfer started at the beginning of the first pinned
+  page instead of at the user buffer, so a buffer not starting on a
+  page boundary (a malloc()ed fbDOOM frame) landed shifted by its
+  page offset: the end of every line shows up at the start of the
+  next one. It was also sized in whole pages (writing past the
+  requested range), ignored the offset when counting the pages to
+  pin, and read one entry past the pages array for the contiguity
+  check. Start at the buffer, transfer exactly count bytes (per page
+  when not contiguous), and let fb_io_write() copy writes that are
+  not 32-byte aligned, since the DMA moves 32-byte blocks.
+
 Measured on hardware (640x480x16): DMA ~25 MB/s vs ~27 MB/s memcpy,
 but 8 ms vs 23 ms CPU per frame - the point of the DMA path.
 
 Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
 
 ---
- arch/sh/drivers/dma/dma-pvr2.c | 34 ++++++++++++++++++++++++++++++----
- drivers/video/fbdev/pvr2fb.c   | 11 +++++++++++
- 2 files changed, 41 insertions(+), 4 deletions(-)
+ arch/sh/drivers/dma/dma-pvr2.c | 34 ++++++++++++++++---
+ drivers/video/fbdev/pvr2fb.c   | 60 +++++++++++++++++++++-------------
+ 2 files changed, 67 insertions(+), 27 deletions(-)
 
 diff --git a/arch/sh/drivers/dma/dma-pvr2.c b/arch/sh/drivers/dma/dma-pvr2.c
-index 21c347543..13e112879 100644
+index 21c3475..13e1128 100644
 --- a/arch/sh/drivers/dma/dma-pvr2.c
 +++ b/arch/sh/drivers/dma/dma-pvr2.c
 @@ -20,6 +20,8 @@ static int count;
@@ -107,7 +118,7 @@ index 21c347543..13e112879 100644
  }
  
 diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
-index da748e377..4ea374cd9 100644
+index a6e7abc..cfdcd26 100644
 --- a/drivers/video/fbdev/pvr2fb.c
 +++ b/drivers/video/fbdev/pvr2fb.c
 @@ -67,6 +67,7 @@
@@ -118,7 +129,30 @@ index da748e377..4ea374cd9 100644
  #endif
  
  #ifdef CONFIG_SH_STORE_QUEUES
-@@ -679,6 +680,16 @@ static ssize_t pvr2fb_write(struct fb_info *info, const char *buf,
+@@ -642,7 +643,8 @@ static irqreturn_t __maybe_unused pvr2fb_interrupt(int irq, void *dev_id)
+ static ssize_t pvr2fb_write(struct fb_info *info, const char __user *buf,
+ 			    size_t count, loff_t *ppos)
+ {
+-	unsigned long dst, start, end, len;
++	unsigned long offset = (unsigned long)buf & ~PAGE_MASK;
++	unsigned long dst, start, end, len, left;
+ 	unsigned int nr_pages;
+ 	struct page **pages;
+ 	int ret, i;
+@@ -650,7 +652,11 @@ static ssize_t pvr2fb_write(struct fb_info *info, const char __user *buf,
+ 	if (!info->screen_base)
+ 		return -ENODEV;
+ 
+-	nr_pages = (count + PAGE_SIZE - 1) >> PAGE_SHIFT;
++	/* The DMA moves 32-byte blocks, let the CPU copy anything else */
++	if ((offset | *ppos | count) & 31)
++		return fb_io_write(info, buf, count, ppos);
++
++	nr_pages = DIV_ROUND_UP(offset + count, PAGE_SIZE);
+ 
+ 	pages = kmalloc_objs(struct page *, nr_pages);
+ 	if (!pages)
+@@ -679,36 +685,44 @@ static ssize_t pvr2fb_write(struct fb_info *info, const char __user *buf,
  
  	dma_configure_channel(shdma, 0x12c1);
  
@@ -132,9 +166,57 @@ index da748e377..4ea374cd9 100644
 +	 */
 +	flush_cache_all();
 +
++	/* As we do this in one shot, it's either all or nothing.. */
++	if ((*ppos + count) > fb_info->fix.smem_len) {
++		ret = -ENOSPC;
++		goto out_unmap;
++	}
++
++	/* The user buffer need not start on a page boundary */
  	dst   = (unsigned long)fb_info->screen_base + *ppos;
- 	start = (unsigned long)page_address(pages[0]);
- 	end   = (unsigned long)page_address(pages[nr_pages]);
+-	start = (unsigned long)page_address(pages[0]);
+-	end   = (unsigned long)page_address(pages[nr_pages]);
+-	len   = nr_pages << PAGE_SHIFT;
++	start = (unsigned long)page_address(pages[0]) + offset;
++	end   = (unsigned long)page_address(pages[nr_pages - 1]) + PAGE_SIZE;
+ 
+ 	/* Half-assed contig check */
+-	if (start + len == end) {
+-		/* As we do this in one shot, it's either all or nothing.. */
+-		if ((*ppos + len) > fb_info->fix.smem_len) {
+-			ret = -ENOSPC;
+-			goto out_unmap;
+-		}
+-
+-		dma_write(shdma, start, 0, len);
+-		dma_write(pvr2dma, 0, dst, len);
++	if (start - offset + (nr_pages << PAGE_SHIFT) == end) {
++		dma_write(shdma, start, 0, count);
++		dma_write(pvr2dma, 0, dst, count);
+ 		dma_wait_for_completion(pvr2dma);
+-
+ 		goto out;
+ 	}
+ 
+ 	/* Not contiguous, writeout per-page instead.. */
+-	for (i = 0; i < nr_pages; i++, dst += PAGE_SIZE) {
+-		if ((*ppos + (i << PAGE_SHIFT)) > fb_info->fix.smem_len) {
+-			ret = -ENOSPC;
+-			goto out_unmap;
+-		}
+-
+-		dma_write_page(shdma, (unsigned long)page_address(pages[i]), 0);
+-		dma_write_page(pvr2dma, 0, dst);
++	for (i = 0, left = count; left; i++, offset = 0) {
++		len = min(left, PAGE_SIZE - offset);
++		dma_write(shdma, (unsigned long)page_address(pages[i]) + offset,
++			  0, len);
++		dma_write(pvr2dma, 0, dst, len);
+ 		dma_wait_for_completion(pvr2dma);
++		dst += len;
++		left -= len;
+ 	}
+ 
+ out:
 -- 
 2.43.0
-

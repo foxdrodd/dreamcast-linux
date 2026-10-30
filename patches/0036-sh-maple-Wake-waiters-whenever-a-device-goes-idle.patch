@@ -1,0 +1,62 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Fri, 30 Oct 2026 21:00:00 +0100
+Subject: [PATCH] sh: maple: Wake waiters whenever a device goes idle
+
+Drivers like vmu-flash and vmu-lcd wait on maple_wait for the busy flag
+of their device to clear before they queue a packet, with a timeout of
+one second. The maple core clears busy for the replies to its own
+packets too, but only wakes the waiters for DATATRF, FILEERR and OK.
+
+The periodic DEVINFO poll marks the device busy every MAPLE_PNP_INTERVAL,
+which is also one second. A driver that runs into it sleeps through its
+whole timeout and then usually finds the next poll in flight, failing
+with "VMU at (2, 1) is busy" and an I/O error on a read of the
+filesystem.
+
+Wake the waiters on every path that clears busy.
+
+---
+diff --git a/drivers/sh/maple/maple.c b/drivers/sh/maple/maple.c
+--- a/drivers/sh/maple/maple.c
++++ b/drivers/sh/maple/maple.c
+@@ -581,6 +581,7 @@
+ 	}
+ 	/* Some hardware devices generate false detach messages on unit 0 */
+ 	atomic_set(&mdev->busy, 0);
++	wake_up(&mdev->maple_wait);
+ }
+ 
+ /* preprocess hotplugs or scans */
+@@ -676,6 +677,14 @@
+ 			case MAPLE_RESPONSE_DEVINFO:
+ 				maple_response_devinfo(mdev, recvbuf);
+ 				atomic_set(&mdev->busy, 0);
++				/*
++				* The periodic DEVINFO poll marks the device
++				* busy too; wake drivers that wait to queue
++				* their own packet, or they sleep until their
++				* timeout and, as the poll repeats every
++				* MAPLE_PNP_INTERVAL, find it busy again.
++				*/
++				wake_up(&mdev->maple_wait);
+ 				break;
+ 
+ 			case MAPLE_RESPONSE_DATATRF:
+@@ -698,6 +707,7 @@
+ 					" 0x%X at (%d, %d)\n", code,
+ 					mdev->port, mdev->unit);
+ 				atomic_set(&mdev->busy, 0);
++				wake_up(&mdev->maple_wait);
+ 				break;
+ 
+ 			case MAPLE_RESPONSE_ALLINFO:
+@@ -706,6 +716,7 @@
+ 				" but call is not supported\n", mdev->port,
+ 				mdev->unit);
+ 				atomic_set(&mdev->busy, 0);
++				wake_up(&mdev->maple_wait);
+ 				break;
+ 
+ 			case MAPLE_RESPONSE_OK:
+--
+2.43.0
