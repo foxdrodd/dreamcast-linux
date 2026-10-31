@@ -10,7 +10,7 @@ LDFLAGS =
 
 NATIVE_CC ?= gcc
 
-TOOLS = vmu_lcd_text vmu_lcd_anim
+TOOLS = vmu_lcd_text vmu_lcd_anim vmu_lcd_t2logo
 HDRS  = vmu_lcd.h
 
 all: $(TOOLS)
@@ -21,8 +21,11 @@ vmu_lcd_text: vmu_lcd_text.c $(HDRS)
 vmu_lcd_anim: vmu_lcd_anim.c $(HDRS)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
+vmu_lcd_t2logo: vmu_lcd_t2logo.c $(HDRS)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
 # Host builds for local testing (suffixed _native, not for the Dreamcast).
-native: vmu_lcd_text_native vmu_lcd_anim_native
+native: vmu_lcd_text_native vmu_lcd_anim_native vmu_lcd_t2logo_native
 
 vmu_lcd_text_native: vmu_lcd_text.c $(HDRS)
 	$(NATIVE_CC) -O2 -Wall -o $@ $<
@@ -30,7 +33,11 @@ vmu_lcd_text_native: vmu_lcd_text.c $(HDRS)
 vmu_lcd_anim_native: vmu_lcd_anim.c $(HDRS)
 	$(NATIVE_CC) -O2 -Wall -o $@ $<
 
+vmu_lcd_t2logo_native: vmu_lcd_t2logo.c $(HDRS)
+	$(NATIVE_CC) -O2 -Wall -o $@ $<
+
 clean:
-	rm -f $(TOOLS) vmu_lcd_text_native vmu_lcd_anim_native
+	rm -f $(TOOLS) vmu_lcd_text_native vmu_lcd_anim_native \
+	      vmu_lcd_t2logo_native
 
 .PHONY: all native clean

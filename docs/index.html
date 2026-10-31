@@ -48,7 +48,7 @@
 
 <!-- RELEASE: edit version here on each release -->
 <p>
-  <a class="download" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest">Download v7.2.9</a>
+  <a class="download" href="https://github.com/foxdrodd/dreamcast-linux/releases/latest">Download v7.3.1</a>
 </p>
 
 <!-- Photos live in assets/pictures/. Copy a <figure> to add one. -->
@@ -69,11 +69,11 @@
 
 <h2>Boot log</h2>
 <p>
-  Linux 7.2.9 on a real Dreamcast, captured on the serial console (ttySC1, 115200 baud).
-  There is also a <a href="assets/boot-7.2.9.mp4">video of the boot</a> and the
+  Linux 7.3.1 on a real Dreamcast, captured on the serial console (ttySC1, 115200 baud).
+  There is also a <a href="assets/boot-7.3.1.mp4">video of the boot, running fbdoom</a> and the
   <a href="assets/dmesg.txt">raw dmesg</a>.
 </p>
-<pre class="log" tabindex="0" aria-label="Boot log (dmesg) from Dreamcast Linux 7.2.9 on real hardware">Linux version 7.2.9 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #8 PREEMPT Wed Oct 7 2026
+<pre class="log" tabindex="0" aria-label="Boot log (dmesg) from Dreamcast Linux 7.3.1 on real hardware">Linux version 7.3.1 (root@build) (sh4-linux-gcc (GCC) 15.2.0, GNU ld 2.45.1) #11 PREEMPT Fri Oct 30 2026
 Booting machvec: Sega Dreamcast
 Kernel command line: console=ttySC1,115200 panic=3 ip=dhcp
 Zone ranges:
@@ -83,12 +83,12 @@ I-cache : n_ways=1 n_sets=256 way_incr=8192
 D-cache : n_ways=1 n_sets=512 way_incr=16384
 virtual kernel memory layout:
     lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
-      .text : 0x8c001000 - 0x8c34b470   (3369 kB)
+      .text : 0x8c001000 - 0x8c350178   (3388 kB)
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 intc: Registered controller 'sh7750' with 20 IRQs
 Calibrating delay loop (skipped)... 199.50 BogoMIPS PRESET (lpj=399012)
 CPU: SH7750
-Memory: 11336K/16384K available (3365K kernel code, 205K rwdata, 424K rodata, 148K init, 93K bss, 4436K reserved)
+Memory: 11308K/16384K available (3384K kernel code, 202K rwdata, 436K rodata, 148K init, 94K bss, 4464K reserved)
 Performance Events: sh7750 support registered
 Advanced Linux Sound Architecture Driver Initialized.
 DMA: Registering g2_dmac handler (4 channels).
@@ -98,11 +98,11 @@ PCI: Fixing up device 0000:00:00.0
 maple: bus core now registered
 NET: Registered PF_INET protocol family
 TCP: Hash tables configured (established 1024 bind 1024)
-sq: Registering store queue API.
 maple (null): detected Dreamcast Mouse: function 0x200: at (0, 0)
 maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
 maple (null): detected Dreamcast Controller: function 0x1: at (2, 0)
 maple (null): detected Keyboard: function 0x40: at (3, 0)
+sq: Registering store queue API.
 maple (null): detected Visual Memory: function 0xE: at (2, 1)
 squashfs: version 4.0 (2009/01/31) Phillip Lougher
 Console: switching to colour frame buffer device 80x30
@@ -110,7 +110,7 @@ fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memor
 fb0: Mode 640x480-16 pitch = 1280 cable: VGA video output: VGA
 sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
 SuperH (H)SCI(F) driver initialized
-sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
+sh-sci.1: ttySC1 MMIO:0xffe80000 (irq = 56, base_baud = 0) is a scif
 printk: legacy console [ttySC1] enabled
 pvr2_dc: /dev/pvr ready (VRAM 8MB, regs, TA FIFO, CH2-DMA submit)
 Dreamcast_visual_memory 2:01.E: VMU LCD at (2, 1) registered as vmu_lcd0
@@ -127,7 +127,6 @@ input: Dreamcast Mouse as /devices/maple/0:00.200/input/input1
 input: Dreamcast Controller as /devices/maple/1:00.1/input/input2
 input: Dreamcast Controller as /devices/maple/2:00.1/input/input3
 AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
-random: crng init done
 8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1
 Sending DHCP requests ., OK
 IP-Config: Got DHCP answer from 192.168.0.1, my address is 192.168.0.38
@@ -137,6 +136,7 @@ ALSA device list:
 Freeing unused kernel image (initmem) memory: 148K
 Run /init as init process
 ISO 9660 Extensions: RRIP_1991A
+random: crng init done
 
 root@dreamcast:/$ </pre>
 
@@ -175,14 +175,16 @@ root@dreamcast:/$ </pre>
 </p>
 
 <!-- LATEST RELEASE: hand-edited, update on each release -->
-<h3>v7.2.9, October 2026</h3>
+<h3>v7.3.1, October 2026</h3>
 <ul>
-  <li>Kernel update to Linux 7.2.9, with largely the same userland as 7.1.3.</li>
-  <li>Prototype modem driver, an initial adaptation of the KallistiOS driver.</li>
-  <li>Improved keypress detection and a new boot screen.</li>
-  <li>A bit more free RAM from a trimmed kernel config, and a fix for a boot race when a VMU is plugged in.</li>
+  <li>Kernel update to Linux 7.3.1, with largely the same userland as 7.2.9.</li>
+  <li>Reliable VMU saves via vmufat</li>
+  <li>GD-ROM access is even more stable</li>
+  <li>Boots about 4 seconds faster: clearing the AICA sound RAM no longer takes hundreds of thousands of unaligned access traps.</li>
+  <li>A cleaner boot: no more stripes over the SEGA licence screen</li>
+  <li>Fixes for kernel oopses with PPP header compression and with unaligned accesses in branch delay slots.</li>
 </ul>
-<p><a href="https://github.com/foxdrodd/dreamcast-linux/releases/tag/7.2.9">Full release notes</a></p>
+<p><a href="https://github.com/foxdrodd/dreamcast-linux/releases/tag/7.3.1">Full release notes</a></p>
 
 <div class="table-wrap">
 <table>

@@ -32,6 +32,8 @@ cd ..
 
 wait
 
+# exit
+
 # then build the userland variants with tiny-initrd:
 sed -i 's,CONFIG_INITRAMFS_SOURCE=.*,CONFIG_INITRAMFS_SOURCE="/usr/src/dreamcast/tiny-initrd",' dreamcast/kernel.config
 ./rebuildkernel.sh

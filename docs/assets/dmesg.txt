@@ -1,4 +1,4 @@
-Linux version 7.2.9 (root@c17f7317a78e) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #8 PREEMPT Wed Oct  7 21:09:20 UTC 2026
+Linux version 7.3.1 (root@bfa6af19c6b2) (sh4-linux-gcc (GCC) 15.2.0, GNU ld (GNU Binutils) 2.45.1) #11 PREEMPT Fri Oct 30 17:50:37 UTC 2026
 Boot params:
 ... MOUNT_ROOT_RDONLY - 00000000
 ... RAMDISK_FLAGS     - 00000000
@@ -33,9 +33,9 @@ virtual kernel memory layout:
     vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
     lowmem  : 0x8c000000 - 0x8d000000   (  16 MB) (cached)
             : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
-      .init : 0x8c3ea000 - 0x8c40f000   ( 148 kB)
-      .data : 0x8c34b470 - 0x8c3e9bb0   ( 633 kB)
-      .text : 0x8c001000 - 0x8c34b470   (3369 kB)
+      .init : 0x8c3f1000 - 0x8c416000   ( 148 kB)
+      .data : 0x8c350178 - 0x8c3f0b1c   ( 642 kB)
+      .text : 0x8c001000 - 0x8c350178   (3388 kB)
 SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
 rcu: Preemptible hierarchical RCU implementation.
 rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
@@ -59,7 +59,7 @@ VFS: Finished mounting rootfs on nullfs
 Performance Events: sh7750 support registered
 rcu: Hierarchical SRCU implementation.
 rcu: 	Max phase no-delay instances is 1000.
-Memory: 11336K/16384K available (3365K kernel code, 205K rwdata, 424K rodata, 148K init, 93K bss, 4436K reserved, 0K cma-reserved)
+Memory: 11308K/16384K available (3384K kernel code, 202K rwdata, 436K rodata, 148K init, 94K bss, 4464K reserved, 0K cma-reserved)
 devtmpfs: initialized
 posixtimers hash table entries: 512 (order: 0, 2048 bytes, linear)
 futex hash table entries: 256 (3072 bytes on 1 NUMA nodes, total 3 KiB, linear).
@@ -91,14 +91,6 @@ TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
 TCP bind hash table entries: 1024 (order: 1, 8192 bytes, linear)
 TCP: Hash tables configured (established 1024 bind 1024)
 UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
-NET: Registered PF_UNIX/PF_LOCAL protocol family
-RPC: Registered named UNIX socket transport module.
-RPC: Registered udp transport module.
-RPC: Registered tcp transport module.
-RPC: Registered tcp-with-tls transport module.
-RPC: Registered tcp NFSv4.1 backchannel transport module.
-PCI: CLS 0 bytes, default 32
-sq: Registering store queue API.
 maple (null): detected Dreamcast Mouse: function 0x200: at (0, 0)
 maple (null): no driver found
 maple (null): detected Dreamcast Controller: function 0x1: at (1, 0)
@@ -107,9 +99,17 @@ maple (null): detected Dreamcast Controller: function 0x1: at (2, 0)
 maple (null): no driver found
 maple (null): detected Keyboard: function 0x40: at (3, 0)
 maple (null): no driver found
-workingset: timestamp_bits=30 (anon: 25) max_order=12 bucket_order=0 (anon: 0)
+NET: Registered PF_UNIX/PF_LOCAL protocol family
+RPC: Registered named UNIX socket transport module.
+RPC: Registered udp transport module.
+RPC: Registered tcp transport module.
+RPC: Registered tcp-with-tls transport module.
+RPC: Registered tcp NFSv4.1 backchannel transport module.
+PCI: CLS 0 bytes, default 32
+sq: Registering store queue API.
 maple (null): detected Visual Memory: function 0xE: at (2, 1)
 maple (null): no driver found
+workingset: timestamp_bits=30 (anon: 25) max_order=12 bucket_order=0 (anon: 0)
 squashfs: version 4.0 (2009/01/31) Phillip Lougher
 Console: switching to colour frame buffer device 80x30
 fb0: NEC PowerVR2 (rev 1.1) frame buffer device, using 600k/8192k of video memory
@@ -118,8 +118,8 @@ fb0: registering with SQ API
 sqremap:    NEC PowerVR2  [2048 pages]  va 0xe0000000   pa 0xa5000000
 fb0: Mapped video memory to SQ addr 0xe0000000
 SuperH (H)SCI(F) driver initialized
-sh-sci.0: ttySC0 at MMIO 0xffe00000 (irq = 39, base_baud = 0) is a sci
-sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 56, base_baud = 0) is a scif
+sh-sci.0: ttySC0 MMIO:0xffe00000 (irq = 39, base_baud = 0) is a sci
+sh-sci.1: ttySC1 MMIO:0xffe80000 (irq = 56, base_baud = 0) is a scif
 printk: legacy console [ttySC1] enabled
 pvr2_dc: /dev/pvr ready (VRAM 8MB, regs, TA FIFO, CH2-DMA submit)
 brd: module loaded
@@ -143,7 +143,6 @@ input: Dreamcast Mouse as /devices/maple/0:00.200/input/input1
 input: Dreamcast Controller as /devices/maple/1:00.1/input/input2
 input: Dreamcast Controller as /devices/maple/2:00.1/input/input3
 AICA AICA: ALSA Driver for Yamaha AICA Super Intelligent Sound Processor
-random: crng init done
 NET: Registered PF_PACKET protocol family
 8139too 0000:00:00.0 eth0: link up, 100Mbps, full-duplex, lpa 0xC1E1
 Sending DHCP requests ., OK
@@ -166,3 +165,4 @@ Run /init as init process
     HOME=/
     TERM=linux
 ISO 9660 Extensions: RRIP_1991A
+random: crng init done
