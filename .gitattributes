@@ -1,2 +1,3 @@
 drivers/** linguist-vendored
 userland/** linguist-vendored
+tests/** linguist-vendored
