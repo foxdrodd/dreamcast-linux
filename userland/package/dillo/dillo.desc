@@ -1,0 +1,38 @@
+[COPY] --- T2-COPYRIGHT-BEGIN ---
+[COPY] t2/package/*/dillo/dillo.desc
+[COPY] Copyright (C) 2004 - 2026 The T2 SDE Project
+[COPY] Copyright (C) 1998 - 2003 ROCK Linux Project
+[COPY] SPDX-License-Identifier: GPL-2.0
+[COPY] --- T2-COPYRIGHT-END ---
+
+[I] A small Web Browser (i.e. for handhelds)
+
+[T] Dillo is a fast and lighteweight webbrowser.
+[T]
+[T] It is mainly designed for use on handhelds - but it might also be of
+[T] help on old computers. It is able to render a good subset of HTML,
+[T] excluding frames, JavaScript and JVM support.
+
+[U] https://www.dillo.org/
+
+[A] Jorge Arellano Cid <jcid@softhome.net>
+[M] René Rebe <rene@exactco.de>
+
+[C] extra/office
+[F] CROSS
+
+[E] opt libwebp
+
+[L] GPL
+[V] 3.3.0
+
+[D] f0400e307013323c999f4b3168ffd984d031a8da634188999b7eca58 dillo-3.3.0.tar.gz https://dillo-browser.org/release/3.3.0/
+
+pkginstalled openssl && var_append confopt ' ' --enable-tls
+var_append confopt ' ' --enable-experimental-fltk
+var_append GCC_WRAPPER_APPEND ' ' -L$root$(pkgprefix libdir libx11)
+var_append GCC_WRAPPER_APPEND ' ' -lm
+
+# Use the target fltk-config, not the host one, and drop any stale cached lookup
+hook_add preconf 5 "sed -i '/^ac_cv_path_FLTK_CONFIG=/d' config.cache 2>/dev/null || true"
+export ac_cv_path_FLTK_CONFIG=$root$(pkgprefix bindir fltk)/fltk-config

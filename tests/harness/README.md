@@ -102,6 +102,25 @@ player shows. Config: `VIDEO_DEV` (`/dev/video0`), `VIDEO_SIZE` (`640x480`),
 Run `maple-release-test.sh` with **`GRAB=1`** to auto-save a screenshot beside
 the log at each manual visual check.
 
+## record-demo.py — boot + fbdoom video for the website
+
+Records the demo video in `docs/assets/boot-<ver>.mp4` from the same dongle:
+SysRq reboot → Dreamcast/SEGA screens → boot → tty1 prompt, then Enter (the
+login runs flashfetch) and `fbdoom` typed on tty1. Input goes in through
+`ttytype` (TIOCSTI into `/dev/tty1`, needs `CONFIG_LEGACY_TIOCSTI=y`); the
+prebuilt `ttytype/ttytype-musl-sh4.gz` is uploaded on musl/muslX, other images
+compile `ttytype/ttytype.c` natively if they have a `cc`.
+
+```sh
+DC_PORT=/dev/ttyUSB1 ./record-demo.py --out ../../docs/assets/boot-7.3.1.mp4
+./record-demo.py --recut logs/demo-<ts> --trim-a 6:33 --trim-b 1.5:35 --out x.mp4
+```
+
+It takes two captures (`logs/demo-<ts>-{a,b}.mkv`, kept) so the serial upload
+between them isn't in the video, then trims and joins them into H.264 640x480
+20 fps. The default trims fit a 7.3.1 boot; check the result and `--recut` if
+the timing moved. Kills `fbdoom` afterwards. Don't run it with X up.
+
 ## fbdoom-test.sh — verify fbdoom launches on the framebuffer
 
 Checks `fbdoom -iwad /newdoom1.wad` actually starts, four ways (strongest last):

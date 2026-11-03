@@ -2,3 +2,4 @@
 /build
 archive
 *.swp
+__pycache__

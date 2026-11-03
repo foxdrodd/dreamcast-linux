@@ -1,0 +1,44 @@
+[COPY] --- T2-COPYRIGHT-BEGIN ---
+[COPY] t2/package/*/fltk/fltk.desc
+[COPY] Copyright (C) 2004 - 2026 The T2 SDE Project
+[COPY] Copyright (C) 1998 - 2003 ROCK Linux Project
+[COPY] SPDX-License-Identifier: GPL-2.0
+[COPY] --- T2-COPYRIGHT-END ---
+
+[I] A portable GUI library
+
+[T] FLTK (pronounced "fulltick") is a LGPL'd C++ graphical user interface
+[T] toolkit for X (UNIX®), OpenGL, and WIN32 (Microsoft® Windows® NT
+[T] 4.0, 95, or 98). It is currently maintained by a small group of
+[T] developers across the world with a central repository in the US.
+[T]
+[T] FLTK was originally created to build in-house applications at Digital
+[T] Domain for image processing and 3D graphics. The original author,
+[T] Bill Spitzak, received permission from Digital Domain to release
+[T] it to the public domain in the hopes that it could be used to make
+[T] better, faster, and nicer-looking UNIX programs. Digital Domain
+[T] has since withdrawn support for FLTK, but Bill is still able to
+[T] work on it from time to time.
+
+[U] https://www.fltk.org/
+
+[A] Bill Spitzak and others
+[M] René Rebe <rene@exactco.de>
+
+[C] base/x11
+[F] CROSS
+
+[L] LGPL
+[V] 1.4.5
+[P] X 0----5---9 128.300
+
+[D] aae39a8d3dcb922ade5feb64e992e787f4cf7a9d7431bda5b80964d2 fltk-1.4.5-source.tar.gz https://github.com/fltk/fltk/releases/download/release-1.4.5/
+
+[ "$SDECFG_STATIC" = 0 ] && var_append confopt ' ' --enable-shared
+# [[ $libdir = *lib64 ]] && hook_add premake 5 'mkdir lib64; sed -i -e "s/\.\.\/lib/..\/lib64/g" makeinclude'
+
+var_append GCC_WRAPPER_APPEND ' ' -L$root$(pkgprefix libdir libx11)
+var_append confopt ' ' --disable-wayland
+var_append confopt ' ' --disable-xcursor
+var_append confopt ' ' "--disable-xfixes --disable-xft --disable-xinerama --disable-xrender --disable-fluid --disable-gdiplus --disable-gl --disable-test --disable-forms"
+
