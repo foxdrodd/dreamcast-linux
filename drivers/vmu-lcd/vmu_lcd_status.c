@@ -1,7 +1,8 @@
 /*
  * vmu_lcd_status - Tux status screen for the SEGA Dreamcast VMU LCD.
  *
- * Shows the kernel's splash Tux on the 48x32 VMU display and uses it as a
+ * Shows the kernel's splash Tux on the 48x32 display of every plugged-in
+ * VMU (the same picture on all of them) and uses it as a
  * status indicator:
  *
  *   - while waiting for a network address, Tux blinks next to "DHCP ...";
@@ -602,12 +603,24 @@ static void page_mood(const struct stats *st, int swapping)
 /* Output                                                              */
 /* ------------------------------------------------------------------ */
 
+/*
+ * Every VMU with a display gets the same picture.  The driver names them
+ * vmu_lcd0..vmu_lcd7 (lowest free number first), so all eight names are
+ * probed each frame; a VMU plugged in later shows Tux on the next frame.
+ * -o restricts the output to one device.
+ */
+#define MAX_LCDS	8
+
+struct lcd {
+	int fd;
+	int have_last;
+	unsigned char last[FB_SIZE];
+};
+
 static volatile sig_atomic_t stop;
-static const char *dev = "/dev/vmu_lcd0";
+static const char *dev;			/* -o: only this device */
 static int flip;
-static int lcd_fd = -1;
-static unsigned char last[FB_SIZE];
-static int have_last;
+static struct lcd lcds[MAX_LCDS];
 
 static void on_signal(int sig)
 {
@@ -616,48 +629,72 @@ static void on_signal(int sig)
 }
 
 /*
- * Present the current pixel buffer; skips unchanged frames.
+ * Present the current pixel buffer on one display; skips unchanged frames.
  *
  * One write per frame, no tight retry loop: every LCD write shares the
  * maple bus and the VMU with the memory card, and hammering it makes
  * vmufat reads fail with "VMU ... is busy".
  *
- *   ENXIO  a real VMU draws the frame but sends no reply to the LCD block
- *          write, which the kernel reports as ENXIO - count it as drawn.
+ *   ENXIO  the VMU did not answer: it was pulled, but the kernel keeps
+ *          the device while its memory card is registered.  Count the
+ *          frame as drawn so an empty slot is only retried on a change
+ *          or after REDRAW_TICKS.
  *   EIO    the driver timed out but left the packet queued; it still lands.
  *   EBUSY, EAGAIN, EINTR
  *          the VMU is busy (e.g. with a flash read): try again next tick.
- *   other  unplugged or wedged: reopen next tick.
- *
- * A frame that got lost anyway is repainted after REDRAW_TICKS.
+ *   other  gone or wedged: reopen next tick.
  */
-static void present(void)
+static void present_one(struct lcd *l, const char *path,
+			const unsigned char *fb)
 {
-	unsigned char fb[FB_SIZE];
 	ssize_t n;
 
-	pack(fb, flip);
-	if (have_last && !memcmp(fb, last, FB_SIZE))
+	if (l->fd < 0) {
+		l->fd = open(path, O_WRONLY);
+		if (l->fd < 0)
+			return;			/* no VMU there (yet) */
+		l->have_last = 0;
+	}
+	if (l->have_last && !memcmp(fb, l->last, FB_SIZE))
 		return;
 
-	if (lcd_fd < 0) {
-		lcd_fd = open(dev, O_WRONLY);
-		if (lcd_fd < 0)
-			return;			/* no VMU (yet), try next tick */
-	}
-
-	n = write(lcd_fd, fb, FB_SIZE);
+	n = write(l->fd, fb, FB_SIZE);
 	if (n == FB_SIZE || (n < 0 && (errno == ENXIO || errno == EIO))) {
-		memcpy(last, fb, FB_SIZE);
-		have_last = 1;
+		memcpy(l->last, fb, FB_SIZE);
+		l->have_last = 1;
 		return;
 	}
 	if (n < 0 && (errno == EBUSY || errno == EAGAIN || errno == EINTR))
 		return;
-	/* unplugged or wedged: reopen next time and redraw */
-	close(lcd_fd);
-	lcd_fd = -1;
-	have_last = 0;
+	close(l->fd);
+	l->fd = -1;
+}
+
+/* Present the current pixel buffer on every VMU display (or just -o). */
+static void present(void)
+{
+	char path[] = "/dev/vmu_lcd0";
+	unsigned char fb[FB_SIZE];
+	int i;
+
+	pack(fb, flip);
+	if (dev) {
+		present_one(&lcds[0], dev, fb);
+		return;
+	}
+	for (i = 0; i < MAX_LCDS; i++) {
+		path[sizeof(path) - 2] = '0' + i;
+		present_one(&lcds[i], path, fb);
+	}
+}
+
+/* Repaint everything on the next present(), e.g. after a VMU hot-swap. */
+static void forget_frames(void)
+{
+	int i;
+
+	for (i = 0; i < MAX_LCDS; i++)
+		lcds[i].have_last = 0;
 }
 
 static void sleep_ms(long ms)
@@ -680,7 +717,7 @@ static void usage(const char *prog)
 		"usage: %s [-r] [-o dev] [-i iface] [-t sec] [-s sec] [-w sec] [-b]\n"
 		"       %s [-r] -p splash|dhcp|ip|mood   (one frame to stdout)\n"
 		"  -r  rotate 180 degrees (VMU in a controller)\n"
-		"  -o  LCD device (default /dev/vmu_lcd0)\n"
+		"  -o  only this LCD device (default: all /dev/vmu_lcd0..7)\n"
 		"  -i  interface to watch (default: eth0, then ppp0)\n"
 		"  -t  refresh interval (default 3 s)\n"
 		"  -s  how long to show a new IP address (default 6 s)\n"
@@ -717,6 +754,8 @@ int main(int argc, char **argv)
 	}
 	if (interval < 1)
 		interval = 1;
+	for (opt = 0; opt < MAX_LCDS; opt++)
+		lcds[opt].fd = -1;
 
 	belly_init();
 
@@ -785,16 +824,17 @@ int main(int argc, char **argv)
 		page_mood(&st, prev_pswp >= 0 && st.pswp != prev_pswp);
 		prev_pswp = st.pswp;
 		if (++tick % REDRAW_TICKS == 0)
-			have_last = 0;	/* repaint after a VMU hot-swap */
+			forget_frames();	/* repaint after a VMU hot-swap */
 		present();
 		sleep_ms(interval * 1000L);
 	}
 
 	stop = 0;			/* let present() run once more */
 	page_splash();
-	have_last = 0;
+	forget_frames();
 	present();
-	if (lcd_fd >= 0)
-		close(lcd_fd);
+	for (opt = 0; opt < MAX_LCDS; opt++)
+		if (lcds[opt].fd >= 0)
+			close(lcds[opt].fd);
 	return 0;
 }
