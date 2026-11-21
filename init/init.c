@@ -184,6 +184,31 @@ static void start_manager(struct console *c)
 	c->pid = pid;
 }
 
+/*
+ * VMU status screen: Tux on the VMU LCD showing the IP address and memory
+ * use (drivers/vmu-lcd/vmu_lcd_status.c).  Started in the background from
+ * the userland once we are chrooted into it, only if it is installed; not
+ * respawned, and reaped by the main loop if it exits.  -r because the VMU
+ * sits upside down in the controller (same as the kernel splash).
+ */
+#define VMU_STATUS "/usr/bin/vmu_lcd_status"
+
+static void start_vmu_status(void)
+{
+	char *const argv[] = { VMU_STATUS, "-r", NULL };
+	pid_t pid;
+
+	if (access(VMU_STATUS, X_OK) < 0)
+		return;
+
+	pid = fork();
+	if (pid == 0) {
+		setsid();
+		execve(VMU_STATUS, argv, envp_serial);
+		_exit(127);
+	}
+}
+
 static int xmkdir(const char *path)
 {
 	if (mkdir(path, 0755) < 0 && errno != EEXIST) {
@@ -240,6 +265,8 @@ int main(void)
 
 	if (access("/bin/mksh", X_OK) < 0)
 		perror("err /bin/mksh");
+
+	start_vmu_status();
 
 	/* Launch a manager per console that actually exists. */
 	init_consoles();
