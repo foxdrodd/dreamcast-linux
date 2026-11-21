@@ -1,0 +1,34 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 21 Nov 2026 19:30:00 +0100
+Subject: [PATCH] sh: maple: Put the bus timeout into bits 31:16
+
+The maple speed register (SB_MSYS) holds the response time-out counter
+in bits 31:16, as used by KallistiOS (MAPLE_SPEED_TIMEOUT(n) = n << 16,
+programmed with 50000). MAPLE_TIMEOUT() shifted by 15 instead, so
+MAPLE_TIMEOUT(0xFFFF) set a time-out of 0x7FFF, about 65% of the value
+KallistiOS uses, plus a stray bit 15.
+
+On a real VMU the reply to an LCD block write arrives later than that:
+the frame is drawn, but the maple core sees MAPLE_RESPONSE_NONE, treats
+it as a possible hot unplug, marks the device busy == 2 and the LCD
+driver returns -ENXIO for every frame. Because the memory card shares
+the device's busy flag, a concurrent flash write then fails with -ENXIO
+too ("VMU write failing with error -6", lost async page write).
+
+Shift by 16 so the full 0xFFFF time-out is programmed.
+
+---
+diff --git a/arch/sh/include/mach-dreamcast/mach/maple.h b/arch/sh/include/mach-dreamcast/mach/maple.h
+--- a/arch/sh/include/mach-dreamcast/mach/maple.h
++++ b/arch/sh/include/mach-dreamcast/mach/maple.h
+@@ -21,7 +21,7 @@
+ 
+ #define MAPLE_MAGIC    0x6155404f
+ #define MAPLE_2MBPS    0
+-#define MAPLE_TIMEOUT(n) ((n)<<15)
++#define MAPLE_TIMEOUT(n) ((n)<<16)
+ 
+ /* Function codes */
+ #define MAPLE_FUNC_CONTROLLER 0x001
+-- 
+2.43.0

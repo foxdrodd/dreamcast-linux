@@ -1,0 +1,43 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 21 Nov 2026 19:00:00 +0100
+Subject: [PATCH] fs: vmufat: Add the buffer head folio operations
+
+vmufat goes through buffer heads (block_write_begin, generic_write_end,
+block_read_full_folio) but its address_space_operations lack the
+buffer head callbacks that other such filesystems (fat, minix, ext2)
+set:
+
+- migrate_folio: kcompactd falls back to fallback_migrate_folio() and
+  warns once:
+
+    vmufat_address_space_operations does not implement migrate_folio
+    WARNING: mm/migrate.c:1077 ... kcompactd0
+
+- invalidate_folio: truncate and unlink leave the buffer heads
+  attached to the folio instead of releasing them.
+
+- dirty_folio: folio_mark_dirty() calls it unconditionally.
+
+Use block_dirty_folio, block_invalidate_folio and buffer_migrate_folio
+like minix does.
+
+---
+diff --git a/fs/vmufat/inode.c b/fs/vmufat/inode.c
+--- a/fs/vmufat/inode.c
++++ b/fs/vmufat/inode.c
+@@ -972,10 +972,13 @@
+ 
+ const struct address_space_operations
+ 		vmufat_address_space_operations = {
++	.dirty_folio =	block_dirty_folio,
++	.invalidate_folio = block_invalidate_folio,
+ 	.read_folio =	vmufat_read_folio,
+ 	.writepages =	vmufat_writepages,
+ 	.write_begin =	vmufat_write_begin,
+ 	.write_end =	generic_write_end,
++	.migrate_folio = buffer_migrate_folio,
+ };
+ 
+ const struct inode_operations vmufat_inode_operations = {
+-- 
+2.43.0
