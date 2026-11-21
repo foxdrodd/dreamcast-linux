@@ -85,8 +85,6 @@ static sighandler_t signal(int sig, sighandler_t handler)
 #define STRIDE		(W / 8)
 #define FB_SIZE		(STRIDE * H)		/* 192 bytes */
 
-#define RETRY_MAX	20		/* transient NAKs while the LCD paints */
-#define RETRY_US	4000
 #define REDRAW_TICKS	10		/* rewrite an unchanged frame now and then */
 #define DIZZY_PCT	10		/* RAM avail + swap free below this % */
 
@@ -617,12 +615,26 @@ static void on_signal(int sig)
 	stop = 1;
 }
 
-/* Present the current pixel buffer; skips unchanged frames. */
+/*
+ * Present the current pixel buffer; skips unchanged frames.
+ *
+ * One write per frame, no tight retry loop: every LCD write shares the
+ * maple bus and the VMU with the memory card, and hammering it makes
+ * vmufat reads fail with "VMU ... is busy".
+ *
+ *   ENXIO  a real VMU draws the frame but sends no reply to the LCD block
+ *          write, which the kernel reports as ENXIO - count it as drawn.
+ *   EIO    the driver timed out but left the packet queued; it still lands.
+ *   EBUSY, EAGAIN, EINTR
+ *          the VMU is busy (e.g. with a flash read): try again next tick.
+ *   other  unplugged or wedged: reopen next tick.
+ *
+ * A frame that got lost anyway is repainted after REDRAW_TICKS.
+ */
 static void present(void)
 {
 	unsigned char fb[FB_SIZE];
 	ssize_t n;
-	int tries;
 
 	pack(fb, flip);
 	if (have_last && !memcmp(fb, last, FB_SIZE))
@@ -634,20 +646,14 @@ static void present(void)
 			return;			/* no VMU (yet), try next tick */
 	}
 
-	for (tries = 0; tries < RETRY_MAX; tries++) {
-		n = write(lcd_fd, fb, FB_SIZE);
-		if (n == FB_SIZE) {
-			memcpy(last, fb, FB_SIZE);
-			have_last = 1;
-			return;
-		}
-		if (n < 0 && (errno == ENXIO || errno == EAGAIN ||
-			      errno == EBUSY || errno == EINTR)) {
-			usleep(RETRY_US);
-			continue;
-		}
-		break;
+	n = write(lcd_fd, fb, FB_SIZE);
+	if (n == FB_SIZE || (n < 0 && (errno == ENXIO || errno == EIO))) {
+		memcpy(last, fb, FB_SIZE);
+		have_last = 1;
+		return;
 	}
+	if (n < 0 && (errno == EBUSY || errno == EAGAIN || errno == EINTR))
+		return;
 	/* unplugged or wedged: reopen next time and redraw */
 	close(lcd_fd);
 	lcd_fd = -1;
