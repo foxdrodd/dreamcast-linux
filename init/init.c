@@ -209,6 +209,55 @@ static void start_vmu_status(void)
 	}
 }
 
+/*
+ * Swap in PowerVR2 VRAM (/dev/vramblk0, 6 MiB above the 2 MiB pvr2fb keeps
+ * for the console).  VRAM does not survive a reset, so the swap header is
+ * written fresh on every boot.  Done here instead of running mkswap and
+ * swapon from the GD-ROM: one 4 KiB write plus one syscall, no exec.
+ * Quietly skipped if the kernel has no vramblk (or it lost the VRAM to
+ * pvr2fb, video=pvr2fb:vram:8M).
+ */
+#define VRAM_SWAP	"/dev/vramblk0"
+#define SWAP_PAGE	4096
+#define SWAP_PRIO	10		/* above zram or disk swap added later */
+#define SWAP_FLAG_PREFER 0x8000
+
+static void start_vram_swap(void)
+{
+	static unsigned char hdr[SWAP_PAGE];
+	unsigned int *info = (unsigned int *)(hdr + 1024);
+	off_t size;
+	int fd, ret;
+
+	fd = open(VRAM_SWAP, O_RDWR);
+	if (fd < 0)
+		return;
+
+	size = lseek(fd, 0, SEEK_END);
+	if (size < 16 * SWAP_PAGE) {
+		close(fd);
+		return;
+	}
+
+	/* union swap_header: version, last_page, nr_badpages, uuid 0 */
+	info[0] = 1;
+	info[1] = size / SWAP_PAGE - 1;
+	info[2] = 0;
+	memcpy(hdr + SWAP_PAGE - 10, "SWAPSPACE2", 10);
+
+	ret = lseek(fd, 0, SEEK_SET) < 0 ||
+	      write(fd, hdr, SWAP_PAGE) != SWAP_PAGE || fsync(fd) < 0;
+	close(fd);
+	if (ret) {
+		perror("vram swap header");
+		return;
+	}
+
+	if (__nolibc_syscall2(__NR_swapon, VRAM_SWAP,
+			      SWAP_FLAG_PREFER | SWAP_PRIO) < 0)
+		printf("swapon %s failed\n", VRAM_SWAP);
+}
+
 static int xmkdir(const char *path)
 {
 	if (mkdir(path, 0755) < 0 && errno != EEXIST) {
@@ -266,6 +315,7 @@ int main(void)
 	if (access("/bin/mksh", X_OK) < 0)
 		perror("err /bin/mksh");
 
+	start_vram_swap();
 	start_vmu_status();
 
 	/* Launch a manager per console that actually exists. */
