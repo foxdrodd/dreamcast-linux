@@ -1,0 +1,305 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 21 Nov 2026 10:35:00 +0100
+Subject: [PATCH] block: Add a Dreamcast PowerVR2 VRAM block device
+
+The Dreamcast has 16 MiB of RAM, but the 640x480 console framebuffer
+uses well under 1 MiB of the 8 MiB of PowerVR2 video RAM. Expose a
+window of the rest (by default 6 MiB above the first 2 MiB) as
+/dev/vramblk0, mainly to swap to it.
+
+VRAM is accessed through the 32-bit (linear) area at 0x05000000; the
+64-bit area is bank interleaved and corrupts sub-word stores. Reads and
+writes each have two methods, selectable at runtime through the rmode
+and wmode parameters: uncached P2 accesses, or cached P1 accesses where
+writes allocate lines with movca.l and purge them, and reads invalidate
+their lines afterwards. No VRAM line stays in the operand cache between
+requests, so the methods can be mixed. The defaults (uncached writes,
+cached reads) are the fastest pair measured on a real Dreamcast.
+
+---
+diff -uprN a/drivers/block/Kconfig b/drivers/block/Kconfig
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -257,6 +257,22 @@ config BLK_DEV_RAM_SIZE
+ 	  The default value is 4096 kilobytes. Only change this if you know
+ 	  what you are doing.
+ 
++config BLK_DEV_DC_VRAM
++	tristate "Dreamcast PowerVR2 VRAM block device"
++	depends on SH_DREAMCAST && 29BIT
++	help
++	  Expose the PowerVR2 video RAM that the console framebuffer does
++	  not use as a block device (/dev/vramblk0), mainly to swap to it.
++	  By default the device covers the 6 MiB above the first 2 MiB of
++	  VRAM; the window is set with the vramblk.offset and vramblk.size
++	  parameters.
++
++	  Nothing else may use that part of VRAM while the device is in
++	  use, e.g. 3D applications or a framebuffer mode larger than 2 MiB.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called vramblk.
++
+ config ATA_OVER_ETH
+ 	tristate "ATA over Ethernet support"
+ 	depends on NET
+diff -uprN a/drivers/block/Makefile b/drivers/block/Makefile
+--- a/drivers/block/Makefile
++++ b/drivers/block/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_ATARI_FLOPPY)	+= ataflop.o
+ obj-$(CONFIG_AMIGA_Z2RAM)	+= z2ram.o
+ obj-$(CONFIG_N64CART)		+= n64cart.o
+ obj-$(CONFIG_BLK_DEV_RAM)	+= brd.o
++obj-$(CONFIG_BLK_DEV_DC_VRAM)	+= vramblk.o
+ obj-$(CONFIG_BLK_DEV_LOOP)	+= loop.o
+ obj-$(CONFIG_SUNVDC)		+= sunvdc.o
+ 
+diff -uprN a/drivers/block/vramblk.c b/drivers/block/vramblk.c
+--- a/drivers/block/vramblk.c
++++ b/drivers/block/vramblk.c
+@@ -0,0 +1,245 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Dreamcast PowerVR2 VRAM block device
++ *
++ * The PowerVR2 has 8 MiB of video RAM, of which the 640x480 console
++ * framebuffer uses well under 1 MiB.  This driver exposes a window of the
++ * rest as a block device, mainly to be used as a swap device on the 16 MiB
++ * Dreamcast.
++ *
++ * VRAM is accessed through the 32-bit (linear) area at 0x05000000.  The
++ * 64-bit area at 0x04000000 is bank interleaved, and sub-word CPU stores
++ * into it corrupt the neighbouring bytes.
++ *
++ * Two access methods exist per direction, and can be switched at runtime
++ * through /sys/module/vramblk/parameters/{rmode,wmode} for benchmarking:
++ *
++ *   0 (io):    uncached P2 accesses, 32 bits at a time.
++ *   1 (cache): cached P1 accesses.  Writes allocate the operand cache lines
++ *              with movca.l (no line fill from VRAM) and purge them right
++ *              after, so the data goes out as 32-byte bursts.  Reads go
++ *              through the cache and invalidate the lines right after.
++ *
++ * Every request leaves no VRAM line in the operand cache, so the methods
++ * can be mixed and switched between requests.  Requests that are not
++ * 32-byte aligned fall back to the io method.
++ *
++ * On a real Dreamcast (4 KiB requests) uncached writes run at ~15.7 MB/s
++ * against ~8.9 MB/s for cached ones, while cached reads run at ~15.9 MB/s
++ * against ~6.0 MB/s for uncached ones, hence the defaults.
++ */
++
++#include <linux/bio.h>
++#include <linux/blkdev.h>
++#include <linux/highmem.h>
++#include <linux/io.h>
++#include <linux/ioport.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <asm/addrspace.h>
++#include <asm/cacheflush.h>
++
++#define VRAM_PHYS	0x05000000UL	/* 32-bit (linear) VRAM area */
++#define VRAM_SIZE	(8UL << 20)
++#define VB_LINE		32		/* SH-4 operand cache line size */
++
++enum { VB_MODE_IO, VB_MODE_CACHE };
++
++static unsigned long offset = 2UL << 20;
++module_param(offset, ulong, 0444);
++MODULE_PARM_DESC(offset, "Start of the device inside VRAM, in bytes (default 2 MiB)");
++
++static unsigned long size = 6UL << 20;
++module_param(size, ulong, 0444);
++MODULE_PARM_DESC(size, "Size of the device in bytes (default 6 MiB)");
++
++static int rmode = VB_MODE_CACHE;
++module_param(rmode, int, 0644);
++MODULE_PARM_DESC(rmode, "Read method: 0 = uncached, 1 = cached + invalidate (default)");
++
++static int wmode = VB_MODE_IO;
++module_param(wmode, int, 0644);
++MODULE_PARM_DESC(wmode, "Write method: 0 = uncached (default), 1 = movca.l + purge");
++
++struct vramblk {
++	void __iomem *io;	/* uncached (P2) view of the window */
++	void *cached;		/* cached (P1) view of the window */
++	struct gendisk *disk;
++	int major;
++};
++
++static struct vramblk vb;
++
++static bool vb_line_aligned(unsigned long off, const void *buf, size_t len)
++{
++	return !((off | len) & (VB_LINE - 1)) && !((unsigned long)buf & 3);
++}
++
++static void vb_write_cached(void *dst, const void *src, size_t len)
++{
++	u32 *d = dst;
++	const u32 *s = src;
++	size_t n;
++
++	for (n = len; n; n -= VB_LINE, d += 8, s += 8) {
++		register u32 r0 __asm__("r0") = s[0];
++
++		/* Allocate the line without fetching it from VRAM. */
++		__asm__ __volatile__("movca.l %0, @%1"
++				     : : "z" (r0), "r" (d) : "memory");
++		d[1] = s[1];
++		d[2] = s[2];
++		d[3] = s[3];
++		d[4] = s[4];
++		d[5] = s[5];
++		d[6] = s[6];
++		d[7] = s[7];
++	}
++	/* Write the lines back and drop them from the cache. */
++	__flush_purge_region(dst, len);
++}
++
++static void vb_read_cached(void *dst, void *src, size_t len)
++{
++	memcpy(dst, src, len);
++	__flush_invalidate_region(src, len);
++}
++
++static void vb_write(unsigned long off, const void *buf, size_t len)
++{
++	if (READ_ONCE(wmode) == VB_MODE_CACHE && vb_line_aligned(off, buf, len))
++		vb_write_cached(vb.cached + off, buf, len);
++	else
++		memcpy_toio(vb.io + off, buf, len);
++}
++
++static void vb_read(unsigned long off, void *buf, size_t len)
++{
++	if (READ_ONCE(rmode) == VB_MODE_CACHE && vb_line_aligned(off, buf, len))
++		vb_read_cached(buf, vb.cached + off, len);
++	else
++		memcpy_fromio(buf, vb.io + off, len);
++}
++
++static void vramblk_submit_bio(struct bio *bio)
++{
++	sector_t sector = bio->bi_iter.bi_sector;
++	bool write = op_is_write(bio_op(bio));
++	struct bvec_iter iter;
++	struct bio_vec bv;
++
++	switch (bio_op(bio)) {
++	case REQ_OP_READ:
++	case REQ_OP_WRITE:
++		break;
++	default:
++		bio_io_error(bio);
++		return;
++	}
++
++	if (bio_end_sector(bio) > get_capacity(bio->bi_bdev->bd_disk)) {
++		bio_io_error(bio);
++		return;
++	}
++
++	bio_for_each_segment(bv, bio, iter) {
++		unsigned long off = sector << SECTOR_SHIFT;
++		void *buf = bvec_kmap_local(&bv);
++
++		if (write) {
++			vb_write(off, buf, bv.bv_len);
++		} else {
++			vb_read(off, buf, bv.bv_len);
++			flush_dcache_page(bv.bv_page);
++		}
++		kunmap_local(buf);
++		sector += bv.bv_len >> SECTOR_SHIFT;
++	}
++
++	bio_endio(bio);
++}
++
++static const struct block_device_operations vramblk_fops = {
++	.owner		= THIS_MODULE,
++	.submit_bio	= vramblk_submit_bio,
++};
++
++static int __init vramblk_init(void)
++{
++	struct queue_limits lim = {
++		.physical_block_size	= PAGE_SIZE,
++		.io_min			= PAGE_SIZE,
++		.features		= BLK_FEAT_SYNCHRONOUS |
++					  BLK_FEAT_NOWAIT,
++	};
++	unsigned long phys = VRAM_PHYS + offset;
++	int err;
++
++	if (!size || offset >= VRAM_SIZE || size > VRAM_SIZE - offset ||
++	    !PAGE_ALIGNED(offset) || !PAGE_ALIGNED(size)) {
++		pr_err("vramblk: invalid window offset=%#lx size=%#lx\n",
++		       offset, size);
++		return -EINVAL;
++	}
++
++	if (!request_mem_region(phys, size, "vramblk"))
++		return -EBUSY;
++
++	vb.io = ioremap(phys, size);
++	if (!vb.io) {
++		err = -ENOMEM;
++		goto out_release;
++	}
++	vb.cached = (void *)P1SEGADDR(phys);
++
++	vb.major = register_blkdev(0, "vramblk");
++	if (vb.major < 0) {
++		err = vb.major;
++		goto out_unmap;
++	}
++
++	vb.disk = blk_alloc_disk(&lim, NUMA_NO_NODE);
++	if (IS_ERR(vb.disk)) {
++		err = PTR_ERR(vb.disk);
++		goto out_unregister;
++	}
++	vb.disk->major = vb.major;
++	vb.disk->first_minor = 0;
++	vb.disk->minors = 1;
++	vb.disk->fops = &vramblk_fops;
++	vb.disk->private_data = &vb;
++	strscpy(vb.disk->disk_name, "vramblk0", DISK_NAME_LEN);
++	set_capacity(vb.disk, size >> SECTOR_SHIFT);
++
++	err = add_disk(vb.disk);
++	if (err)
++		goto out_put_disk;
++
++	pr_info("vramblk: %lu KiB of VRAM at %#lx\n", size >> 10, phys);
++	return 0;
++
++out_put_disk:
++	put_disk(vb.disk);
++out_unregister:
++	unregister_blkdev(vb.major, "vramblk");
++out_unmap:
++	iounmap(vb.io);
++out_release:
++	release_mem_region(phys, size);
++	return err;
++}
++
++static void __exit vramblk_exit(void)
++{
++	del_gendisk(vb.disk);
++	put_disk(vb.disk);
++	unregister_blkdev(vb.major, "vramblk");
++	iounmap(vb.io);
++	release_mem_region(VRAM_PHYS + offset, size);
++}
++
++module_init(vramblk_init);
++module_exit(vramblk_exit);
++
++MODULE_DESCRIPTION("Dreamcast PowerVR2 VRAM block device");
++MODULE_LICENSE("GPL");
