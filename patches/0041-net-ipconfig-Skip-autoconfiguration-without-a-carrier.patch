@@ -1,0 +1,90 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Tue, 24 Nov 2026 00:10:00 +0100
+Subject: [PATCH] net: ipconfig: Skip autoconfiguration without a carrier
+
+With ip=dhcp and a network adapter but no cable, ipconfig first waits
+carrier_timeout (120 s by default) for a link, then sends DHCP requests
+nobody can answer (six of them with backoff, ~80 s), then reopens the
+devices and does both again. On a Dreamcast with a Broadband Adapter
+and no cable plugged in that stalls the boot for more than six
+minutes.
+
+Remember whether a carrier showed up during the wait and, if none did,
+give up on DHCP/BOOTP/RARP right away. An NFS or CIFS root still keeps
+retrying forever, and carrier_timeout=0 keeps meaning "don't wait, just
+try".
+
+---
+ net/ipv4/ipconfig.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+--- a/net/ipv4/ipconfig.c
++++ b/net/ipv4/ipconfig.c
+@@ -102,6 +102,9 @@
+ /* Wait for carrier timeout default in seconds */
+ static unsigned int carrier_timeout = 120;
+ 
++/* Did any device report a carrier before carrier_timeout ran out? */
++static bool ic_have_carrier __initdata;
++
+ /*
+  * Public IP configuration
+  */
+@@ -273,6 +276,7 @@
+ 		goto have_carrier;
+ 
+ 	/* wait for a carrier on at least one device */
++	ic_have_carrier = false;
+ 	start = jiffies;
+ 	next_msg = start + secs_to_jiffies(20);
+ 	while (time_before(jiffies, start +
+@@ -283,6 +287,7 @@
+ 		for_each_netdev(&init_net, dev)
+ 			if (ic_is_init_dev(dev) && netif_carrier_ok(dev)) {
+ 				rtnl_unlock();
++				ic_have_carrier = true;
+ 				goto have_carrier;
+ 			}
+ 		rtnl_unlock();
+@@ -1475,6 +1480,21 @@
+  *	IP Autoconfig dispatcher.
+  */
+ 
++#ifdef IPCONFIG_DYNAMIC
++static bool __init ic_root_on_net(void)
++{
++#ifdef CONFIG_ROOT_NFS
++	if (ROOT_DEV == Root_NFS)
++		return true;
++#endif
++#ifdef CONFIG_CIFS_ROOT
++	if (ROOT_DEV == Root_CIFS)
++		return true;
++#endif
++	return false;
++}
++#endif
++
+ static int __init ip_auto_config(void)
+ {
+ 	__be32 addr;
+@@ -1534,6 +1554,17 @@
+ #endif
+ 	    ic_first_dev->next) {
+ #ifdef IPCONFIG_DYNAMIC
++		/*
++		 * Without a carrier no DHCP/BOOTP/RARP answer can arrive,
++		 * so don't spend minutes on retries and reopens. A
++		 * network root still has to wait for the link.
++		 */
++		if (!ic_have_carrier && carrier_timeout && !ic_root_on_net()) {
++			pr_info("IP-Config: No carrier, skipping autoconfiguration\n");
++			ic_close_devs();
++			return -1;
++		}
++
+ 		if (ic_dynamic() < 0) {
+ 			ic_close_devs();
+ 
+-- 
+2.47.0
