@@ -12,6 +12,10 @@ declare -A userland=(
 linux_version=$(cat dreamcast/build-dreamcast.sh|grep '^LINUX_VERSION=.*'|cut -d"=" -f2|tr -d '"')
 reldir=release-${linux_version}
 
+# The CDIs are packed in the zstd seekable format: still a normal .zst for
+# "zstd -d", but the browser emulator can stream single 256 KiB frames.
+zstd_seekable=$PWD/scripts/zstd-seekable.py
+
 # Update Kernel Image to get the 1ST_READ.BIN
 #
 
@@ -20,7 +24,7 @@ sed -i 's,CONFIG_INITRAMFS_SOURCE=.*,CONFIG_INITRAMFS_SOURCE="/usr/src/dreamcast
 ./rebuildkernel.sh
 cd build
 mkdir -p $reldir
-zstd -f linux616.cdi -o $reldir/linux-$linux_version-base-busybox.cdi.zst &
+$zstd_seekable linux616.cdi $reldir/linux-$linux_version-base-busybox.cdi.zst &
 cp -vf linux616.cdi linux-$linux_version-base-busybox.cdi
 
 zstd -f 1ST_READ.BIN -o $reldir/1ST_READ.BIN.zst &
@@ -57,7 +61,7 @@ for i in "${!userland[@]}"; do
 	iso=linux-$linux_version-with-userland-$i
 	genisoimage -l -r -C 0,11702 -G IP.BIN -o $iso.iso 1ST_READ.BIN ${userland[$i]}
 	/opt/toolchains/dc/bin/cdi4dc $iso.iso $iso.cdi
-	zstd -f $iso.cdi -o $reldir/$iso.cdi.zst &
+	$zstd_seekable $iso.cdi $reldir/$iso.cdi.zst &
 	usrland=linux-$linux_version-userland-$i
 	tar --zstd -cf $reldir/$usrland.tar.zst -C ${userland[$i]} . &
 done
