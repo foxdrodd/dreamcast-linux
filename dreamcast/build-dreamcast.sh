@@ -297,7 +297,7 @@ EOF
     make clean scramble kernel-boot.bin
 
     cp kernel-boot.bin /opt/build/
-    cp IP.BIN /opt/build/
+    cp /usr/src/IP.BIN /opt/build/	# dreamcast/IP.BIN in the repository
     cp scramble /opt/build/
   popd
 
