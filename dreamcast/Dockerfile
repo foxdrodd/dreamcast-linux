@@ -22,10 +22,7 @@ RUN echo 1234567
 COPY build-dreamcast.sh \
   kernel.config \
   busybox.config \
-  chroot.sh \
-  sh-boot-20010831-1455.tar.gz hello \
-  sh-boot-20010831-1455.diff \
-  sh-boot-20010831-1455-sh4.diff \
+  chroot.sh hello \
   /usr/src/
 
 COPY firmware/aica_firmware.bin /usr/src/dreamcast

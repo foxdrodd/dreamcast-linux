@@ -71,11 +71,14 @@ pushd dreamcast
     tar xjf busybox-${BUSYBOX_VERSION}.tar.bz2
   fi
 
-  if [ ! -d "sh-boot" ]; then
-    tar xzf ../sh-boot-20010831-1455.tar.gz
-    patch -p0 < ../sh-boot-20010831-1455.diff
-    patch -p0 < ../sh-boot-20010831-1455-sh4.diff
+  # sh-boot (kernel-boot.bin loader, scramble) comes from the sh-boot git
+  # submodule, mounted read-only at /usr/src/sh-boot; refresh the build copy.
+  if [ ! -f /usr/src/sh-boot/tools/dreamcast/kernel-boot.S ]; then
+    echo "sh-boot missing: run 'git submodule update --init'" >&2
+    exit 1
   fi
+  # no --delete: keep local files such as tools/dreamcast/IP.BIN
+  rsync -a --exclude=.git /usr/src/sh-boot/ sh-boot/
 
   #
   # Preparations

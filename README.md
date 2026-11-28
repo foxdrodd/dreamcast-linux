@@ -50,7 +50,9 @@ Tested Devices, feel free to add PR to add your test device:
 | CDI | qemu patched |  :heavy_check_mark: Yes | My custom [qemu](https://github.com/foxdrodd/qemu) boots with framebuffer, serial, network, VMU, GDROM, keyboard, mouse, [Wiki](https://github.com/foxdrodd/dreamcast-linux/wiki/QEMU-Support-for-Dreamcast) |
 
 
-**ATTENTION:** You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, aligned to `.dreamcast/src/sh-boot/tools/dreamcast/kernel-boot.S` `L_binary_zImage_bin_dest:` and `L_entry:`. (The memory position of the zipped kernel image, depending on how big it is). In the example below, we chose 0x00600000 / 0xac600000.
+The boot loader (`kernel-boot.bin`, `scramble`) is built from [sh-boot](https://github.com/foxdrodd/sh-boot/), included as the git submodule `sh-boot/`. Clone with `git clone --recursive`, or run `git submodule update --init` in an existing checkout.
+
+**ATTENTION:** You need to customize the `.dreamcast/src/linux-xx/arch/sh/Kconfig` to modify BOOT_LINK_OFFSET, the link address of the zipped kernel image. The boot ROM loads `1ST_READ.BIN` to 0x8c010000 and `kernel-boot.S` jumps to the zImage right there; the zImage then moves itself to its link address, so that has to lie above the decompressed kernel (depending on how big it is). In the example below, we chose 0x00600000 (0x8c600000).
 
 ```
 config BOOT_LINK_OFFSET

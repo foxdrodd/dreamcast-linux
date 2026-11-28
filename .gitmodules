@@ -1,0 +1,4 @@
+[submodule "sh-boot"]
+	path = sh-boot
+	url = https://github.com/foxdrodd/sh-boot
+	branch = dc-linux-loader

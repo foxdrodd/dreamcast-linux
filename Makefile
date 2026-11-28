@@ -11,6 +11,7 @@ base:
 dreamcast:
 	(docker run --privileged -it \
 		-v "${PWD}/.dreamcast/src:/usr/src/dreamcast" \
+		-v "${PWD}/sh-boot:/usr/src/sh-boot:ro" \
 		-v "${PWD}/.dreamcast/opt:/opt/dreamcast" \
 		-v "${PWD}/build:/opt/build" \
 		dreamcastlinux:update2)
