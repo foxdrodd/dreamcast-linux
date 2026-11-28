@@ -268,17 +268,9 @@ EOF
 
   chmod a+x ${INITRD}/etc/init.d/rcS
 
-    dd if=/dev/zero of=initrd.img bs=1k count=3000
-    mke2fs -F -vm0 initrd.img
-    mkdir -p initrd.dir
-    mount -o loop initrd.img initrd.dir
-#    (cd initrd ; tar cf - .) | (cd initrd.dir ; tar xvf -)
-  
+    # ${INITRD} is built into the kernel as its initramfs
+    # (CONFIG_INITRAMFS_SOURCE); no separate initrd image is needed.
     cd initrd;  rm -f init; ln -s bin/busybox init; cd ..
-
-    cp -r initrd/* initrd.dir/
-    umount initrd.dir
-    gzip -c -9 initrd.img > initrd.bin
   fi
 
   #
@@ -299,7 +291,6 @@ EOF
 
   pushd sh-boot/tools/dreamcast
     cp ../../../linux-${LINUX_VERSION}/arch/sh/boot/zImage ./zImage.bin
-    cp ../../../initrd.bin .
     make clean scramble kernel-boot.bin
 
     cp kernel-boot.bin /opt/build/

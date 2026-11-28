@@ -1,0 +1,115 @@
+From: Florian Fuchs <fuchsfl@gmail.com>
+Date: Sat, 28 Nov 2026 11:30:00 +0100
+Subject: [PATCH] sh: boot: Enable the caches while decompressing
+
+Nothing in the boot path turns the caches on before the kernel's
+cache_init(), and on a Dreamcast the boot ROM starts 1ST_READ.BIN with
+both caches off, so the decompressor runs uncached. Fitting instruction
+counts from QEMU against boot times on the real hardware gives about
+78 ns (~16 CPU cycles) per instruction; inflating the kernel takes
+about 10 s.
+
+On SH4, if both caches are off on entry, enable them in write-through
+mode for the decompression, so memory is never stale, and restore the
+original CCR with both caches invalidated before jumping to the kernel,
+so it starts in exactly the same state as before.
+
+On a Dreamcast (gzip kernel, -Os) the time from reset to the first
+kernel message drops from 26.0 s to 18.6 s.
+
+Signed-off-by: Florian Fuchs <fuchsfl@gmail.com>
+---
+--- a/arch/sh/boot/compressed/head_32.S
++++ b/arch/sh/boot/compressed/head_32.S
+@@ -76,16 +76,90 @@
+ 	mov.l	init_stack_addr, r0
+ 	mov.l	@r0, r15
+ 
++#ifdef CONFIG_CPU_SH4
++	/*
++	 * If the boot loader left both caches off, turn them on for the
++	 * decompressor, in write-through mode so that memory is never stale.
++	 * r8 = original CCR, r9 = 1 if we changed it (both callee-saved).
++	 */
++	mov.l	ccr_addr, r1
++	mov.l	@r1, r8
++	mov	#0, r9
++	mov.l	ccr_enable_bits, r2
++	tst	r2, r8
++	bf	1f			! a cache is already on: leave CCR alone
++	mov.l	ccr_on, r4
++	bsr	write_ccr
++	 nop
++	mov	#1, r9
++1:
++#endif
++
+ 	/* Decompress the kernel */
+ 	mov.l	decompress_kernel_addr, r0
+ 	jsr	@r0
+ 	nop
+ 
++#ifdef CONFIG_CPU_SH4
++	/* Hand the kernel the original CCR, with both caches invalidated */
++	tst	r9, r9
++	bt	2f
++	mov.l	ccr_inval_bits, r4
++	or	r8, r4
++	bsr	write_ccr
++	 nop
++2:
++#endif
++
+ 	/* Jump to the start of the decompressed kernel */
+ 	mov.l	kernel_start_addr, r0
+ 	jmp	@r0
+ 	nop
+-	
++
++#ifdef CONFIG_CPU_SH4
++	/*
++	 * write_ccr: CCR = r4. The CCR may only be written from the P2
++	 * area and must be followed by 8 instructions before returning to
++	 * a cacheable area.
++	 */
++write_ccr:
++	mova	3f, r0
++	mov.l	p2_mask, r1
++	and	r1, r0
++	mov.l	p2_base, r1
++	or	r1, r0
++	jmp	@r0
++	 nop
++
++	.align	2
++3:	mov.l	ccr_addr, r1
++	mov.l	r4, @r1
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	nop
++	rts
++	 nop
++
++	.align	2
++ccr_addr:
++	.long	0xff00001c	/* SH_CCR */
++ccr_enable_bits:
++	.long	0x00000101	/* ICE | OCE */
++ccr_on:
++	.long	0x0000090b	/* ICI | ICE | OCI | WT | OCE, P1 write-through */
++ccr_inval_bits:
++	.long	0x00000808	/* ICI | OCI */
++p2_mask:
++	.long	0x1fffffff
++p2_base:
++	.long	0xa0000000
++#endif
++
+ 	.align	2
+ bss_start_addr:
+ 	.long	__bss_start

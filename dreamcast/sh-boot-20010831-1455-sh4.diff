@@ -2,7 +2,7 @@ diff --git a/tools/dreamcast/Makefile b/tools/dreamcast/Makefile
 index f4a12e7..704472f 100644
 --- sh-boot.orig//tools/dreamcast/Makefile
 +++ sh-boot/tools/dreamcast/Makefile
-@@ -19,10 +19,10 @@ clean::
+@@ -19,19 +19,19 @@
  	rm -f *.elf *.o *~
  
  %.bin: %.elf
@@ -13,9 +13,11 @@ index f4a12e7..704472f 100644
 -	$(OBJCOPY) -I binary -O elf32-sh-linux $^ $@
 +	$(OBJCOPY) -B sh4 -I binary -O elf32-sh-linux $^ $@
  
- kernel-boot.elf: kernel-boot.S zImage.o initrd.o
+-kernel-boot.elf: kernel-boot.S zImage.o initrd.o
++kernel-boot.elf: kernel-boot.S zImage.o
  	$(CC) $(CFLAGS) -o $@ $^ $(LINKFLAGS)
-@@ -31,7 +31,7 @@ sh-stub-boot.elf: sh-stub-boot.S sh-stub.o
+ 
+ sh-stub-boot.elf: sh-stub-boot.S sh-stub.o
  	$(CC) $(CFLAGS) -o $@ $^ $(LINKFLAGS)
  
  sh-stub.o: ../../sh-stub.bin
